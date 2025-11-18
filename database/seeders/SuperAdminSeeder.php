@@ -5,15 +5,17 @@ namespace Database\Seeders;
 use App\Models\Admin;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class SuperAdminSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        Admin::firstOrCreate(
+        foreach (['superadmin', 'subadmin'] as $role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'admin']);
+        }
+
+        $admin = Admin::firstOrCreate(
             ['email' => 'admin@legitbooks.com'],
             [
                 'name' => 'Super Admin',
@@ -22,5 +24,7 @@ class SuperAdminSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        $admin->syncRoles(['superadmin']);
     }
 }

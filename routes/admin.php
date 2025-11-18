@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\PlatformSettingsController;
+use App\Http\Controllers\Admin\AdminUserController;
 
 Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AdminAuthController::class, 'login']);
@@ -20,5 +21,6 @@ Route::middleware(['auth:admin'])->group(function () {
 
     Route::get('settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
+    Route::resource('admins', AdminUserController::class)->except(['show']);
 });
 

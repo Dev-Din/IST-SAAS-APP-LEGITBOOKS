@@ -1,9 +1,10 @@
 # LegitBooks - Multi-Tenant Accounting SaaS
 
-LegitBooks is a comprehensive Laravel-based multi-tenant accounting SaaS application with distinct Admin and Tenant areas. The platform supports tenant scoping via `tenant_hash` in URLs, double-entry bookkeeping, M-Pesa integration, invoice generation, and configurable branding modes.
+LegitBooks is a comprehensive Laravel-based multi-tenant accounting SaaS application with distinct Admin and Tenant areas, plus a public marketing website. The platform supports tenant scoping via session-based tenant resolution, double-entry bookkeeping, M-Pesa integration, invoice generation, and configurable branding modes.
 
 ## Features
 
+- **Public Marketing Website**: Professional marketing pages showcasing product, pricing, and features
 - **Multi-Tenant Architecture**: Single database with tenant scoping via `tenant_id`
 - **Admin Platform**: Manage tenants, subscriptions, platform settings
 - **Tenant Accounting**: Invoices, payments, chart of accounts, journal entries
@@ -41,7 +42,7 @@ LegitBooks is a comprehensive Laravel-based multi-tenant accounting SaaS applica
 
 **Tenant-Scoped Tables:**
 - `users` - Tenant users
-- `contacts` - Customers/vendors
+- `contacts` - Customers/suppliers
 - `products` - Products/services
 - `chart_of_accounts` - Chart of accounts
 - `accounts` - Bank/cash accounts
@@ -124,7 +125,61 @@ php artisan serve
 npm run dev
 ```
 
+## Application Structure
+
+LegitBooks consists of three main areas:
+
+### 1. Marketing Website (Public)
+The public-facing marketing website is accessible to all visitors without authentication:
+
+- **Homepage**: `http://localhost:8000/` - Landing page with product overview
+- **Features**: `http://localhost:8000/features` - Detailed feature list
+- **Pricing**: `http://localhost:8000/pricing` - Subscription plans and pricing
+- **Solutions**: `http://localhost:8000/solutions` - Solutions by business type
+- **About**: `http://localhost:8000/about` - Company information
+- **Contact**: `http://localhost:8000/contact` - Contact form
+- **FAQ**: `http://localhost:8000/faq` - Frequently asked questions
+- **Legal**: 
+  - Terms: `http://localhost:8000/legal/terms`
+  - Privacy: `http://localhost:8000/legal/privacy`
+
+The marketing site includes:
+- Responsive design with Tailwind CSS
+- Clear CTAs linking to tenant signup/login
+- Contact form with email integration
+- SEO-friendly structure
+
+### 2. Tenant Portal (Authenticated)
+Tenants access their accounting application after login:
+
+- **Login**: `http://localhost:8000/app/auth/login`
+- **Dashboard**: `http://localhost:8000/app` (after login)
+- **Invoices**: `http://localhost:8000/app/invoices`
+- **Contacts**: `http://localhost:8000/app/contacts`
+- **Products**: `http://localhost:8000/app/products`
+- **Payments**: `http://localhost:8000/app/payments`
+- **Chart of Accounts**: `http://localhost:8000/app/chart-of-accounts`
+
+### 3. Admin Portal (Authenticated)
+Platform administrators manage tenants and system settings:
+
+- **Login**: `http://localhost:8000/admin/login`
+- **Dashboard**: `http://localhost:8000/admin` (after login)
+- **Tenants**: `http://localhost:8000/admin/tenants`
+- **Settings**: `http://localhost:8000/admin/settings`
+- **Admins**: `http://localhost:8000/admin/admins`
+
 ## Usage
+
+### User Journey: Marketing Site → Tenant App
+
+1. **Visitor lands on marketing site**: `http://localhost:8000/`
+2. **Explores features/pricing**: Navigates through marketing pages
+3. **Clicks "Start free trial"**: Redirected to `http://localhost:8000/app/auth/login`
+4. **Signs in or requests access**: Uses tenant credentials (tenants are created by admins)
+5. **Accesses tenant dashboard**: `http://localhost:8000/app` after authentication
+
+**Note**: Tenant accounts are created by platform administrators. Visitors can sign in if they have credentials, or contact support to request access.
 
 ### Creating a Tenant
 
@@ -140,10 +195,10 @@ Navigate to `/admin/tenants/create`
 
 Tenants access their application via:
 ```
-/app/{tenant_hash}/dashboard
+/app/auth/login
 ```
 
-The `tenant_hash` is generated automatically when a tenant is created.
+After login, tenants are automatically routed to their dashboard at `/app`. The tenant is resolved from the authenticated user's session, eliminating the need for tenant_hash in URLs.
 
 ### M-Pesa Simulation
 
@@ -193,6 +248,8 @@ Key test suites:
 - `InvoiceNumberServiceTest` - Per-tenant invoice numbering
 - `InvoicePaymentFlowTest` - Invoice → Payment → Journal flow
 - `AdminProvisioningTest` - Tenant provisioning
+- `MarketingRoutesTest` - Marketing page accessibility
+- `ContactFormTest` - Contact form validation and submission
 
 ## Project Structure
 
@@ -202,7 +259,8 @@ app/
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Admin/              # Admin controllers
-│   │   └── Tenant/             # Tenant controllers
+│   │   ├── Tenant/             # Tenant controllers
+│   │   └── Marketing/          # Marketing website controllers
 │   └── Middleware/             # ResolveTenant, EnsureTenantActive
 ├── Models/                     # Eloquent models
 │   └── Traits/                 # HasTenantScope trait
@@ -217,14 +275,24 @@ app/
 routes/
 ├── admin.php                   # Admin routes
 ├── tenant.php                  # Tenant routes
-└── web.php                     # Main routes
+└── web.php                     # Main routes (includes marketing)
 
 resources/
 ├── views/
 │   ├── admin/                  # Admin Blade views
 │   ├── tenant/                 # Tenant Blade views
+│   ├── marketing/              # Marketing website views
+│   │   ├── components/          # Reusable components (navbar, footer, CTA)
+│   │   └── legal/               # Legal pages (terms, privacy)
 │   └── layouts/               # Layout templates
+│       ├── admin.blade.php
+│       ├── tenant.blade.php
+│       └── marketing.blade.php # Marketing site layout
 └── csv_templates/              # CSV import templates
+
+tests/
+└── Feature/
+    └── Marketing/              # Marketing route tests
 
 database/
 ├── migrations/                 # Database migrations

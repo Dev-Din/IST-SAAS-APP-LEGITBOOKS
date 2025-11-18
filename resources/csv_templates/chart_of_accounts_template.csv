@@ -1,0 +1,3 @@
+code,name,type,category,parent_code
+5000,Expenses,expense,,
+5100,Office Supplies,expense,expense,5000

@@ -35,6 +35,11 @@ class Tenant extends Model
         return $this->hasOne(Subscription::class);
     }
 
+    public function paymentMethods()
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
     public function contacts()
     {
         return $this->hasMany(Contact::class);
@@ -76,7 +81,7 @@ class Tenant extends Model
         if ($override) {
             return $override;
         }
-        return env('BRANDING_MODE', 'A');
+        return config('legitbooks.branding_mode', 'A');
     }
 
     public function getBrandSettings(): array

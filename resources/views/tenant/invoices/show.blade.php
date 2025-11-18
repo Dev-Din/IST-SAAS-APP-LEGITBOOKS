@@ -1,0 +1,112 @@
+@extends('layouts.tenant')
+
+@section('title', 'Invoice ' . $invoice->invoice_number)
+
+@section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="py-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Invoice {{ $invoice->invoice_number }}</h1>
+            <div class="flex space-x-3">
+                <a href="{{ route('tenant.invoices.pdf', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Download PDF
+                </a>
+                <a href="{{ route('tenant.invoices.edit', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
+                    Edit
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Invoice Details</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                            Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                @if($invoice->status === 'paid') bg-green-100 text-green-800
+                                @elseif($invoice->status === 'sent') bg-blue-100 text-blue-800
+                                @elseif($invoice->status === 'overdue') bg-red-100 text-red-800
+                                @else bg-gray-100 text-gray-800
+                                @endif">
+                                {{ ucfirst($invoice->status) }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-gray-900">{{ number_format($invoice->total, 2) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-5 sm:p-6">
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Billed To</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ $invoice->contact->name }}<br>
+                            @if($invoice->contact->email){{ $invoice->contact->email }}<br>@endif
+                            @if($invoice->contact->address){{ $invoice->contact->address }}@endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Invoice Date</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $invoice->invoice_date->format('d/m/Y') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Due Date</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A' }}</dd>
+                    </div>
+                </dl>
+
+                <div class="mt-8">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Line Items</h4>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($invoice->lineItems as $item)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item->description }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->quantity }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item->unit_price, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->tax_rate }}%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ number_format($item->line_total, 2) }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Subtotal:</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ number_format($invoice->subtotal, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Tax:</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ number_format($invoice->tax_amount, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-right text-sm font-bold text-gray-900">Total:</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ number_format($invoice->total, 2) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                @if($invoice->notes)
+                <div class="mt-6">
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Notes</h4>
+                    <p class="text-sm text-gray-500">{{ $invoice->notes }}</p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+

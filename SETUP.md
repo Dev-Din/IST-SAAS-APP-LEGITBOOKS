@@ -3,10 +3,11 @@
 ## Prerequisites
 
 Make sure you have:
-- PHP 8.2 or higher
-- Composer installed
-- MySQL/MariaDB running
-- Node.js and npm installed
+
+-   PHP 8.2 or higher
+-   Composer installed
+-   MySQL/MariaDB running
+-   Node.js and npm installed
 
 ## Step-by-Step Setup
 
@@ -83,8 +84,9 @@ php artisan migrate
 ```
 
 This will create all the necessary tables for:
-- Platform (admins, tenants, subscriptions, etc.)
-- Tenant-scoped (users, invoices, payments, etc.)
+
+-   Platform (admins, tenants, subscriptions, etc.)
+-   Tenant-scoped (users, invoices, payments, etc.)
 
 ### 6. Seed Database
 
@@ -93,8 +95,9 @@ php artisan db:seed
 ```
 
 This will create:
-- A super admin user (admin@legitbooks.com / password: `password`)
-- A demo tenant with demo data
+
+-   A super admin user (admin@legitbooks.com / password: `password`)
+-   A demo tenant with demo data
 
 ### 7. Build Frontend Assets
 
@@ -103,6 +106,7 @@ npm run build
 ```
 
 Or for development with hot reload:
+
 ```bash
 npm run dev
 ```
@@ -110,12 +114,15 @@ npm run dev
 ### 8. Start the Development Server
 
 **Option 1: Laravel Development Server**
+
 ```bash
 php artisan serve
 ```
+
 The app will be available at: http://localhost:8000
 
 **Option 2: Using the dev script (includes queue, logs, and vite)**
+
 ```bash
 composer run dev
 ```
@@ -123,12 +130,15 @@ composer run dev
 ## Accessing the Application
 
 ### Admin Panel
-- URL: http://localhost:8000/admin
-- Login: admin@legitbooks.com
-- Password: password
+
+-   URL: http://localhost:8000/admin
+-   Login: admin@legitbooks.com
+-   Password: password
 
 ### Demo Tenant
+
 After seeding, you can access the demo tenant:
+
 1. Get the tenant hash from the database or seeder output
 2. Access: http://localhost:8000/app/{tenant_hash}/dashboard
 3. Login: admin@demo.com or user@demo.com
@@ -137,11 +147,13 @@ After seeding, you can access the demo tenant:
 ### Create a New Tenant
 
 **Via Artisan Command:**
+
 ```bash
 php artisan legitbooks:tenant:create "My Company" company@example.com --seed-demo
 ```
 
 **Via Admin Panel:**
+
 1. Login to admin panel
 2. Navigate to Tenants
 3. Click "Create New Tenant"
@@ -149,16 +161,19 @@ php artisan legitbooks:tenant:create "My Company" company@example.com --seed-dem
 ## Common Commands
 
 ### M-Pesa Simulation
+
 ```bash
 php artisan mpesa:simulate {tenant_hash} 254712345678 1000
 ```
 
 ### Tenant Backup
+
 ```bash
 php artisan tenant:backup {tenant_hash}
 ```
 
 ### Clear Cache
+
 ```bash
 php artisan cache:clear
 php artisan config:clear
@@ -169,24 +184,30 @@ php artisan view:clear
 ## Troubleshooting
 
 ### Migration Errors
+
 If you encounter migration errors:
+
 ```bash
 php artisan migrate:fresh --seed
 ```
+
 ⚠️ **Warning**: This will drop all tables and recreate them!
 
 ### Permission Issues
+
 ```bash
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 ```
 
 ### Database Connection Issues
-- Verify MySQL is running
-- Check database credentials in `.env`
-- Ensure database exists
+
+-   Verify MySQL is running
+-   Check database credentials in `.env`
+-   Ensure database exists
 
 ### Asset Build Issues
+
 ```bash
 rm -rf node_modules
 npm install
@@ -202,8 +223,7 @@ npm run build
 
 ## Development Tips
 
-- Use `php artisan tinker` to interact with the database
-- Check logs in `storage/logs/laravel.log`
-- Use `php artisan route:list` to see all routes
-- Use `php artisan migrate:status` to check migration status
-
+-   Use `php artisan tinker` to interact with the database
+-   Check logs in `storage/logs/laravel.log`
+-   Use `php artisan route:list` to see all routes
+-   Use `php artisan migrate:status` to check migration status

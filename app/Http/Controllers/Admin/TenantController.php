@@ -3,63 +3,67 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
+use App\Services\TenantProvisioningService;
 use Illuminate\Http\Request;
 
 class TenantController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $tenants = Tenant::latest()->paginate(15);
+        return view('admin.tenants.index', compact('tenants'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return view('admin.tenants.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request, TenantProvisioningService $provisioningService)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:tenants,email',
+        ]);
+
+        $tenant = Tenant::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'tenant_hash' => Tenant::generateTenantHash(),
+            'status' => 'active',
+            'settings' => [
+                'branding_override' => null,
+            ],
+        ]);
+
+        $provisioningService->provision($tenant, [
+            'create_admin' => $request->boolean('create_admin'),
+            'admin_email' => $request->input('admin_email', $validated['email']),
+            'admin_password' => $request->input('admin_password'),
+            'seed_demo_data' => $request->boolean('seed_demo_data'),
+        ]);
+
+        return redirect()->route('admin.tenants.index')
+            ->with('success', "Tenant '{$tenant->name}' created successfully!");
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Tenant $tenant)
     {
-        //
+        return view('admin.tenants.show', compact('tenant'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function suspend(Tenant $tenant)
     {
-        //
+        $tenant->update(['status' => 'suspended']);
+        return back()->with('success', 'Tenant suspended successfully');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function updateBranding(Request $request, Tenant $tenant)
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $settings = $tenant->settings ?? [];
+        $settings['branding_override'] = $request->input('branding_override');
+        $tenant->update(['settings' => $settings]);
+        return back()->with('success', 'Branding updated successfully');
     }
 }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('type')->default('customer'); // customer or vendor
+            $table->string('type')->default('customer'); // customer or supplier
             $table->text('address')->nullable();
             $table->string('tax_id')->nullable();
             $table->timestamps();

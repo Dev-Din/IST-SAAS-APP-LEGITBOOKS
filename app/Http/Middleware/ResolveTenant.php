@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\Tenant;
 use App\Services\TenantContext;
+use Illuminate\Support\Facades\Auth;
 
 class ResolveTenant
 {
@@ -21,15 +22,42 @@ class ResolveTenant
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $tenantHash = $request->route('tenant_hash');
-        
-        if (!$tenantHash) {
-            abort(404, 'Tenant hash not found in route');
+        $tenant = null;
+
+        // Try to get tenant from session first
+        $tenantId = $request->session()->get('tenant_id');
+        if ($tenantId) {
+            $tenant = Tenant::find($tenantId);
         }
 
-        $tenant = Tenant::where('tenant_hash', $tenantHash)->first();
+        // If not in session, try to get from authenticated user
+        if (!$tenant && Auth::check()) {
+            $user = Auth::user();
+            if ($user && $user->tenant_id) {
+                $tenant = Tenant::find($user->tenant_id);
+                // Store in session for future requests
+                if ($tenant) {
+                    $request->session()->put('tenant_id', $tenant->id);
+                }
+            }
+        }
+
+        // If still no tenant, try to get from route parameter (for backward compatibility)
+        if (!$tenant) {
+            $tenantHash = $request->route('tenant_hash');
+            if ($tenantHash) {
+                $tenant = Tenant::where('tenant_hash', $tenantHash)->first();
+                if ($tenant) {
+                    $request->session()->put('tenant_id', $tenant->id);
+                }
+            }
+        }
 
         if (!$tenant) {
+            // Redirect to login if not authenticated, or show error
+            if (!Auth::check()) {
+                return redirect()->route('tenant.auth.login');
+            }
             abort(404, 'Tenant not found');
         }
 
