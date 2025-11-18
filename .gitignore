@@ -1,28 +1,88 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+# Laravel
+/.env
+/.env.backup
+/.env.production
+/.phpunit.result.cache
+/phpunit.xml
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+
+# Dependencies
 /node_modules
+/vendor
 /public/build
 /public/hot
 /public/storage
+
+# Storage
 /storage/*.key
 /storage/pail
-/vendor
-Homestead.json
-Homestead.yaml
-Thumbs.db
-/LegitBooks REQUIRMENTS.txt
-/SETUP.md
-/QUICK_START.sh
+/storage/logs/*.log
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/views/.gitignore
+!/storage/framework/testing/.gitignore
 
+# Bootstrap cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+/database/*.sqlite
+/database/*.sqlite3
+
+# IDE & Editor files
+/.fleet
+/.idea
+/.nova
+/.phpactor.json
+/.vscode
+/.zed
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Project specific
+/LegitBooks REQUIRMENTS.txt
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Compiled assets
+/public/mix-manifest.json
+/public/js
+/public/css
+
+# Coverage reports
+/coverage
+/.phpunit.cache
+
+# Laravel Sail
+/.docker
+
+# Backup files
+*.backup
+*.old
