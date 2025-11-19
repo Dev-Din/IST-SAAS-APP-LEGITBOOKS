@@ -5,32 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'LegitBooks')</title>
-    @vite(['resources/css/tenant.css', 'resources/js/app.js'])
     @php
         $tenant = app(\App\Services\TenantContext::class)->getTenant();
         $brandMode = $tenant ? $tenant->getBrandingMode() : env('BRANDING_MODE', 'A');
         $brandSettings = $tenant ? $tenant->getBrandSettings() : [];
+        $brandColor = $brandSettings['primary_color'] ?? '#392a26';
     @endphp
+    <link rel="icon" type="image/png" href="{{ asset('LegitBooks-tab-logo.png') }}" id="favicon">
+    <link rel="apple-touch-icon" href="{{ asset('LegitBooks-tab-logo.png') }}">
+    <link rel="mask-icon" href="{{ asset('LegitBooks-tab-logo.png') }}" color="{{ $brandColor }}">
+    @vite(['resources/css/tenant.css', 'resources/js/app.js'])
     <style>
         :root {
             --brand-primary: {{ $brandSettings['primary_color'] ?? '#392a26' }};
             --brand-text: {{ $brandSettings['text_color'] ?? '#ffffff' }};
         }
     </style>
+    <script>
+        // Create rounded favicon
+        (function() {
+            const img = new Image();
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const size = 32; // Standard favicon size
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Create circular clipping path
+                    ctx.beginPath();
+                    ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+                    ctx.clip();
+                    
+                    // Draw the image
+                    ctx.drawImage(img, 0, 0, size, size);
+                    
+                    // Update favicon
+                    const favicon = document.getElementById('favicon');
+                    if (favicon) {
+                        favicon.href = canvas.toDataURL('image/png');
+                    } else {
+                        // Create new link if not found
+                        const link = document.createElement('link');
+                        link.rel = 'icon';
+                        link.type = 'image/png';
+                        link.href = canvas.toDataURL('image/png');
+                        document.head.appendChild(link);
+                    }
+                } catch (e) {
+                    console.warn('Failed to create rounded favicon:', e);
+                }
+            };
+            img.onerror = function() {
+                console.warn('Failed to load favicon image');
+            };
+            img.src = '{{ asset("LegitBooks-tab-logo.png") }}';
+        })();
+    </script>
 </head>
-<body class="bg-gray-50">
-    <div class="min-h-screen">
+<body class="bg-gray-50 overflow-x-hidden">
+    <div class="min-h-screen w-full max-w-full">
         @php
             $isAuthPage = request()->routeIs('tenant.auth.login') || request()->routeIs('tenant.auth.register') || request()->routeIs('tenant.auth.billing');
         @endphp
         
         @if($isAuthPage)
         {{-- Auth pages: Centered logo only, no nav links --}}
-        <nav class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="bg-white shadow-sm border-b w-full overflow-x-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div class="flex justify-center items-center h-16">
                     <div class="flex items-center">
-                        <span class="text-xl font-bold" style="color: var(--brand-primary);">LegitBooks</span>
+                        <span class="text-lg sm:text-xl font-bold" style="color: var(--brand-primary);">LegitBooks</span>
                     </div>
                 </div>
             </div>
@@ -38,11 +84,12 @@
         @else
         {{-- Authenticated pages: Full nav with links --}}
         @auth
-        <nav class="bg-white shadow-sm border-b w-full">
-            <div class="w-full">
-                <div class="flex justify-between items-center h-16 w-full">
+        <nav class="bg-white shadow-sm border-b w-full overflow-x-hidden">
+            <div class="w-full max-w-full">
+                <!-- Desktop Layout -->
+                <div class="hidden md:flex justify-between items-center h-16 w-full max-w-full">
                     <!-- Logo - Far Left -->
-                    <div class="flex items-center flex-shrink-0 pl-8">
+                    <div class="flex items-center flex-shrink-0 pl-4 md:pl-8">
                         <a href="{{ route('tenant.dashboard') }}" class="flex items-center py-2">
                             @if($brandMode === 'B')
                                 <span class="text-xl font-bold text-gray-900">LegitBooks</span>
@@ -65,7 +112,7 @@
                     </div>
                     
                     <!-- Logout Button - Far Right -->
-                    <div class="flex items-center flex-shrink-0 pr-8">
+                    <div class="flex items-center flex-shrink-0 pr-4 md:pr-8">
                         <form method="POST" action="{{ route('tenant.auth.logout') }}">
                             @csrf
                             <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white shadow-sm" style="background-color: var(--brand-primary);">
@@ -74,8 +121,48 @@
                         </form>
                     </div>
                 </div>
+                
+                <!-- Mobile Layout -->
+                <div class="md:hidden flex justify-between items-center h-16 w-full max-w-full px-3 sm:px-4">
+                    <div class="flex items-center flex-shrink-0">
+                        <a href="{{ route('tenant.dashboard') }}" class="flex items-center">
+                            @if($brandMode === 'B')
+                                <span class="text-lg font-bold text-gray-900">LegitBooks</span>
+                            @else
+                                <span class="text-lg font-bold" style="color: var(--brand-primary);">
+                                    {{ $brandSettings['name'] ?? ($tenant->name ?? 'LegitBooks') }}
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+                    <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 focus:outline-none flex-shrink-0" id="tenant-mobile-menu-button">
+                        <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Mobile menu -->
+                <div class="md:hidden hidden w-full" id="tenant-mobile-menu">
+                    <div class="px-3 pt-2 pb-3 space-y-1 bg-white border-t w-full max-w-full">
+                        <a href="{{ route('tenant.dashboard') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Dashboard</a>
+                        <a href="{{ route('tenant.invoices.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Invoices</a>
+                        <a href="{{ route('tenant.contacts.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Contacts</a>
+                        <a href="{{ route('tenant.billing.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Billing & Subscriptions</a>
+                        <form method="POST" action="{{ route('tenant.auth.logout') }}">
+                            @csrf
+                            <button type="submit" class="block w-full text-left px-3 py-2 text-gray-700 hover:text-gray-900">Logout</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </nav>
+        <script>
+        document.getElementById('tenant-mobile-menu-button')?.addEventListener('click', function() {
+            const menu = document.getElementById('tenant-mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        </script>
         @endauth
         @endif
 

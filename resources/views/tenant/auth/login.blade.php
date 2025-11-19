@@ -3,8 +3,8 @@
 @section('title', 'Login')
 
 @section('content')
-<div class="max-w-md mx-auto mt-20">
-    <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+<div class="max-w-md mx-auto mt-12 sm:mt-16 md:mt-20 px-4 sm:px-6 w-full">
+    <div class="bg-white shadow-md rounded-lg px-6 sm:px-8 pt-6 pb-8 mb-4 w-full">
         @php
             $tenant = app(\App\Services\TenantContext::class)->getTenant();
             $brandMode = $tenant ? $tenant->getBrandingMode() : env('BRANDING_MODE', 'A');

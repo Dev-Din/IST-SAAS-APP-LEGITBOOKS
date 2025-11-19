@@ -4,18 +4,18 @@
 
 @section('content')
 <!-- Hero -->
-<section class="bg-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="bg-white py-12 sm:py-16 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">About LegitBooks</h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">We're on a mission to make accounting simple and accessible for small businesses across Kenya.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">About LegitBooks</h1>
+            <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-2">We're on a mission to make accounting simple and accessible for small businesses across Kenya.</p>
         </div>
     </div>
 </section>
 
 <!-- Story -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <h2 class="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
         <div class="prose prose-lg text-gray-600">
             <p>
@@ -36,9 +36,9 @@
 </section>
 
 <!-- Mission & Vision -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
                 <p class="text-lg text-gray-600">
@@ -58,10 +58,10 @@
 </section>
 
 <!-- What Makes Us Different -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">What makes us different</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-12 px-2">What makes us different</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <div class="text-center">
                 <div class="bg-indigo-100 rounded-lg p-6 mb-4 inline-block">
                     <svg class="h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,10 +96,10 @@
 </section>
 
 <!-- CTA -->
-<section class="py-16 bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-white mb-4">Join us on this journey</h2>
-        <p class="text-xl text-gray-300 mb-8">Start your free trial and experience the difference.</p>
+<section class="py-12 sm:py-16 bg-gray-900 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 px-2">Join us on this journey</h2>
+        <p class="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 px-2">Start your free trial and experience the difference.</p>
         <a href="{{ route('tenant.auth.register') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
             Get started
         </a>

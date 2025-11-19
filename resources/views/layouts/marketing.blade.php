@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'LegitBooks - Simple, Accurate Cloud Accounting')</title>
+    <link rel="icon" type="image/png" href="{{ asset('LegitBooks-tab-logo.png') }}" id="favicon">
+    <link rel="apple-touch-icon" href="{{ asset('LegitBooks-tab-logo.png') }}">
+    <link rel="mask-icon" href="{{ asset('LegitBooks-tab-logo.png') }}" color="#392a26">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root {
@@ -13,8 +16,50 @@
             --brand-accent-light: #818cf8;
         }
     </style>
+    <script>
+        // Create rounded favicon
+        (function() {
+            const img = new Image();
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const size = 32; // Standard favicon size
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Create circular clipping path
+                    ctx.beginPath();
+                    ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+                    ctx.clip();
+                    
+                    // Draw the image
+                    ctx.drawImage(img, 0, 0, size, size);
+                    
+                    // Update favicon
+                    const favicon = document.getElementById('favicon');
+                    if (favicon) {
+                        favicon.href = canvas.toDataURL('image/png');
+                    } else {
+                        // Create new link if not found
+                        const link = document.createElement('link');
+                        link.rel = 'icon';
+                        link.type = 'image/png';
+                        link.href = canvas.toDataURL('image/png');
+                        document.head.appendChild(link);
+                    }
+                } catch (e) {
+                    console.warn('Failed to create rounded favicon:', e);
+                }
+            };
+            img.onerror = function() {
+                console.warn('Failed to load favicon image');
+            };
+            img.src = '{{ asset("LegitBooks-tab-logo.png") }}';
+        })();
+    </script>
 </head>
-<body class="bg-white text-gray-900 antialiased">
+<body class="bg-white text-gray-900 antialiased overflow-x-hidden">
     @include('marketing.components.navbar')
     
     <main>

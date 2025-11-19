@@ -4,19 +4,19 @@
 
 @section('content')
 <!-- Hero -->
-<section class="bg-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="bg-white py-12 sm:py-16 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">Powerful features for your business</h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Everything you need to manage your finances, all in one place.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">Powerful features for your business</h1>
+            <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-2">Everything you need to manage your finances, all in one place.</p>
         </div>
     </div>
 </section>
 
 <!-- Invoicing & Payments -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-6">Invoicing & Payments</h2>
                 <ul class="space-y-4">
@@ -58,7 +58,7 @@
                     </li>
                 </ul>
             </div>
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 <div class="text-center">
                     <svg class="h-32 w-32 mx-auto text-indigo-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -70,9 +70,9 @@
 </section>
 
 <!-- Expenses & Bills -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div class="order-2 lg:order-1 bg-white rounded-lg shadow-lg p-8">
                 <div class="text-center">
                     <svg class="h-32 w-32 mx-auto text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,9 +117,9 @@
 </section>
 
 <!-- Reporting & Dashboards -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporting & Dashboards</h2>
                 <ul class="space-y-4">
@@ -161,7 +161,7 @@
                     </li>
                 </ul>
             </div>
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 <div class="text-center">
                     <svg class="h-32 w-32 mx-auto text-blue-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -173,9 +173,9 @@
 </section>
 
 <!-- Double-Entry & Audit Logs -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div class="order-2 lg:order-1 bg-white rounded-lg shadow-lg p-8">
                 <div class="text-center">
                     <svg class="h-32 w-32 mx-auto text-purple-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,10 +229,10 @@
 </section>
 
 <!-- CTA -->
-<section class="py-16 bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-white mb-4">Ready to experience these features?</h2>
-        <p class="text-xl text-gray-300 mb-8">Start your free trial today.</p>
+<section class="py-12 sm:py-16 bg-gray-900 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 px-2">Ready to experience these features?</h2>
+        <p class="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 px-2">Start your free trial today.</p>
         <a href="{{ route('tenant.auth.register') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
             Start free trial
         </a>

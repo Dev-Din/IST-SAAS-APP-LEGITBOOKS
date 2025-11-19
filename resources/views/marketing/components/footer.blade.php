@@ -1,6 +1,6 @@
-<footer class="bg-gray-50 border-t border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<footer class="bg-gray-50 border-t border-gray-200 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div class="col-span-1">
                 <h3 class="text-lg font-bold mb-4" style="color: var(--brand-primary);">LegitBooks</h3>
                 <p class="text-sm text-gray-600">Simple, accurate cloud accounting for small businesses.</p>
@@ -31,7 +31,6 @@
                 <ul class="space-y-2">
                     <li><a href="{{ route('tenant.auth.login') }}" class="text-sm text-gray-600 hover:text-gray-900">Sign in</a></li>
                     <li><a href="{{ route('tenant.auth.register') }}" class="text-sm text-gray-600 hover:text-gray-900">Start free trial</a></li>
-                    <li><a href="{{ route('admin.login') }}" class="text-sm text-gray-600 hover:text-gray-900">Admin login</a></li>
                 </ul>
             </div>
         </div>

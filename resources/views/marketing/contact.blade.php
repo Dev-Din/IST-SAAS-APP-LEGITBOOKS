@@ -4,23 +4,29 @@
 
 @section('content')
 <!-- Hero -->
-<section class="bg-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="bg-white py-12 sm:py-16 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">Get in touch</h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">Get in touch</h1>
+            <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-2">Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
         </div>
     </div>
 </section>
 
 <!-- Contact Form -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-lg shadow-lg p-8">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        @if(session('success'))
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+            <p class="font-medium">{{ session('success') }}</p>
+        </div>
+        @endif
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
             <form method="POST" action="{{ route('marketing.contact.submit') }}">
                 @csrf
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -38,12 +44,22 @@
                     </div>
                 </div>
                 
-                <div class="mb-6">
-                    <label for="company" class="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                    <input type="text" name="company" id="company" value="{{ old('company') }}" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                    @error('company')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div>
+                        <label for="company" class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                        <input type="text" name="company" id="company" value="{{ old('company') }}" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        @error('company')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        @error('phone')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
                 
                 <div class="mb-6">
@@ -65,9 +81,9 @@
 </section>
 
 <!-- Additional Info -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+<section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center">
             <div>
                 <svg class="h-12 w-12 text-indigo-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>

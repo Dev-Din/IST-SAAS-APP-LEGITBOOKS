@@ -4,21 +4,21 @@
 
 @section('content')
 <!-- Hero -->
-<section class="bg-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="bg-white py-12 sm:py-16 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h1>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Choose the plan that fits your business. All plans include a 14-day free trial.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">Simple, transparent pricing</h1>
+            <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-2">Choose the plan that fits your business. All plans include a 14-day free trial.</p>
         </div>
     </div>
 </section>
 
 <!-- Pricing Cards -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<section class="py-12 sm:py-16 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             <!-- Free Plan -->
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Free</h3>
                 <div class="mb-6">
                     <span class="text-4xl font-bold text-gray-900">KSh 0</span>
@@ -56,7 +56,7 @@
             </div>
 
             <!-- Starter Plan -->
-            <div class="bg-white rounded-lg shadow-lg p-8 border-2" style="border-color: var(--brand-primary);">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8 border-2" style="border-color: var(--brand-primary);">
                 <div class="text-center mb-2">
                     <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full text-white" style="background-color: var(--brand-primary);">POPULAR</span>
                 </div>
@@ -103,7 +103,7 @@
             </div>
 
             <!-- Business Plan -->
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Business</h3>
                 <div class="mb-6">
                     <span class="text-4xl font-bold text-gray-900">KSh 5,000</span>
@@ -147,7 +147,7 @@
             </div>
 
             <!-- Enterprise Plan -->
-            <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
                 <div class="mb-6">
                     <span class="text-4xl font-bold text-gray-900">Custom</span>
@@ -193,67 +193,69 @@
 </section>
 
 <!-- Comparison Table -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Compare plans</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+<section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-12 px-2">Compare plans</h2>
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+            <div class="inline-block min-w-full align-middle px-4 sm:px-0">
+                <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Free</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Starter</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Enterprise</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
+                        <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Free</th>
+                        <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Starter</th>
+                        <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
+                        <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Enterprise</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Invoices per month</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">50</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">Unlimited</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">Unlimited</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">Unlimited</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">Invoices per month</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">50</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">Unlimited</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">Unlimited</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">Unlimited</td>
                     </tr>
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Users</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">1</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">3</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">10</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">Unlimited</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">Users</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">1</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">3</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">10</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">Unlimited</td>
                     </tr>
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">M-Pesa Integration</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">—</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">M-Pesa Integration</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">—</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
                     </tr>
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Advanced Reports</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">—</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">Advanced Reports</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">—</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
                     </tr>
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CSV Import/Export</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">—</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">—</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">CSV Import/Export</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">—</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-gray-500">—</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-center text-green-600">✓</td>
                     </tr>
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- CTA -->
-<section class="py-16 bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-white mb-4">Start your 14-day free trial</h2>
-        <p class="text-xl text-gray-300 mb-8">No credit card required. Cancel anytime.</p>
+<section class="py-12 sm:py-16 bg-gray-900 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 px-2">Start your 14-day free trial</h2>
+        <p class="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 px-2">No credit card required. Cancel anytime.</p>
         <a href="{{ route('tenant.auth.login') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
             Get started now
         </a>

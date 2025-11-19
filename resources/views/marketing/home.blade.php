@@ -4,16 +4,16 @@
 
 @section('content')
 <!-- Hero Section -->
-<section class="bg-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="bg-white py-12 sm:py-16 md:py-20 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
                 LegitBooks solves small business accounting
             </h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p class="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-2">
                 Simple, accurate cloud accounting designed for small businesses. Track invoices, manage payments, and stay compliant with ease.
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
                 <a href="{{ route('tenant.auth.register') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white" style="background-color: var(--brand-primary);">
                     Start free trial
                 </a>
@@ -26,23 +26,23 @@
 </section>
 
 <!-- Social Proof -->
-<section class="bg-gray-50 py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <p class="text-center text-sm text-gray-500 mb-8">Trusted by small businesses across Kenya</p>
-        <div class="flex justify-center items-center space-x-12 opacity-60">
-            <div class="text-gray-400 font-semibold text-lg">Small Business</div>
-            <div class="text-gray-400 font-semibold text-lg">Freelancers</div>
-            <div class="text-gray-400 font-semibold text-lg">SMEs</div>
-            <div class="text-gray-400 font-semibold text-lg">Accountants</div>
+<section class="bg-gray-50 py-8 sm:py-12 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <p class="text-center text-sm text-gray-500 mb-6 sm:mb-8">Trusted by small businesses across Kenya</p>
+        <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-12 opacity-60 px-2">
+            <div class="text-gray-400 font-semibold text-sm sm:text-base md:text-lg">Small Business</div>
+            <div class="text-gray-400 font-semibold text-sm sm:text-base md:text-lg">Freelancers</div>
+            <div class="text-gray-400 font-semibold text-sm sm:text-base md:text-lg">SMEs</div>
+            <div class="text-gray-400 font-semibold text-sm sm:text-base md:text-lg">Accountants</div>
         </div>
     </div>
 </section>
 
 <!-- Feature Highlights -->
-<section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Everything you need to manage your finances</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<section class="py-12 sm:py-16 md:py-20 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-12 px-2">Everything you need to manage your finances</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             <div class="text-center">
                 <div class="bg-indigo-100 rounded-lg p-6 mb-4 inline-block">
                     <svg class="h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,10 +87,10 @@
 </section>
 
 <!-- How It Works -->
-<section class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">How it works</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<section class="py-12 sm:py-16 md:py-20 bg-gray-50 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-12 px-2">How it works</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <div class="text-center">
                 <div class="bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 shadow-md">
                     <span class="text-2xl font-bold" style="color: var(--brand-primary);">1</span>
@@ -119,9 +119,9 @@
 </section>
 
 <!-- Why LegitBooks -->
-<section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<section class="py-12 sm:py-16 md:py-20 bg-white w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-6">Why choose LegitBooks over spreadsheets?</h2>
                 <ul class="space-y-4">
@@ -151,7 +151,7 @@
                     </li>
                 </ul>
             </div>
-            <div class="bg-gray-50 rounded-lg p-8">
+            <div class="bg-gray-50 rounded-lg p-6 sm:p-8">
                 <div class="text-center">
                     <svg class="h-24 w-24 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -165,10 +165,10 @@
 </section>
 
 <!-- Final CTA -->
-<section class="py-20 bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-white mb-4">Ready to get started?</h2>
-        <p class="text-xl text-gray-300 mb-8">Start your free trial today. No credit card required.</p>
+<section class="py-12 sm:py-16 md:py-20 bg-gray-900 w-full overflow-x-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 px-2">Ready to get started?</h2>
+        <p class="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 px-2">Start your free trial today. No credit card required.</p>
         <a href="{{ route('tenant.auth.register') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
             Start free trial
         </a>
