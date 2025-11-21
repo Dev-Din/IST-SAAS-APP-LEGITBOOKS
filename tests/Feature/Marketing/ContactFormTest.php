@@ -17,7 +17,7 @@ class ContactFormTest extends TestCase
         parent::setUp();
         
         // Set required environment variables for tests
-        putenv('WEB3FORMS_API_KEY=ba71d21d-27e1-4cce-945d-b6be08729209');
+        putenv('WEB3FORMS_API_KEY=2b37e16d-620e-4d6b-b370-4023bbe9fde1');
     }
 
     /**
@@ -167,7 +167,7 @@ class ContactFormTest extends TestCase
         Http::assertSent(function ($request) {
             return $request->url() === 'https://api.web3forms.com/submit' &&
                    $request->method() === 'POST' &&
-                   $request['access_key'] === 'ba71d21d-27e1-4cce-945d-b6be08729209' &&
+                   $request['access_key'] === '2b37e16d-620e-4d6b-b370-4023bbe9fde1' &&
                    $request['name'] === 'Test User' &&
                    $request['email'] === 'test@example.com';
         });

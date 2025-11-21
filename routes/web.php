@@ -19,7 +19,6 @@ Route::get('/about', [AboutController::class, 'index'])->name('marketing.about')
 Route::get('/contact', [ContactController::class, 'showForm'])->name('marketing.contact');
 Route::post('/contact', [ContactController::class, 'submitForm'])->name('marketing.contact.submit');
 Route::get('/faq', [FaqController::class, 'index'])->name('marketing.faq');
-Route::get('/legal/terms', [LegalController::class, 'terms'])->name('marketing.legal.terms');
 Route::get('/legal/privacy', [LegalController::class, 'privacy'])->name('marketing.legal.privacy');
 
 // Admin routes

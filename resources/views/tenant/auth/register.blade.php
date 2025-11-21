@@ -72,6 +72,42 @@
             </div>
 
             <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="phone">
+                    Phone Number
+                </label>
+                <div class="flex gap-2">
+                    <div class="w-24 flex-shrink-0">
+                        <select
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('phone_country_code') border-red-500 @enderror"
+                            id="phone_country_code"
+                            name="phone_country_code"
+                        >
+                            <option value="">--</option>
+                            <option value="KE" {{ old('phone_country_code') === 'KE' ? 'selected' : '' }}>KE (+254)</option>
+                            <option value="TZ" {{ old('phone_country_code') === 'TZ' ? 'selected' : '' }}>TZ (+255)</option>
+                            <option value="UG" {{ old('phone_country_code') === 'UG' ? 'selected' : '' }}>UG (+256)</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <input
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('phone_number') border-red-500 @enderror"
+                            id="phone_number"
+                            type="tel"
+                            name="phone_number"
+                            value="{{ old('phone_number') }}"
+                            placeholder="Phone number"
+                        >
+                    </div>
+                </div>
+                @error('phone_country_code')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+                @error('phone_number')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
                     Password *
                 </label>
@@ -100,6 +136,30 @@
                     required
                     placeholder="Confirm your password"
                 >
+            </div>
+
+            <div class="mb-6">
+                <div class="flex items-start">
+                    <input
+                        class="mt-1 mr-2 h-4 w-4 text-gray-700 focus:ring-gray-500 border-gray-300 rounded @error('accept_terms') border-red-500 @enderror"
+                        id="accept_terms"
+                        type="checkbox"
+                        name="accept_terms"
+                        value="1"
+                        {{ old('accept_terms') ? 'checked' : '' }}
+                        required
+                    >
+                    <label class="text-sm text-gray-700" for="accept_terms">
+                        I accept the 
+                        <a href="{{ route('marketing.home') }}" target="_blank" class="font-bold hover:underline" style="color: var(--brand-primary);">
+                            Terms and Conditions
+                        </a>
+                        *
+                    </label>
+                </div>
+                @error('accept_terms')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="flex items-center justify-between">

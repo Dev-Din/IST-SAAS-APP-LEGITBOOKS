@@ -27,6 +27,9 @@ class TenantRegistrationController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
+            'phone_country_code' => 'nullable|string|size:2|in:KE,TZ,UG|required_with:phone_number',
+            'phone_number' => 'nullable|string|max:20|required_with:phone_country_code',
+            'accept_terms' => 'required|accepted',
         ]);
 
         // Check if tenant email already exists
@@ -64,6 +67,8 @@ class TenantRegistrationController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'is_active' => true,
+                'phone_country_code' => $validated['phone_country_code'] ?? null,
+                'phone_number' => $validated['phone_number'] ?? null,
             ]);
 
             DB::commit();

@@ -21,7 +21,6 @@
                 <ul class="space-y-2">
                     <li><a href="{{ route('marketing.about') }}" class="text-sm text-gray-600 hover:text-gray-900">About</a></li>
                     <li><a href="{{ route('marketing.contact') }}" class="text-sm text-gray-600 hover:text-gray-900">Contact</a></li>
-                    <li><a href="{{ route('marketing.legal.terms') }}" class="text-sm text-gray-600 hover:text-gray-900">Terms</a></li>
                     <li><a href="{{ route('marketing.legal.privacy') }}" class="text-sm text-gray-600 hover:text-gray-900">Privacy</a></li>
                 </ul>
             </div>

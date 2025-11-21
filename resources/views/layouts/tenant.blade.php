@@ -76,7 +76,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div class="flex justify-center items-center h-16">
                     <div class="flex items-center">
-                        <span class="text-lg sm:text-xl font-bold" style="color: var(--brand-primary);">LegitBooks</span>
+                        <a href="{{ route('marketing.home') }}" class="text-lg sm:text-xl font-bold hover:opacity-80 transition-opacity" style="color: var(--brand-primary);">LegitBooks</a>
                     </div>
                 </div>
             </div>

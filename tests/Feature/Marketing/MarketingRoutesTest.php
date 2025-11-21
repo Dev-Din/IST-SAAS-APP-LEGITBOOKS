@@ -77,16 +77,6 @@ class MarketingRoutesTest extends TestCase
     }
 
     /**
-     * Test that terms page is accessible.
-     */
-    public function test_terms_page_is_accessible(): void
-    {
-        $response = $this->get('/legal/terms');
-        $response->assertStatus(200);
-        $response->assertViewIs('marketing.legal.terms');
-    }
-
-    /**
      * Test that privacy page is accessible.
      */
     public function test_privacy_page_is_accessible(): void

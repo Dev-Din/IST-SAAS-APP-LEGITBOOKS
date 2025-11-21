@@ -24,6 +24,8 @@ class User extends Authenticatable
         'tenant_id',
         'role_id',
         'is_active',
+        'phone_country_code',
+        'phone_number',
     ];
 
     /**
