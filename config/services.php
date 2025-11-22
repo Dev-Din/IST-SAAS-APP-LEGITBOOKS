@@ -35,8 +35,4 @@ return [
         ],
     ],
 
-    'web3forms' => [
-        'key' => env('WEB3FORMS_API_KEY'),
-    ],
-
 ];

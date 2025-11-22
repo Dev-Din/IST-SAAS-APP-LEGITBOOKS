@@ -23,7 +23,7 @@
         @endif
         
         <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-            <form method="POST" action="{{ route('marketing.contact.submit') }}">
+            <form method="POST" action="{{ route('marketing.contact.submit') }}" onsubmit="handleContactSubmit(this)">
                 @csrf
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -71,7 +71,7 @@
                 </div>
                 
                 <div class="flex justify-end">
-                    <button type="submit" class="px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white" style="background-color: var(--brand-primary);">
+                    <button type="submit" id="contact-submit-btn" class="px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white disabled:opacity-50 disabled:cursor-not-allowed" style="background-color: var(--brand-primary);">
                         Send Message
                     </button>
                 </div>
@@ -79,6 +79,33 @@
         </div>
     </div>
 </section>
+
+<script>
+function handleContactSubmit(form) {
+    const submitBtn = document.getElementById('contact-submit-btn');
+    
+    // Disable button immediately
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    
+    // Allow form to submit normally
+    // If validation fails, Laravel will redirect back and the button will be re-enabled
+    // by the page reload
+    return true;
+}
+
+// Re-enable button if validation errors occur (page reload with old input)
+document.addEventListener('DOMContentLoaded', function() {
+    const submitBtn = document.getElementById('contact-submit-btn');
+    const hasErrors = document.querySelector('.text-red-600');
+    
+    // If there are validation errors, ensure button is enabled
+    if (hasErrors) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
+    }
+});
+</script>
 
 <!-- Additional Info -->
 <section class="py-12 sm:py-16 bg-white w-full overflow-x-hidden">

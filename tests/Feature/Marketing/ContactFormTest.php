@@ -4,7 +4,6 @@ namespace Tests\Feature\Marketing;
 
 use App\Models\ContactSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -15,9 +14,6 @@ class ContactFormTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Set required environment variables for tests
-        putenv('WEB3FORMS_API_KEY=2b37e16d-620e-4d6b-b370-4023bbe9fde1');
     }
 
     /**
@@ -26,9 +22,6 @@ class ContactFormTest extends TestCase
     public function test_contact_form_submission_with_valid_data(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $response = $this->post('/contact', [
             'name' => 'John Doe',
@@ -83,9 +76,6 @@ class ContactFormTest extends TestCase
     public function test_contact_form_accepts_optional_fields(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $response = $this->post('/contact', [
             'name' => 'John Doe',
@@ -127,9 +117,6 @@ class ContactFormTest extends TestCase
     public function test_submission_is_saved_to_database(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $this->post('/contact', [
             'name' => 'Jane Smith',
@@ -149,39 +136,11 @@ class ContactFormTest extends TestCase
     }
 
     /**
-     * Test Web3Forms POST is made (mocked).
-     */
-    public function test_web3forms_post_is_made(): void
-    {
-        Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
-
-        $this->post('/contact', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'message' => 'Test message',
-        ]);
-
-        Http::assertSent(function ($request) {
-            return $request->url() === 'https://api.web3forms.com/submit' &&
-                   $request->method() === 'POST' &&
-                   $request['access_key'] === '2b37e16d-620e-4d6b-b370-4023bbe9fde1' &&
-                   $request['name'] === 'Test User' &&
-                   $request['email'] === 'test@example.com';
-        });
-    }
-
-    /**
      * Test email sending (Mail fake).
      */
     public function test_email_is_sent(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $this->post('/contact', [
             'name' => 'Email Test',
@@ -200,9 +159,6 @@ class ContactFormTest extends TestCase
     public function test_redirect_with_success_message(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $response = $this->post('/contact', [
             'name' => 'Success Test',
@@ -220,9 +176,6 @@ class ContactFormTest extends TestCase
     public function test_json_response_for_ajax_requests(): void
     {
         Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => true], 200),
-        ]);
 
         $response = $this->postJson('/contact', [
             'name' => 'AJAX Test',
@@ -233,32 +186,6 @@ class ContactFormTest extends TestCase
         $response->assertJson([
             'success' => true,
             'message' => 'Thank you for your message! We\'ll get back to you soon.',
-        ]);
-    }
-
-    /**
-     * Test Web3Forms failure handling.
-     */
-    public function test_web3forms_failure_handling(): void
-    {
-        Mail::fake();
-        Http::fake([
-            'api.web3forms.com/submit' => Http::response(['success' => false], 400),
-        ]);
-
-        $response = $this->post('/contact', [
-            'name' => 'Failure Test',
-            'email' => 'failure@example.com',
-            'message' => 'Testing failure handling',
-        ]);
-
-        $response->assertRedirect(route('marketing.contact'));
-        $response->assertSessionHas('success');
-
-        // Submission should still be saved with failed status
-        $this->assertDatabaseHas('contact_submissions', [
-            'email' => 'failure@example.com',
-            'web3forms_status' => 'failed',
         ]);
     }
 }

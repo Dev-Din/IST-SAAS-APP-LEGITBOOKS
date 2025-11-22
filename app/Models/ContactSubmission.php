@@ -12,7 +12,6 @@ class ContactSubmission extends Model
         'phone',
         'company',
         'message',
-        'web3forms_status',
         'mail_status',
     ];
 

@@ -17,7 +17,9 @@ Route::get('/pricing', [PricingController::class, 'index'])->name('marketing.pri
 Route::get('/solutions', [SolutionsController::class, 'index'])->name('marketing.solutions');
 Route::get('/about', [AboutController::class, 'index'])->name('marketing.about');
 Route::get('/contact', [ContactController::class, 'showForm'])->name('marketing.contact');
-Route::post('/contact', [ContactController::class, 'submitForm'])->name('marketing.contact.submit');
+Route::post('/contact', [ContactController::class, 'submitForm'])
+    ->middleware('throttle:3,1')
+    ->name('marketing.contact.submit');
 Route::get('/faq', [FaqController::class, 'index'])->name('marketing.faq');
 Route::get('/legal/privacy', [LegalController::class, 'privacy'])->name('marketing.legal.privacy');
 
