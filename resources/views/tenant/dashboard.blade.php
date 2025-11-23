@@ -5,9 +5,11 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="py-6">
+        @perm('view_dashboard')
         <h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            @anyperm(['manage_invoices', 'view_invoices'])
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -25,7 +27,9 @@
                     </div>
                 </div>
             </div>
+            @endanyperm
 
+            @anyperm(['manage_payments', 'view_payments'])
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -43,7 +47,9 @@
                     </div>
                 </div>
             </div>
+            @endanyperm
 
+            @anyperm(['manage_contacts', 'view_contacts'])
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -61,7 +67,9 @@
                     </div>
                 </div>
             </div>
+            @endanyperm
 
+            @anyperm(['manage_invoices', 'view_invoices'])
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-5">
                     <div class="flex items-center">
@@ -79,23 +87,38 @@
                     </div>
                 </div>
             </div>
+            @endanyperm
         </div>
 
+        @anyperm(['manage_invoices', 'view_invoices', 'manage_contacts', 'view_contacts'])
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
             <div class="flex space-x-4">
+                @perm('manage_invoices')
                 <a href="{{ route('tenant.invoices.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white" style="background-color: var(--brand-primary);">
                     Create Invoice
                 </a>
+                @endperm
+                @perm('manage_contacts')
                 <a href="{{ route('tenant.contacts.create') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Add Contact
                 </a>
+                @endperm
+                @anyperm(['manage_invoices', 'view_invoices'])
                 <a href="{{ route('tenant.invoices.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     View Invoices
                 </a>
+                @endanyperm
             </div>
         </div>
+        @endanyperm
+        @else
+        <div class="bg-white shadow rounded-lg p-8 text-center text-gray-500">
+            You do not have permission to view the dashboard.
+        </div>
+        @endperm
     </div>
 </div>
 @endsection
+
 

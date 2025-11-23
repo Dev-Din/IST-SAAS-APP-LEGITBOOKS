@@ -29,6 +29,14 @@ class TenantAuthController extends Controller
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $user = Auth::user();
             
+            // Double-check that user is still active after authentication
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Your account has been deactivated. Please contact your account owner or administrator.',
+                ])->onlyInput('email');
+            }
+            
             // Get tenant from user and store in session
             if ($user->tenant_id) {
                 $request->session()->put('tenant_id', $user->tenant_id);

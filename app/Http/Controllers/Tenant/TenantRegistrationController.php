@@ -60,13 +60,19 @@ class TenantRegistrationController extends Controller
                 'seed_demo_data' => false, // Don't seed demo data for new signups
             ]);
 
-            // Create user account
+            // Create user account - this is the account owner
+            // Grant all available permissions to the owner
+            $allPermissions = array_keys(config('tenant_permissions.permissions', []));
+            
             $user = User::create([
                 'tenant_id' => $tenant->id,
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'is_active' => true,
+                'is_owner' => true, // Mark as account owner
+                'role_name' => 'Account Owner',
+                'permissions' => $allPermissions, // Grant all permissions
                 'phone_country_code' => $validated['phone_country_code'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
             ]);

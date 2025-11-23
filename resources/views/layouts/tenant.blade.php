@@ -104,10 +104,21 @@
                     <!-- Centered Navigation Links -->
                     <div class="flex items-center justify-center flex-1">
                         <nav class="flex items-center space-x-8">
+                            @perm('view_dashboard')
                             <a href="{{ route('tenant.dashboard') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.dashboard') ? 'text-gray-900' : '' }}">Dashboard</a>
+                            @endperm
+                            @anyperm(['manage_invoices', 'view_invoices'])
                             <a href="{{ route('tenant.invoices.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.invoices.*') ? 'text-gray-900' : '' }}">Invoices</a>
+                            @endanyperm
+                            @anyperm(['manage_contacts', 'view_contacts'])
                             <a href="{{ route('tenant.contacts.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.contacts.*') ? 'text-gray-900' : '' }}">Contacts</a>
+                            @endanyperm
+                            @perm('manage_users')
+                            <a href="{{ route('tenant.users.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'text-gray-900' : '' }}">Users</a>
+                            @endperm
+                            @perm('manage_billing')
                             <a href="{{ route('tenant.billing.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.billing.*') ? 'text-gray-900' : '' }}">Billing & Subscriptions</a>
+                            @endperm
                         </nav>
                     </div>
                     
@@ -145,10 +156,21 @@
                 <!-- Mobile menu -->
                 <div class="md:hidden hidden w-full" id="tenant-mobile-menu">
                     <div class="px-3 pt-2 pb-3 space-y-1 bg-white border-t w-full max-w-full">
+                        @perm('view_dashboard')
                         <a href="{{ route('tenant.dashboard') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Dashboard</a>
+                        @endperm
+                        @anyperm(['manage_invoices', 'view_invoices'])
                         <a href="{{ route('tenant.invoices.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Invoices</a>
+                        @endanyperm
+                        @anyperm(['manage_contacts', 'view_contacts'])
                         <a href="{{ route('tenant.contacts.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Contacts</a>
+                        @endanyperm
+                        @perm('manage_users')
+                        <a href="{{ route('tenant.users.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Users</a>
+                        @endperm
+                        @perm('manage_billing')
                         <a href="{{ route('tenant.billing.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Billing & Subscriptions</a>
+                        @endperm
                         <form method="POST" action="{{ route('tenant.auth.logout') }}">
                             @csrf
                             <button type="submit" class="block w-full text-left px-3 py-2 text-gray-700 hover:text-gray-900">Logout</button>

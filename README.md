@@ -48,6 +48,7 @@ LegitBooks is a comprehensive Laravel-based multi-tenant accounting SaaS applica
 - `accounts` - Bank/cash accounts
 - `invoices` & `invoice_line_items` - Invoices
 - `payments` & `payment_allocations` - Payments
+- `invoice_counters` - Year-based invoice number sequences (per tenant)
 - `journal_entries` & `journal_lines` - Double-entry journals
 - `fixed_assets` - Fixed asset management
 - `audit_logs` - Tenant audit trail
@@ -236,6 +237,58 @@ $tenant->settings = [
 ];
 ```
 
+## Invoice Number Generation
+
+### Overview
+
+LegitBooks uses a concurrency-safe, year-based invoice number generator. Each tenant has independent sequences that reset annually.
+
+**Format:** `INV-{YEAR}-{SEQUENCE}` (e.g., `INV-2025-0001`)
+
+### Database Structure
+
+The `invoice_counters` table stores the current sequence per tenant per year:
+- `tenant_id` - Tenant identifier
+- `year` - Year (e.g., 2025)
+- `sequence` - Current sequence number (increments with each invoice)
+
+**Unique Constraint:** `(tenant_id, year)` ensures one counter per tenant per year.
+
+### Concurrency Safety
+
+The invoice number generator uses:
+- **Database Transactions**: All operations wrapped in `DB::transaction()`
+- **Row-Level Locking**: `lockForUpdate()` prevents concurrent access
+- **Atomic Operations**: Sequence increment happens atomically
+
+This ensures that even if two users create invoices simultaneously, they receive unique, sequential numbers.
+
+### Migration
+
+Run the migration to set up the invoice counters table:
+```bash
+php artisan migrate
+```
+
+The migration safely updates existing `invoice_counters` tables (if present) to support year-based sequences.
+
+### Usage
+
+The `InvoiceNumberService` is automatically injected into `InvoiceController`:
+
+```php
+$invoiceNumber = $invoiceNumberService->generate($tenant->id);
+// Returns: "INV-2025-0001"
+```
+
+### Testing
+
+Run invoice number generation tests:
+```bash
+php artisan test --filter=InvoiceNumberServiceTest
+php artisan test --filter=InvoiceSequenceConcurrencyTest
+```
+
 ## Testing
 
 Run PHPUnit tests:
@@ -245,7 +298,8 @@ php artisan test
 
 Key test suites:
 - `JournalEntryTest` - Double-entry balancing
-- `InvoiceNumberServiceTest` - Per-tenant invoice numbering
+- `InvoiceNumberServiceTest` - Invoice number format and sequence increments
+- `InvoiceSequenceConcurrencyTest` - Concurrency safety validation
 - `InvoicePaymentFlowTest` - Invoice → Payment → Journal flow
 - `AdminProvisioningTest` - Tenant provisioning
 - `MarketingRoutesTest` - Marketing page accessibility

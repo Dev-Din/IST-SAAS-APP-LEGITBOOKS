@@ -10,6 +10,7 @@ use App\Observers\AuditObserver;
 use App\Observers\InvoiceObserver;
 use App\Observers\PaymentObserver;
 use App\Services\PlatformSettings;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,6 +34,17 @@ class AppServiceProvider extends ServiceProvider
         Payment::observe(PaymentObserver::class);
         Contact::observe(AuditObserver::class);
         Product::observe(AuditObserver::class);
+
+        // Register Blade directives for permission checks
+        Blade::if('perm', function (string $permission) {
+            $user = auth()->user();
+            return $user && $user->hasPermission($permission);
+        });
+
+        Blade::if('anyperm', function (array $permissions) {
+            $user = auth()->user();
+            return $user && $user->hasAnyPermission($permissions);
+        });
 
         // Only try to load platform settings if database is available
         // This allows commands like config:clear and cache:clear to run without DB connection

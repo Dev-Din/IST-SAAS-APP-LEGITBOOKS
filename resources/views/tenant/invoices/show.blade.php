@@ -8,15 +8,20 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">Invoice {{ $invoice->invoice_number }}</h1>
             <div class="flex space-x-3">
+                @anyperm(['manage_invoices', 'view_invoices'])
                 <a href="{{ route('tenant.invoices.pdf', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Download PDF
                 </a>
+                @endanyperm
+                @perm('manage_invoices')
                 <a href="{{ route('tenant.invoices.edit', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
                     Edit
                 </a>
+                @endperm
             </div>
         </div>
 
+        @anyperm(['manage_invoices', 'view_invoices'])
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
                 <div class="flex justify-between items-center">
@@ -106,6 +111,11 @@
                 @endif
             </div>
         </div>
+        @else
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg p-8 text-center text-gray-500">
+            You do not have permission to view this invoice.
+        </div>
+        @endanyperm
     </div>
 </div>
 @endsection

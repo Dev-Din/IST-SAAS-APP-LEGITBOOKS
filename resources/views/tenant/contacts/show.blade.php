@@ -7,11 +7,14 @@
     <div class="py-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">{{ $contact->name }}</h1>
+            @perm('manage_contacts')
             <a href="{{ route('tenant.contacts.edit', $contact) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
                 Edit
             </a>
+            @endperm
         </div>
 
+        @anyperm(['manage_contacts', 'view_contacts'])
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">Contact Information</h3>
@@ -56,6 +59,11 @@
                 </dl>
             </div>
         </div>
+        @else
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg p-8 text-center text-gray-500">
+            You do not have permission to view this contact.
+        </div>
+        @endanyperm
     </div>
 </div>
 @endsection

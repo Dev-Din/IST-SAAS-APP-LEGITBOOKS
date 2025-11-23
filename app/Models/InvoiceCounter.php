@@ -9,10 +9,21 @@ class InvoiceCounter extends Model
 {
     use HasFactory;
 
+    protected $table = 'invoice_counters';
+
     protected $fillable = [
         'tenant_id',
-        'last_number',
+        'year',
+        'sequence',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'year' => 'integer',
+            'sequence' => 'integer',
+        ];
+    }
 
     public function tenant()
     {

@@ -7,11 +7,14 @@
     <div class="py-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">Invoices</h1>
+            @perm('manage_invoices')
             <a href="{{ route('tenant.invoices.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white" style="background-color: var(--brand-primary);">
                 Create Invoice
             </a>
+            @endperm
         </div>
 
+        @anyperm(['manage_invoices', 'view_invoices'])
         <div class="bg-white shadow overflow-hidden sm:rounded-md">
             <ul class="divide-y divide-gray-200">
                 @forelse($invoices as $invoice)
@@ -60,7 +63,10 @@
                 </li>
                 @empty
                 <li class="px-4 py-8 text-center text-gray-500">
-                    No invoices found. <a href="{{ route('tenant.invoices.create') }}" class="text-indigo-600 hover:text-indigo-900">Create your first invoice</a>
+                    No invoices found.
+                    @perm('manage_invoices')
+                    <a href="{{ route('tenant.invoices.create') }}" class="text-indigo-600 hover:text-indigo-900">Create your first invoice</a>
+                    @endperm
                 </li>
                 @endforelse
             </ul>
@@ -69,6 +75,11 @@
         <div class="mt-4">
             {{ $invoices->links() }}
         </div>
+        @else
+        <div class="bg-white shadow overflow-hidden sm:rounded-md p-8 text-center text-gray-500">
+            You do not have permission to view invoices.
+        </div>
+        @endanyperm
     </div>
 </div>
 @endsection

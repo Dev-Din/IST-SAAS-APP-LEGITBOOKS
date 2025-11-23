@@ -10,6 +10,8 @@ use App\Models\ChartOfAccount;
 use App\Services\TenantContext;
 use App\Services\InvoiceNumberService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class InvoiceController extends Controller
 {
@@ -60,9 +62,18 @@ class InvoiceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        try {
+            // Generate invoice number with concurrency safety
+            $invoiceNumber = $invoiceNumberService->generate($tenant->id);
+        } catch (RuntimeException $e) {
+            return back()
+                ->withErrors(['invoice' => 'Unable to generate invoice number, please try again.'])
+                ->withInput();
+        }
+
         $invoice = Invoice::create([
             'tenant_id' => $tenant->id,
-            'invoice_number' => $invoiceNumberService->generate($tenant->id),
+            'invoice_number' => $invoiceNumber,
             'contact_id' => $validated['contact_id'],
             'invoice_date' => $validated['invoice_date'],
             'due_date' => $validated['due_date'] ?? null,

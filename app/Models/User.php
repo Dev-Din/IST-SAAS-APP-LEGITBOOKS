@@ -19,11 +19,16 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'tenant_id',
         'role_id',
+        'role_name',
+        'permissions',
         'is_active',
+        'is_owner',
         'phone_country_code',
         'phone_number',
     ];
@@ -49,6 +54,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_owner' => 'boolean',
+            'permissions' => 'array',
         ];
     }
 
@@ -60,5 +67,51 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(\Spatie\Permission\Models\Role::class);
+    }
+
+    public function invitations()
+    {
+        return $this->hasMany(UserInvitation::class, 'inviter_user_id');
+    }
+
+    /**
+     * Check if user has a specific permission
+     * Account owners always have full access
+     */
+    public function hasPermission(string $permission): bool
+    {
+        // Owner always has full access
+        if ($this->is_owner) {
+            return true;
+        }
+
+        $permissions = is_array($this->permissions) ? $this->permissions : [];
+        return in_array($permission, $permissions, true);
+    }
+
+    /**
+     * Check if user has any of the given permissions
+     * Account owners always have full access
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        // Owner always has full access
+        if ($this->is_owner) {
+            return true;
+        }
+
+        $current = is_array($this->permissions) ? $this->permissions : [];
+        return count(array_intersect($permissions, $current)) > 0;
+    }
+
+    /**
+     * Get full name
+     */
+    public function getFullNameAttribute(): string
+    {
+        if ($this->first_name || $this->last_name) {
+            return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+        }
+        return $this->name ?? '';
     }
 }

@@ -7,11 +7,14 @@
     <div class="py-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">Contacts</h1>
+            @perm('manage_contacts')
             <a href="{{ route('tenant.contacts.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white" style="background-color: var(--brand-primary);">
                 Add Contact
             </a>
+            @endperm
         </div>
 
+        @anyperm(['manage_contacts', 'view_contacts'])
         <div class="bg-white shadow overflow-hidden sm:rounded-md">
             <ul class="divide-y divide-gray-200">
                 @forelse($contacts as $contact)
@@ -57,7 +60,10 @@
                 </li>
                 @empty
                 <li class="px-4 py-8 text-center text-gray-500">
-                    No contacts found. <a href="{{ route('tenant.contacts.create') }}" class="text-indigo-600 hover:text-indigo-900">Add your first contact</a>
+                    No contacts found.
+                    @perm('manage_contacts')
+                    <a href="{{ route('tenant.contacts.create') }}" class="text-indigo-600 hover:text-indigo-900">Add your first contact</a>
+                    @endperm
                 </li>
                 @endforelse
             </ul>
@@ -66,6 +72,11 @@
         <div class="mt-4">
             {{ $contacts->links() }}
         </div>
+        @else
+        <div class="bg-white shadow overflow-hidden sm:rounded-md p-8 text-center text-gray-500">
+            You do not have permission to view contacts.
+        </div>
+        @endanyperm
     </div>
 </div>
 @endsection

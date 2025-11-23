@@ -70,6 +70,11 @@ class Tenant extends Model
         return $this->hasMany(JournalEntry::class);
     }
 
+    public function userInvitations()
+    {
+        return $this->hasMany(UserInvitation::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

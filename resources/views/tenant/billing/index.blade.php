@@ -6,6 +6,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">Billing & Subscriptions</h1>
 
+    @perm('manage_billing')
     <!-- Current Subscription -->
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Current Subscription</h2>
@@ -43,6 +44,7 @@
         </div>
 
         <!-- Change Plan -->
+        @perm('manage_billing')
         <div class="mt-6 pt-6 border-t border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Plan</h3>
             <form method="POST" action="{{ route('tenant.billing.update-plan') }}">
@@ -65,12 +67,14 @@
                 </div>
             </form>
         </div>
+        @endperm
         @else
         <p class="text-gray-600">No active subscription found.</p>
         @endif
     </div>
 
     <!-- Payment Methods -->
+    @perm('manage_billing')
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-gray-900">Payment Methods</h2>
@@ -134,6 +138,11 @@
         <p class="text-gray-600">No payment methods added yet.</p>
         @endif
     </div>
+    @else
+    <div class="bg-white shadow rounded-lg p-8 text-center text-gray-500">
+        You do not have permission to access billing & subscriptions.
+    </div>
+    @endperm
 </div>
 
 <!-- Add Payment Method Modal -->

@@ -21,7 +21,7 @@ Route::get('/auth/login', [TenantAuthController::class, 'showLoginForm'])->name(
 Route::post('/auth/login', [TenantAuthController::class, 'login']);
 Route::post('/auth/logout', [TenantAuthController::class, 'logout'])->name('auth.logout');
 
-Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middleware\EnsureTenantActive::class, 'auth:web'])->group(function () {
+Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middleware\EnsureTenantActive::class, 'auth:web', 'user.active'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('invoices', InvoiceController::class);
@@ -32,6 +32,21 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::resource('contacts', ContactController::class);
     Route::resource('products', ProductController::class);
     Route::resource('chart-of-accounts', ChartOfAccountController::class);
+
+    // User Management
+    Route::middleware(['permission:manage_users'])->group(function () {
+        Route::get('users', [\App\Http\Controllers\Tenant\TenantUserController::class, 'index'])->name('users.index');
+        Route::get('users/invite', [\App\Http\Controllers\Tenant\TenantUserController::class, 'create'])->name('users.create');
+        Route::post('users/invite', [\App\Http\Controllers\Tenant\TenantUserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}/edit', [\App\Http\Controllers\Tenant\TenantUserController::class, 'edit'])->name('users.edit');
+        Route::put('users/{user}', [\App\Http\Controllers\Tenant\TenantUserController::class, 'update'])->name('users.update');
+        Route::patch('users/{user}/activate', [\App\Http\Controllers\Tenant\TenantUserController::class, 'activate'])->name('users.activate');
+        Route::patch('users/{user}/deactivate', [\App\Http\Controllers\Tenant\TenantUserController::class, 'deactivate'])->name('users.deactivate');
+        Route::delete('users/{user}', [\App\Http\Controllers\Tenant\TenantUserController::class, 'destroy'])->name('users.destroy');
+        Route::post('invitations/{invitation}/resend', [\App\Http\Controllers\Tenant\TenantUserController::class, 'resendInvitation'])->name('invitations.resend');
+        Route::post('invitations/{invitation}/cancel', [\App\Http\Controllers\Tenant\TenantUserController::class, 'cancelInvitation'])->name('invitations.cancel');
+        Route::delete('invitations/{invitation}', [\App\Http\Controllers\Tenant\TenantUserController::class, 'destroyInvitation'])->name('invitations.destroy');
+    });
 
     // Billing & Subscriptions
     Route::get('billing', [\App\Http\Controllers\Tenant\BillingController::class, 'index'])->name('billing.index');

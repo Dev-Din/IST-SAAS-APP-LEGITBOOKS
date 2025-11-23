@@ -23,6 +23,10 @@ Route::post('/contact', [ContactController::class, 'submitForm'])
 Route::get('/faq', [FaqController::class, 'index'])->name('marketing.faq');
 Route::get('/legal/privacy', [LegalController::class, 'privacy'])->name('marketing.legal.privacy');
 
+// Public invitation acceptance routes (no auth required)
+Route::get('/invitation/accept/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->name('invitation.accept');
+Route::post('/invitation/accept/{token}', [\App\Http\Controllers\InvitationController::class, 'accept'])->name('invitation.accept.submit');
+
 // Admin routes
 Route::middleware('web')
     ->prefix('admin')
