@@ -27,12 +27,26 @@ return new class extends Migration
         } else {
             // Update existing table
             Schema::table('invoice_counters', function (Blueprint $table) {
-                // Drop old unique constraint on tenant_id if exists
-                if (Schema::hasColumn('invoice_counters', 'tenant_id')) {
-                    try {
-                        $table->dropUnique(['tenant_id']);
-                    } catch (\Exception $e) {
-                        // Constraint might not exist, continue
+                // Check if unique constraint exists before trying to drop it
+                // Note: We can't drop it if it's used by a foreign key, so we'll skip it
+                $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
+                if (!empty($indexes)) {
+                    // Check if it's used by a foreign key
+                    $foreignKeys = DB::select("
+                        SELECT CONSTRAINT_NAME 
+                        FROM information_schema.KEY_COLUMN_USAGE 
+                        WHERE TABLE_SCHEMA = DATABASE() 
+                        AND TABLE_NAME = 'invoice_counters' 
+                        AND COLUMN_NAME = 'tenant_id' 
+                        AND CONSTRAINT_NAME != 'PRIMARY'
+                    ");
+                    // Only drop if not used by foreign key
+                    if (empty($foreignKeys)) {
+                        try {
+                            $table->dropUnique(['tenant_id']);
+                        } catch (\Exception $e) {
+                            // Constraint might be used elsewhere, continue
+                        }
                     }
                 }
                 

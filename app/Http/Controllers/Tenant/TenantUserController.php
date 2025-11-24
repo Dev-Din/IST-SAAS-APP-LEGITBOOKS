@@ -28,6 +28,12 @@ class TenantUserController extends Controller
     {
         $tenant = $this->tenantContext->getTenant();
         
+        // Redirect free plan tenants to billing page
+        if ($tenant->onFreePlan()) {
+            return redirect()->route('tenant.billing.page')
+                ->with('info', 'Invite users available on paid plans - Upgrade now to add team members.');
+        }
+        
         // Get users from users table only (users who have accepted their invitation)
         // Order: Owner first, then others by first name (or created_at as fallback)
         $users = User::where('tenant_id', $tenant->id)

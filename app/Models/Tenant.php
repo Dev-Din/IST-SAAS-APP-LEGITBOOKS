@@ -80,6 +80,11 @@ class Tenant extends Model
         return $this->status === 'active';
     }
 
+    public function onFreePlan(): bool
+    {
+        return optional($this->subscription)->plan === 'plan_free';
+    }
+
     public function getBrandingMode(): string
     {
         $override = $this->settings['branding_override'] ?? null;

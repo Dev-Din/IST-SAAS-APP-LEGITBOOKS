@@ -13,6 +13,8 @@ class Subscription extends Model
         'tenant_id',
         'plan',
         'payment_gateway',
+        'started_at',
+        'ends_at',
         'trial_ends_at',
         'next_billing_at',
         'status',
@@ -23,6 +25,8 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
+            'started_at' => 'datetime',
+            'ends_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'next_billing_at' => 'datetime',
             'vat_applied' => 'boolean',

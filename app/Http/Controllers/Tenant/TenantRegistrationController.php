@@ -77,15 +77,31 @@ class TenantRegistrationController extends Controller
                 'phone_number' => $validated['phone_number'] ?? null,
             ]);
 
+            // Create default free plan subscription if one doesn't exist
+            if (!$tenant->subscription) {
+                Subscription::create([
+                    'tenant_id' => $tenant->id,
+                    'plan' => 'plan_free',
+                    'status' => 'active',
+                    'started_at' => now(),
+                    'ends_at' => null,
+                    'trial_ends_at' => null,
+                    'next_billing_at' => null,
+                    'vat_applied' => false,
+                ]);
+            }
+
             DB::commit();
 
-            // Store tenant and user in session for billing step
-            $request->session()->put('registration.tenant_id', $tenant->id);
-            $request->session()->put('registration.user_id', $user->id);
-            $request->session()->put('registration.password', $validated['password']);
+            // Auto-login the user
+            Auth::login($user);
 
-            // Redirect to billing step
-            return redirect()->route('tenant.auth.billing');
+            // Store tenant in session
+            $request->session()->put('tenant_id', $tenant->id);
+
+            // Redirect to dashboard instead of billing
+            return redirect()->route('tenant.dashboard')
+                ->with('success', 'Welcome to LegitBooks! Your account has been created successfully. You are on the free plan.');
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -170,4 +170,153 @@ class BillingController extends Controller
 
         return back()->with('success', 'Payment method removed successfully.');
     }
+
+    /**
+     * Show the billing/upgrade page
+     */
+    public function page(TenantContext $tenantContext)
+    {
+        $tenant = $tenantContext->getTenant();
+        $subscription = $tenant->subscription;
+
+        $plans = [
+            'plan_free' => [
+                'name' => 'Free',
+                'price' => 0,
+                'price_display' => 'Free',
+                'features' => ['50 invoices/month', '1 user', 'Basic reporting', 'Email support'],
+            ],
+            'starter' => [
+                'name' => 'Starter',
+                'price' => 2500,
+                'price_display' => 'KSh 2,500',
+                'features' => ['Unlimited invoices', 'Up to 3 users', 'Advanced reporting', 'M-Pesa integration', 'Priority support'],
+            ],
+            'business' => [
+                'name' => 'Business',
+                'price' => 5000,
+                'price_display' => 'KSh 5,000',
+                'features' => ['Unlimited invoices', 'Up to 10 users', 'Custom reports', 'CSV import/export', '24/7 support'],
+            ],
+            'enterprise' => [
+                'name' => 'Enterprise',
+                'price' => 0,
+                'price_display' => 'Custom',
+                'features' => ['Unlimited everything', 'Unlimited users', 'White-label options', 'API access', 'Dedicated account manager'],
+            ],
+        ];
+
+        // Get demo payment details for prefilling forms
+        $isTestMode = PaymentHelper::isTestMode();
+        $demoPaymentDetails = [];
+        if ($isTestMode) {
+            foreach (['mpesa', 'debit_card', 'credit_card', 'paypal'] as $gateway) {
+                $demoPaymentDetails[$gateway] = PaymentHelper::getDemoPaymentDetails($gateway);
+            }
+        }
+
+        return view('tenant.billing.page', compact('tenant', 'subscription', 'plans', 'isTestMode', 'demoPaymentDetails'));
+    }
+
+    /**
+     * Handle upgrade request with payment method selection
+     */
+    public function upgrade(Request $request, TenantContext $tenantContext)
+    {
+        $tenant = $tenantContext->getTenant();
+        $subscription = $tenant->subscription;
+
+        $validated = $request->validate([
+            'plan' => 'required|in:starter,business,enterprise',
+            'payment_gateway' => 'required|in:mpesa,debit_card,credit_card,paypal',
+            // M-Pesa fields
+            'mpesa_phone' => 'required_if:payment_gateway,mpesa|nullable|string',
+            'mpesa_name' => 'required_if:payment_gateway,mpesa|nullable|string',
+            // Card fields
+            'card_number' => 'required_if:payment_gateway,debit_card,credit_card|nullable|string',
+            'cardholder_name' => 'required_if:payment_gateway,debit_card,credit_card|nullable|string',
+            'expiry_month' => 'required_if:payment_gateway,debit_card,credit_card|nullable|string',
+            'expiry_year' => 'required_if:payment_gateway,debit_card,credit_card|nullable|string',
+            'cvv' => 'required_if:payment_gateway,debit_card,credit_card|nullable|string',
+            // PayPal fields
+            'paypal_email' => 'required_if:payment_gateway,paypal|nullable|email',
+            'paypal_password' => 'required_if:payment_gateway,paypal|nullable|string',
+        ]);
+
+        if (!$subscription) {
+            return back()->withErrors(['plan' => 'No active subscription found.']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Process payment (demo mode in development, real payment in production)
+            $isTestMode = PaymentHelper::isTestMode();
+            $paymentData = [];
+            $paymentResult = null;
+
+            if ($validated['payment_gateway'] === 'mpesa') {
+                $paymentData = [
+                    'phone_number' => $validated['mpesa_phone'] ?? null,
+                    'name' => $validated['mpesa_name'] ?? null,
+                ];
+            } elseif (in_array($validated['payment_gateway'], ['debit_card', 'credit_card'])) {
+                $paymentData = [
+                    'card_number' => str_replace(' ', '', $validated['card_number'] ?? ''),
+                    'cardholder_name' => $validated['cardholder_name'] ?? null,
+                    'expiry_month' => $validated['expiry_month'] ?? null,
+                    'expiry_year' => $validated['expiry_year'] ?? null,
+                    'cvv' => $validated['cvv'] ?? null,
+                ];
+            } elseif ($validated['payment_gateway'] === 'paypal') {
+                $paymentData = [
+                    'email' => $validated['paypal_email'] ?? null,
+                    'password' => $validated['paypal_password'] ?? null,
+                ];
+            }
+
+            if ($isTestMode) {
+                // Use demo payment processing
+                $paymentResult = PaymentHelper::processDemoPayment(
+                    $validated['payment_gateway'],
+                    $paymentData
+                );
+            } else {
+                // In production, integrate with actual payment gateways here
+                // For now, we'll treat it as successful
+                $paymentResult = ['success' => true, 'is_demo' => false];
+            }
+
+            // Update subscription
+            $settings = $subscription->settings ?? [];
+            if ($paymentResult && isset($paymentResult['transaction_id'])) {
+                $settings['transaction_id'] = $paymentResult['transaction_id'];
+            }
+            if ($paymentResult && isset($paymentResult['is_demo'])) {
+                $settings['is_demo_payment'] = $paymentResult['is_demo'];
+            }
+
+            $subscription->update([
+                'plan' => $validated['plan'],
+                'status' => 'active',
+                'started_at' => now(),
+                'payment_gateway' => $validated['payment_gateway'],
+                'settings' => $settings,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('tenant.users.index')
+                ->with('success', 'Upgrade successful — You can now invite users.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Upgrade failed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'tenant_id' => $tenant->id,
+            ]);
+
+            return back()->withErrors(['plan' => 'An error occurred while processing your upgrade. Please try again.']);
+        }
+    }
 }

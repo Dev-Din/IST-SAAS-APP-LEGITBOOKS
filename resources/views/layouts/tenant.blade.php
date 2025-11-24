@@ -114,7 +114,21 @@
                             <a href="{{ route('tenant.contacts.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.contacts.*') ? 'text-gray-900' : '' }}">Contacts</a>
                             @endanyperm
                             @perm('manage_users')
-                            <a href="{{ route('tenant.users.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'text-gray-900' : '' }}">Users</a>
+                            @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
+                            @if(!$isFree)
+                                <a href="{{ route('tenant.users.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'text-gray-900' : '' }}">Users</a>
+                            @else
+                                <button
+                                    type="button"
+                                    class="text-gray-700 font-medium py-2 opacity-60 cursor-not-allowed"
+                                    aria-disabled="true"
+                                    tabindex="-1"
+                                    title="Invite users available on paid plans - Upgrade now to add team members."
+                                    onclick="openBillingModal()"
+                                >
+                                    Users
+                                </button>
+                            @endif
                             @endperm
                             @perm('manage_billing')
                             <a href="{{ route('tenant.billing.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.billing.*') ? 'text-gray-900' : '' }}">Billing & Subscriptions</a>
@@ -166,7 +180,21 @@
                         <a href="{{ route('tenant.contacts.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Contacts</a>
                         @endanyperm
                         @perm('manage_users')
-                        <a href="{{ route('tenant.users.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Users</a>
+                        @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
+                        @if(!$isFree)
+                            <a href="{{ route('tenant.users.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Users</a>
+                        @else
+                            <button
+                                type="button"
+                                class="block w-full text-left px-3 py-2 text-gray-700 opacity-60 cursor-not-allowed"
+                                aria-disabled="true"
+                                tabindex="-1"
+                                title="Invite users available on paid plans - Upgrade now to add team members."
+                                onclick="openBillingModal()"
+                            >
+                                Users
+                            </button>
+                        @endif
                         @endperm
                         @perm('manage_billing')
                         <a href="{{ route('tenant.billing.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Billing & Subscriptions</a>
@@ -184,6 +212,11 @@
             const menu = document.getElementById('tenant-mobile-menu');
             menu.classList.toggle('hidden');
         });
+
+        function openBillingModal() {
+            // Redirect to billing page if JS is disabled, otherwise could open modal
+            window.location.href = '{{ route("tenant.billing.page") }}';
+        }
         </script>
         @endauth
         @endif
