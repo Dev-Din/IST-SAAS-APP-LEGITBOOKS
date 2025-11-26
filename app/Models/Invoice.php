@@ -19,6 +19,12 @@ class Invoice extends BaseTenantModel
         'tax_amount',
         'total',
         'notes',
+        'sent_at',
+        'pdf_path',
+        'payment_token',
+        'payment_status',
+        'mail_status',
+        'mail_message_id',
     ];
 
     protected function casts(): array
@@ -26,10 +32,16 @@ class Invoice extends BaseTenantModel
         return [
             'invoice_date' => 'date',
             'due_date' => 'date',
+            'sent_at' => 'datetime',
             'subtotal' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'total' => 'decimal:2',
         ];
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
     }
 
     public function contact()

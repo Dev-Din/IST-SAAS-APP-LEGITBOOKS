@@ -18,7 +18,6 @@
 <body>
     <div class="header">
         <h1>Invoice {{ $invoice->invoice_number }}</h1>
-        <p>Status: {{ ucfirst($invoice->status) }}</p>
     </div>
 
     <table class="details">

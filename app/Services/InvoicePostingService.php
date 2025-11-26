@@ -50,7 +50,7 @@ class InvoicePostingService
                 'description' => "Invoice {$invoice->invoice_number}",
             ]);
 
-            // Credit revenue accounts per line item
+            // Credit revenue accounts per line item (use subtotal, not line_total which includes tax)
             foreach ($invoice->lineItems as $lineItem) {
                 $salesAccount = $lineItem->salesAccount ?? 
                     \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
@@ -58,11 +58,14 @@ class InvoicePostingService
                         ->first();
 
                 if ($salesAccount) {
+                    // Calculate line subtotal (quantity * unit_price) without tax
+                    $lineSubtotal = $lineItem->quantity * $lineItem->unit_price;
+                    
                     JournalLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_account_id' => $salesAccount->id,
                         'type' => 'credit',
-                        'amount' => $lineItem->line_total,
+                        'amount' => $lineSubtotal,
                         'description' => $lineItem->description,
                     ]);
                 }

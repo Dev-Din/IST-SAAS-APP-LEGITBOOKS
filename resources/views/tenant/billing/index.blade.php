@@ -29,6 +29,31 @@
                     </span>
                 </p>
             </div>
+            @if($subscription->payment_gateway)
+            <div>
+                <p class="text-sm text-gray-600">Payment Method</p>
+                <p class="text-lg font-semibold text-gray-900 capitalize flex items-center">
+                    @if($subscription->payment_gateway === 'mpesa')
+                        <svg class="w-5 h-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        M-Pesa
+                    @elseif(in_array($subscription->payment_gateway, ['debit_card', 'credit_card']))
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        {{ str_replace('_', ' ', ucwords($subscription->payment_gateway, '_')) }}
+                    @elseif($subscription->payment_gateway === 'paypal')
+                        <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        PayPal
+                    @else
+                        {{ str_replace('_', ' ', ucwords($subscription->payment_gateway, '_')) }}
+                    @endif
+                </p>
+            </div>
+            @endif
             @if($subscription->trial_ends_at)
             <div>
                 <p class="text-sm text-gray-600">Trial Ends</p>
@@ -44,15 +69,14 @@
         </div>
 
         <!-- Change Plan -->
-        @perm('manage_billing')
         <div class="mt-6 pt-6 border-t border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Plan</h3>
-            <form method="POST" action="{{ route('tenant.billing.update-plan') }}">
+            <form method="POST" action="{{ route('tenant.billing.update-plan') }}" id="update-plan-form">
                 @csrf
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     @foreach($plans as $planKey => $plan)
                     <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 {{ $subscription->plan === $planKey ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200' }}">
-                        <input type="radio" name="plan" value="{{ $planKey }}" {{ $subscription->plan === $planKey ? 'checked' : '' }} class="mr-3">
+                        <input type="radio" name="plan" value="{{ $planKey }}" {{ $subscription->plan === $planKey ? 'checked' : '' }} class="mr-3 plan-radio" onchange="togglePaymentMethodSelection()">
                         <div>
                             <div class="font-semibold text-gray-900">{{ $plan['name'] }}</div>
                             <div class="text-sm text-gray-600">{{ $plan['price_display'] }}/month</div>
@@ -60,6 +84,127 @@
                     </label>
                     @endforeach
                 </div>
+
+                <!-- Payment Method Selection (only for paid plans) -->
+                <div id="payment-method-selection" class="mt-6 hidden">
+                    <h4 class="text-md font-semibold text-gray-900 mb-3">Select Payment Method</h4>
+                    <div class="space-y-3">
+                        @if($paymentMethods->count() > 0)
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Use Existing Payment Method</label>
+                            @foreach($paymentMethods as $method)
+                            <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-indigo-500 payment-method-option">
+                                <input type="radio" name="payment_method_id" value="{{ $method->id }}" class="mr-3 existing-payment-radio" onchange="toggleNewPaymentMethod()">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div>
+                                        @if($method->type === 'mpesa')
+                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                        @elseif(in_array($method->type, ['debit_card', 'credit_card']))
+                                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                        </div>
+                                        @elseif($method->type === 'paypal')
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-900 text-sm">{{ $method->getDisplayName() }}</div>
+                                        <div class="text-xs text-gray-500 capitalize">{{ str_replace('_', ' ', $method->type) }}</div>
+                                    </div>
+                                    @if($method->is_default)
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-800">Default</span>
+                                    @endif
+                                </div>
+                            </label>
+                            @endforeach
+                        </div>
+                        @endif
+
+                        <!-- Option to use new payment method -->
+                        <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-indigo-500 payment-method-option">
+                            <input type="radio" name="payment_method_id" value="new" class="mr-3 new-payment-radio" onchange="toggleNewPaymentMethod()">
+                            <div class="flex items-center space-x-3">
+                                <div class="font-semibold text-gray-900 text-sm">Use a different payment method</div>
+                            </div>
+                        </label>
+
+                        <!-- New Payment Method Form (hidden by default) -->
+                        <div id="new-payment-method-form" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <h5 class="text-sm font-semibold text-gray-900 mb-3">Enter New Payment Details</h5>
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method Type</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" onclick="selectNewPaymentType('mpesa')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-indigo-500 text-sm new-payment-type-btn" data-type="mpesa">M-Pesa</button>
+                                    <button type="button" onclick="selectNewPaymentType('debit_card')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-indigo-500 text-sm new-payment-type-btn" data-type="debit_card">Debit Card</button>
+                                    <button type="button" onclick="selectNewPaymentType('credit_card')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-indigo-500 text-sm new-payment-type-btn" data-type="credit_card">Credit Card</button>
+                                    <button type="button" onclick="selectNewPaymentType('paypal')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-indigo-500 text-sm new-payment-type-btn" data-type="paypal">PayPal</button>
+                                </div>
+                                <input type="hidden" name="new_payment_type" id="new_payment_type" value="">
+                            </div>
+
+                            <!-- M-Pesa Form -->
+                            <div id="new-mpesa-form" class="hidden space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                                    <input type="text" name="new_mpesa_phone" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="254712345678">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                    <input type="text" name="new_mpesa_name" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="Demo M-Pesa Account">
+                                </div>
+                            </div>
+
+                            <!-- Card Form -->
+                            <div id="new-card-form" class="hidden space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Card Number *</label>
+                                    <input type="text" name="new_card_number" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="4111 1111 1111 1111" maxlength="19">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cardholder Name *</label>
+                                    <input type="text" name="new_cardholder_name" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="Demo User">
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Month *</label>
+                                        <input type="text" name="new_expiry_month" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="12" maxlength="2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Year *</label>
+                                        <input type="text" name="new_expiry_year" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="2025" maxlength="4">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">CVV *</label>
+                                        <input type="text" name="new_cvv" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="123" maxlength="3">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PayPal Form -->
+                            <div id="new-paypal-form" class="hidden space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">PayPal Email *</label>
+                                    <input type="email" name="new_paypal_email" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="demo@paypal.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                                    <input type="password" name="new_paypal_password" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="demo123">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-4">
                     <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
                         Update Plan
@@ -67,14 +212,12 @@
                 </div>
             </form>
         </div>
-        @endperm
         @else
         <p class="text-gray-600">No active subscription found.</p>
         @endif
     </div>
 
     <!-- Payment Methods -->
-    @perm('manage_billing')
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-gray-900">Payment Methods</h2>
@@ -82,6 +225,43 @@
                 Add Payment Method
             </button>
         </div>
+
+        @if($subscription && $subscription->payment_gateway)
+        <!-- Subscription Payment Method -->
+        <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div>
+                        @if($subscription->payment_gateway === 'mpesa')
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        @elseif(in_array($subscription->payment_gateway, ['debit_card', 'credit_card']))
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                        </div>
+                        @elseif($subscription->payment_gateway === 'paypal')
+                        <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        @endif
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-900">Subscription Payment Method</div>
+                        <div class="text-sm text-gray-600">{{ $subscription->getMaskedPaymentDisplay() }}</div>
+                        <div class="text-xs text-gray-500 mt-1">Used for current subscription</div>
+                    </div>
+                </div>
+                <span class="px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-800">Active</span>
+            </div>
+        </div>
+        @endif
 
         @if($paymentMethods->count() > 0)
         <div class="space-y-4">
@@ -134,13 +314,9 @@
             </div>
             @endforeach
         </div>
-        @else
+        @elseif(!$subscription || !$subscription->payment_gateway)
         <p class="text-gray-600">No payment methods added yet.</p>
         @endif
-    </div>
-    @else
-    <div class="bg-white shadow rounded-lg p-8 text-center text-gray-500">
-        You do not have permission to access billing & subscriptions.
     </div>
     @endperm
 </div>
@@ -325,7 +501,92 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = formattedValue;
         });
     }
+
+    // Format new card number input
+    const newCardInput = document.querySelector('input[name="new_card_number"]');
+    if (newCardInput) {
+        newCardInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
+    }
+
+    // Check if payment method selection should be shown on page load
+    togglePaymentMethodSelection();
 });
+
+// Toggle payment method selection based on selected plan
+function togglePaymentMethodSelection() {
+    const selectedPlan = document.querySelector('input[name="plan"]:checked');
+    const paymentMethodSelection = document.getElementById('payment-method-selection');
+    
+    if (!selectedPlan || !paymentMethodSelection) return;
+    
+    const paidPlans = ['starter', 'business', 'enterprise'];
+    const isPaidPlan = paidPlans.includes(selectedPlan.value);
+    const currentPlan = '{{ $subscription->plan ?? "" }}';
+    
+    if (isPaidPlan && selectedPlan.value !== currentPlan) {
+        paymentMethodSelection.classList.remove('hidden');
+    } else {
+        paymentMethodSelection.classList.add('hidden');
+        // Reset payment method selection
+        document.querySelectorAll('input[name="payment_method_id"]').forEach(radio => {
+            radio.checked = false;
+        });
+        document.getElementById('new-payment-method-form').classList.add('hidden');
+    }
+}
+
+// Toggle new payment method form
+function toggleNewPaymentMethod() {
+    const newPaymentRadio = document.querySelector('input[name="payment_method_id"][value="new"]:checked');
+    const newPaymentForm = document.getElementById('new-payment-method-form');
+    
+    if (newPaymentRadio && newPaymentForm) {
+        newPaymentForm.classList.remove('hidden');
+    } else {
+        newPaymentForm.classList.add('hidden');
+        // Reset new payment form
+        document.getElementById('new_payment_type').value = '';
+        document.querySelectorAll('[id^="new-"]:not(#new-payment-method-form)').forEach(el => {
+            if (el.id.startsWith('new-') && el.id !== 'new-payment-method-form') {
+                el.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// Select new payment type
+function selectNewPaymentType(type) {
+    document.getElementById('new_payment_type').value = type;
+    
+    // Update button styles
+    document.querySelectorAll('.new-payment-type-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'bg-indigo-50');
+        btn.classList.add('border-gray-200');
+    });
+    const selectedBtn = document.querySelector(`.new-payment-type-btn[data-type="${type}"]`);
+    if (selectedBtn) {
+        selectedBtn.classList.remove('border-gray-200');
+        selectedBtn.classList.add('border-indigo-500', 'bg-indigo-50');
+    }
+    
+    // Hide all forms
+    document.getElementById('new-mpesa-form').classList.add('hidden');
+    document.getElementById('new-card-form').classList.add('hidden');
+    document.getElementById('new-paypal-form').classList.add('hidden');
+    
+    // Show selected form
+    if (type === 'mpesa') {
+        document.getElementById('new-mpesa-form').classList.remove('hidden');
+    } else if (type === 'debit_card' || type === 'credit_card') {
+        document.getElementById('new-card-form').classList.remove('hidden');
+    } else if (type === 'paypal') {
+        document.getElementById('new-paypal-form').classList.remove('hidden');
+    }
+}
 </script>
 @endsection
 

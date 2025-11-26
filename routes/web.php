@@ -38,3 +38,24 @@ Route::middleware('web')
     ->prefix('app')
     ->name('tenant.')
     ->group(base_path('routes/tenant.php'));
+
+// Public invoice payment routes (no auth required)
+Route::prefix('pay')
+    ->name('invoice.')
+    ->group(function () {
+        Route::get('/{invoice}/{token}', [\App\Http\Controllers\InvoicePaymentController::class, 'show'])->name('pay');
+        Route::post('/{invoice}/{token}/mpesa', [\App\Http\Controllers\InvoicePaymentController::class, 'processMpesa'])->name('pay.mpesa');
+        Route::post('/{invoice}/{token}/card', [\App\Http\Controllers\InvoicePaymentController::class, 'processCard'])->name('pay.card');
+    });
+
+// Webhook routes (no auth, no CSRF)
+Route::prefix('webhooks')
+    ->name('webhooks.')
+    ->middleware(['web'])
+    ->group(function () {
+        Route::post('/mpesa', [\App\Http\Controllers\Tenant\MpesaController::class, 'callback'])->name('mpesa');
+        Route::post('/paypal', function () {
+            // Placeholder for PayPal webhook
+            return response()->json(['message' => 'PayPal webhook not implemented'], 501);
+        })->name('paypal');
+    });

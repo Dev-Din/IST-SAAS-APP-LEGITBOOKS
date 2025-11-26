@@ -10,6 +10,7 @@ class Payment extends BaseTenantModel
 
     protected $fillable = [
         'tenant_id',
+        'invoice_id',
         'payment_number',
         'payment_date',
         'account_id',
@@ -19,6 +20,12 @@ class Payment extends BaseTenantModel
         'reference',
         'notes',
         'mpesa_metadata',
+        'phone',
+        'mpesa_receipt',
+        'transaction_status',
+        'raw_callback',
+        'checkout_request_id',
+        'merchant_request_id',
     ];
 
     protected function casts(): array
@@ -27,12 +34,18 @@ class Payment extends BaseTenantModel
             'payment_date' => 'date',
             'amount' => 'decimal:2',
             'mpesa_metadata' => 'array',
+            'raw_callback' => 'array',
         ];
     }
 
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function contact()

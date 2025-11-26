@@ -27,6 +27,7 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::resource('invoices', InvoiceController::class);
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
+    Route::get('invoices/{invoice}/receipt', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
 
     Route::resource('payments', PaymentController::class);
     Route::resource('contacts', ContactController::class);

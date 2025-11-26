@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ChartOfAccount;
 use App\Services\TenantContext;
 use App\Services\InvoiceNumberService;
+use App\Services\InvoiceSendService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -118,7 +119,7 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        $invoice->load('lineItems', 'contact', 'paymentAllocations.payment');
+        $invoice->load('lineItems', 'contact', 'paymentAllocations.payment', 'tenant');
         
         return view('tenant.invoices.show', compact('invoice', 'tenant'));
     }
@@ -218,9 +219,51 @@ class InvoiceController extends Controller
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
     }
 
-    public function sendEmail(Invoice $invoice, TenantContext $tenantContext)
+    public function receipt(Invoice $invoice, TenantContext $tenantContext)
     {
-        // Email sending logic would go here
-        return redirect()->back()->with('success', 'Invoice email sent successfully.');
+        $tenant = $tenantContext->getTenant();
+        $invoice->load('lineItems', 'contact', 'paymentAllocations.payment');
+        
+        return view('tenant.invoices.receipt', compact('invoice', 'tenant'));
+    }
+
+    public function sendEmail(Invoice $invoice, TenantContext $tenantContext, InvoiceSendService $sendService)
+    {
+        $tenant = $tenantContext->getTenant();
+
+        // Validate invoice can be sent
+        if ($invoice->status === 'paid') {
+            return redirect()->back()->withErrors(['invoice' => 'Cannot send an invoice that is already paid.']);
+        }
+
+        if ($invoice->status === 'cancelled') {
+            return redirect()->back()->withErrors(['invoice' => 'Cannot send a cancelled invoice.']);
+        }
+
+        if (!$invoice->contact->email) {
+            return redirect()->back()->withErrors(['invoice' => 'Contact does not have an email address.']);
+        }
+
+        try {
+            $result = $sendService->sendInvoice($invoice, auth()->id());
+
+            if ($result['success']) {
+                $message = 'Invoice sent successfully.';
+                if ($result['email_status'] === 'failed') {
+                    $message .= ' However, the email failed to send. You can try resending.';
+                }
+                return redirect()->route('tenant.invoices.show', $invoice)
+                    ->with('success', $message);
+            } else {
+                return redirect()->back()->withErrors(['invoice' => 'Failed to send invoice. Please try again.']);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Invoice send failed', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors(['invoice' => 'An error occurred while sending the invoice: ' . $e->getMessage()]);
+        }
     }
 }

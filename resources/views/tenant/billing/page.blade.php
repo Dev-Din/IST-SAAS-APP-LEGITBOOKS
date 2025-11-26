@@ -27,6 +27,16 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Plan Comparison Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         @foreach($plans as $planKey => $plan)
@@ -110,13 +120,9 @@
                                     <label for="mpesa_phone_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
                                     <input type="text" name="mpesa_phone" id="mpesa_phone_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="254712345678" required>
-                                </div>
-                                <div>
-                                    <label for="mpesa_name_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                                    <input type="text" name="mpesa_name" id="mpesa_name_{{ $planKey }}" 
-                                           class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="Demo M-Pesa Account" required>
+                                           placeholder="254712345678" 
+                                           data-payment-field="mpesa"
+                                           disabled>
                                 </div>
                             </div>
 
@@ -127,32 +133,42 @@
                                     <label for="debit_card_number_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Card Number *</label>
                                     <input type="text" name="card_number" id="debit_card_number_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="4111 1111 1111 1111" maxlength="19" required>
+                                           placeholder="4111 1111 1111 1111" maxlength="19"
+                                           data-payment-field="card"
+                                           disabled>
                                 </div>
                                 <div>
                                     <label for="debit_cardholder_name_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Cardholder Name *</label>
                                     <input type="text" name="cardholder_name" id="debit_cardholder_name_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="Demo User" required>
+                                           placeholder="Demo User"
+                                           data-payment-field="card"
+                                           disabled>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
                                         <label for="debit_expiry_month_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Month *</label>
                                         <input type="text" name="expiry_month" id="debit_expiry_month_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="12" maxlength="2" required>
+                                               placeholder="12" maxlength="2"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                     <div>
                                         <label for="debit_expiry_year_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Year *</label>
                                         <input type="text" name="expiry_year" id="debit_expiry_year_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="2025" maxlength="4" required>
+                                               placeholder="2025" maxlength="4"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                     <div>
                                         <label for="debit_cvv_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">CVV *</label>
                                         <input type="text" name="cvv" id="debit_cvv_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="123" maxlength="3" required>
+                                               placeholder="123" maxlength="3"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                 </div>
                             </div>
@@ -164,32 +180,42 @@
                                     <label for="credit_card_number_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Card Number *</label>
                                     <input type="text" name="card_number" id="credit_card_number_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="5555 5555 5555 4444" maxlength="19" required>
+                                           placeholder="5555 5555 5555 4444" maxlength="19"
+                                           data-payment-field="card"
+                                           disabled>
                                 </div>
                                 <div>
                                     <label for="credit_cardholder_name_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Cardholder Name *</label>
                                     <input type="text" name="cardholder_name" id="credit_cardholder_name_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="Demo User" required>
+                                           placeholder="Demo User"
+                                           data-payment-field="card"
+                                           disabled>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
                                         <label for="credit_expiry_month_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Month *</label>
                                         <input type="text" name="expiry_month" id="credit_expiry_month_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="12" maxlength="2" required>
+                                               placeholder="12" maxlength="2"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                     <div>
                                         <label for="credit_expiry_year_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Year *</label>
                                         <input type="text" name="expiry_year" id="credit_expiry_year_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="2025" maxlength="4" required>
+                                               placeholder="2025" maxlength="4"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                     <div>
                                         <label for="credit_cvv_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">CVV *</label>
                                         <input type="text" name="cvv" id="credit_cvv_{{ $planKey }}" 
                                                class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                               placeholder="123" maxlength="3" required>
+                                               placeholder="123" maxlength="3"
+                                               data-payment-field="card"
+                                               disabled>
                                     </div>
                                 </div>
                             </div>
@@ -201,13 +227,17 @@
                                     <label for="paypal_email_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">PayPal Email *</label>
                                     <input type="email" name="paypal_email" id="paypal_email_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="demo@paypal.com" required>
+                                           placeholder="demo@paypal.com"
+                                           data-payment-field="paypal"
+                                           disabled>
                                 </div>
                                 <div>
                                     <label for="paypal_password_{{ $planKey }}" class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
                                     <input type="password" name="paypal_password" id="paypal_password_{{ $planKey }}" 
                                            class="w-full h-12 px-4 rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
-                                           placeholder="demo123" required>
+                                           placeholder="demo123"
+                                           data-payment-field="paypal"
+                                           disabled>
                                 </div>
                             </div>
                         </div>
@@ -240,19 +270,29 @@ function selectPaymentMethod(planKey, gateway) {
         paymentDetailsContainer.classList.remove('hidden');
     }
     
-    // Hide all forms for this plan
+    // Hide all forms for this plan and disable all inputs
     const forms = ['mpesa', 'debit_card', 'credit_card', 'paypal'];
     forms.forEach(formType => {
         const formElement = document.getElementById(formType + '-form-' + planKey);
         if (formElement) {
             formElement.classList.add('hidden');
+            // Disable all inputs in this form
+            formElement.querySelectorAll('input').forEach(input => {
+                input.disabled = true;
+                input.removeAttribute('required');
+            });
         }
     });
     
-    // Show selected form
+    // Show selected form and enable inputs
     const selectedForm = document.getElementById(gateway + '-form-' + planKey);
     if (selectedForm) {
         selectedForm.classList.remove('hidden');
+        // Enable all inputs in the selected form
+        selectedForm.querySelectorAll('input').forEach(input => {
+            input.disabled = false;
+            input.setAttribute('required', 'required');
+        });
     }
     
     // Enable submit button
@@ -282,9 +322,7 @@ function selectPaymentMethod(planKey, gateway) {
 function prefillPaymentForm(planKey, gateway, details) {
     if (gateway === 'mpesa') {
         const phoneInput = document.getElementById('mpesa_phone_' + planKey);
-        const nameInput = document.getElementById('mpesa_name_' + planKey);
         if (phoneInput) phoneInput.value = details.phone_number || '';
-        if (nameInput) nameInput.value = details.name || '';
     } else if (gateway === 'debit_card') {
         const cardInput = document.getElementById('debit_card_number_' + planKey);
         const nameInput = document.getElementById('debit_cardholder_name_' + planKey);
@@ -315,28 +353,60 @@ function prefillPaymentForm(planKey, gateway, details) {
     }
 }
 
-// Format card number input
-document.addEventListener('DOMContentLoaded', function() {
-    // Add card number formatting for all card inputs
-    document.querySelectorAll('input[id$="_card_number_' + '"]').forEach(input => {
-        input.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s/g, '');
-            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-            e.target.value = formattedValue;
-        });
-    });
+// Prepare form submission - ensure all fields are enabled
+function prepareFormSubmission(planKey, form) {
+    const selectedGateway = form.querySelector('input[name="payment_gateway"]:checked')?.value;
     
-    // Format all debit and credit card inputs
-    ['debit', 'credit'].forEach(cardType => {
-        const cardInputs = document.querySelectorAll('input[id^="' + cardType + '_card_number_"]');
-        cardInputs.forEach(input => {
-            input.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\s/g, '');
-                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-                e.target.value = formattedValue;
-            });
+    if (!selectedGateway) {
+        alert('Please select a payment method');
+        return false;
+    }
+    
+    // Enable fields based on selected payment method
+    if (selectedGateway === 'mpesa') {
+        const phoneInput = document.getElementById('mpesa_phone_' + planKey);
+        if (phoneInput) {
+            phoneInput.removeAttribute('disabled');
+            phoneInput.disabled = false;
+        }
+    } else if (selectedGateway === 'debit_card' || selectedGateway === 'credit_card') {
+        const cardNumberInput = document.getElementById(selectedGateway + '_card_number_' + planKey);
+        const cardholderInput = document.getElementById(selectedGateway + '_cardholder_name_' + planKey);
+        const expiryMonthInput = document.getElementById(selectedGateway + '_expiry_month_' + planKey);
+        const expiryYearInput = document.getElementById(selectedGateway + '_expiry_year_' + planKey);
+        const cvvInput = document.getElementById(selectedGateway + '_cvv_' + planKey);
+        
+        [cardNumberInput, cardholderInput, expiryMonthInput, expiryYearInput, cvvInput].forEach(input => {
+            if (input) {
+                input.removeAttribute('disabled');
+                input.disabled = false;
+            }
         });
-    });
+    } else if (selectedGateway === 'paypal') {
+        const emailInput = document.getElementById('paypal_email_' + planKey);
+        const passwordInput = document.getElementById('paypal_password_' + planKey);
+        if (emailInput) {
+            emailInput.removeAttribute('disabled');
+            emailInput.disabled = false;
+        }
+        if (passwordInput) {
+            passwordInput.removeAttribute('disabled');
+            passwordInput.disabled = false;
+        }
+    }
+    
+    return true;
+}
+
+// Prefill M-Pesa phone number if demo data available
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof demoPaymentDetails !== 'undefined' && demoPaymentDetails.mpesa) {
+        document.querySelectorAll('input[id^="mpesa_phone_"]').forEach(input => {
+            if (!input.value && demoPaymentDetails.mpesa.phone_number) {
+                input.value = demoPaymentDetails.mpesa.phone_number;
+            }
+        });
+    }
 });
 </script>
 @endsection

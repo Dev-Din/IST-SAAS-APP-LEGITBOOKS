@@ -14,6 +14,31 @@
                 </a>
                 @endanyperm
                 @perm('manage_invoices')
+                @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
+                    @if($invoice->status === 'sent')
+                        <span class="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50">
+                            Sent on {{ $invoice->sent_at ? $invoice->sent_at->format('d/m/Y H:i') : 'N/A' }}
+                        </span>
+                        @if($invoice->mail_status === 'failed')
+                            <form method="POST" action="{{ route('tenant.invoices.send', $invoice) }}" class="inline">
+                                @csrf
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700">
+                                    Resend Email
+                                </button>
+                            </form>
+                        @endif
+                    @else
+                        <form method="POST" action="{{ route('tenant.invoices.send', $invoice) }}" class="inline" onsubmit="return confirm('Are you sure you want to send this invoice to {{ $invoice->contact->email ?? $invoice->contact->name }}?');">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                Send Invoice
+                            </button>
+                        </form>
+                    @endif
+                @endif
                 <a href="{{ route('tenant.invoices.edit', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
                     Edit
                 </a>
@@ -27,16 +52,6 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h3 class="text-lg leading-6 font-medium text-gray-900">Invoice Details</h3>
-                        <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                            Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                @if($invoice->status === 'paid') bg-green-100 text-green-800
-                                @elseif($invoice->status === 'sent') bg-blue-100 text-blue-800
-                                @elseif($invoice->status === 'overdue') bg-red-100 text-red-800
-                                @else bg-gray-100 text-gray-800
-                                @endif">
-                                {{ ucfirst($invoice->status) }}
-                            </span>
-                        </p>
                     </div>
                     <div class="text-right">
                         <p class="text-2xl font-bold text-gray-900">{{ number_format($invoice->total, 2) }}</p>

@@ -26,16 +26,6 @@
                                     <p class="text-sm font-medium text-indigo-600 truncate">
                                         {{ $invoice->invoice_number }}
                                     </p>
-                                    <p class="ml-2 flex-shrink-0 flex">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            @if($invoice->status === 'paid') bg-green-100 text-green-800
-                                            @elseif($invoice->status === 'sent') bg-blue-100 text-blue-800
-                                            @elseif($invoice->status === 'overdue') bg-red-100 text-red-800
-                                            @else bg-gray-100 text-gray-800
-                                            @endif">
-                                            {{ ucfirst($invoice->status) }}
-                                        </span>
-                                    </p>
                                 </div>
                                 <div class="ml-2 flex-shrink-0 flex">
                                     <p class="text-sm text-gray-900">
