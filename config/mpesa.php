@@ -23,7 +23,8 @@ return [
     'auth_url' => env('MPESA_AUTH_KEY', 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'),
     'stk_push_url' => env('MPESA_EXPRESS_API', 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'),
     
-    'callback_url' => env('MPESA_CALLBACK_URL', 'https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback'),
+    'callback_base' => env('MPESA_CALLBACK_BASE', env('APP_URL')),
+    'callback_url' => env('MPESA_CALLBACK_URL', env('APP_URL') . '/api/payments/mpesa/callback'),
     
     'transaction_type' => env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
     

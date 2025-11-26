@@ -37,6 +37,30 @@
         </div>
     @endif
 
+    <!-- Processing Payment Card (Hidden by default) -->
+    <div id="processing-payment-card" class="mb-8 bg-blue-50 border-2 border-blue-300 rounded-lg p-6 shadow-md hidden">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-900 mb-1">Processing Payment</h3>
+                    <p class="text-sm text-blue-700" id="processing-message">Waiting for payment confirmation...</p>
+                    <p class="text-xs text-blue-600 mt-2" id="processing-details">Please complete the payment on your phone.</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm font-medium text-blue-900" id="payment-status-badge">Pending</div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-blue-200 rounded-full h-2">
+                <div id="processing-progress" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Plan Comparison Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         @foreach($plans as $planKey => $plan)
@@ -406,6 +430,216 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = demoPaymentDetails.mpesa.phone_number;
             }
         });
+    }
+    
+    // Handle form submission with AJAX for M-Pesa
+    document.querySelectorAll('.plan-upgrade-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const formData = new FormData(this);
+            const paymentGateway = formData.get('payment_gateway');
+            
+            // For M-Pesa, use AJAX to handle STK push response
+            if (paymentGateway === 'mpesa') {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                // Prepare form data
+                if (!prepareFormSubmission(this.closest('[class*="plan-checkout-"]').dataset.planKey, this)) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    return;
+                }
+                
+                // Submit via AJAX
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
+                    }
+                })
+                .then(response => {
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        // If not JSON, return as text and show error
+                        return response.text().then(text => {
+                            throw new Error('Server returned HTML instead of JSON. Response: ' + text.substring(0, 200));
+                        });
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show processing payment card
+                        showProcessingCard(data.message || 'M-Pesa STK push sent! Please check your phone to complete the payment.');
+                        
+                        // Start polling for payment status
+                        if (data.checkout_request_id) {
+                            pollPaymentStatus(data.checkout_request_id);
+                        } else {
+                            // Fallback: redirect to billing page
+                            setTimeout(() => {
+                                window.location.href = '{{ route("tenant.billing.page") }}?message=' + encodeURIComponent(data.message || 'M-Pesa STK push sent. Please complete payment on your phone.');
+                            }, 3000);
+                        }
+                    } else {
+                        const errorMsg = data.error || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to initiate payment. Please try again.');
+                        alert(errorMsg);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    let errorMsg = 'An error occurred. Please try again.';
+                    if (error.message) {
+                        console.error('Error details:', error.message);
+                    }
+                    alert(errorMsg);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                });
+            }
+            // For other payment methods, submit normally
+        });
+    });
+
+    // Function to show processing payment card
+    function showProcessingCard(message) {
+        const card = document.getElementById('processing-payment-card');
+        const messageEl = document.getElementById('processing-message');
+        const detailsEl = document.getElementById('processing-details');
+        
+        if (card && messageEl && detailsEl) {
+            messageEl.textContent = message;
+            detailsEl.textContent = 'Please complete the payment on your phone. This page will automatically redirect once payment is confirmed.';
+            card.classList.remove('hidden');
+            
+            // Scroll to card
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // Function to update processing card status
+    function updateProcessingCard(status, message, progress) {
+        const statusBadge = document.getElementById('payment-status-badge');
+        const messageEl = document.getElementById('processing-message');
+        const progressBar = document.getElementById('processing-progress');
+        
+        if (statusBadge) {
+            statusBadge.textContent = status;
+            if (status === 'Completed') {
+                statusBadge.classList.add('text-green-600');
+            }
+        }
+        
+        if (messageEl && message) {
+            messageEl.textContent = message;
+        }
+        
+        if (progressBar && progress !== undefined) {
+            progressBar.style.width = progress + '%';
+        }
+    }
+
+    // Function to poll payment status
+    function pollPaymentStatus(checkoutRequestId) {
+        let pollCount = 0;
+        const maxPolls = 40; // Poll for up to 2 minutes (40 * 3 seconds)
+        const pollInterval = 3000; // Poll every 3 seconds (faster)
+        let lastStatus = 'pending';
+
+        // Start polling immediately (don't wait for first interval)
+        const checkStatus = () => {
+            pollCount++;
+            
+            // Update progress bar (show progress based on time, not just count)
+            const progress = Math.min((pollCount / maxPolls) * 100, 95);
+            if (lastStatus === 'pending') {
+                updateProcessingCard('Processing', 'Waiting for payment confirmation...', progress);
+            }
+
+            fetch('{{ route("tenant.billing.payment-status") }}?checkout_request_id=' + encodeURIComponent(checkoutRequestId) + '&_=' + Date.now(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                cache: 'no-cache'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.is_completed) {
+                    clearInterval(poll);
+                    updateProcessingCard('Completed', 'Payment received! Activating subscription...', 100);
+                    
+                    // Payment completed - redirect immediately if subscription is active
+                    if (data.subscription_active) {
+                        // Update card to show success
+                        updateProcessingCard('Success', 'Payment successful! Redirecting...', 100);
+                        
+                        // Redirect immediately (no delay)
+                        window.location.href = '{{ route("tenant.users.index") }}';
+                    } else {
+                        // Payment completed but subscription not active yet - check again quickly
+                        updateProcessingCard('Processing', 'Payment received! Activating subscription...', 95);
+                        lastStatus = 'processing';
+                        // Check again in 1 second
+                        setTimeout(() => {
+                            checkStatus();
+                        }, 1000);
+                    }
+                } else if (pollCount >= maxPolls) {
+                    // Timeout - stop polling
+                    clearInterval(poll);
+                    updateProcessingCard('Timeout', 'Payment verification timeout. Please check your payment status manually.', 100);
+                    setTimeout(() => {
+                        window.location.href = '{{ route("tenant.billing.page") }}';
+                    }, 3000);
+                } else {
+                    // Update status if changed
+                    if (data.payment_status && data.payment_status !== lastStatus) {
+                        lastStatus = data.payment_status;
+                        if (data.payment_status === 'processing') {
+                            updateProcessingCard('Processing', 'Payment is being processed...', progress);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking payment status:', error);
+                // Continue polling on error (might be temporary network issue)
+                if (pollCount >= maxPolls) {
+                    clearInterval(poll);
+                    updateProcessingCard('Error', 'Unable to verify payment status. Please check manually.', 100);
+                    setTimeout(() => {
+                        window.location.href = '{{ route("tenant.billing.page") }}';
+                    }, 3000);
+                }
+            });
+        };
+
+        // Start checking immediately
+        checkStatus();
+        
+        // Then continue polling at intervals
+        const poll = setInterval(checkStatus, pollInterval);
     }
 });
 </script>

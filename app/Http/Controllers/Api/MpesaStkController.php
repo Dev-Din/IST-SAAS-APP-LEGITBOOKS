@@ -179,25 +179,56 @@ class MpesaStkController extends Controller
         // Verify callback IP (production only)
         $clientIP = $request->ip();
         if (!$this->mpesaService->verifyCallbackIP($clientIP)) {
-            Log::warning('M-Pesa callback from unauthorized IP', [
-                'ip' => $clientIP,
-            ]);
-            return response()->json(['error' => 'Unauthorized'], 403);
+            // In development, log but don't block (tunnel IPs are dynamic)
+            if (config('app.env') !== 'production') {
+                Log::info('M-Pesa callback from tunnel IP (development mode)', [
+                    'ip' => $clientIP,
+                    'x-forwarded-for' => $request->header('x-forwarded-for'),
+                ]);
+            } else {
+                Log::warning('M-Pesa callback from unauthorized IP', [
+                    'ip' => $clientIP,
+                ]);
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
         }
 
+        // Log Cloudflare headers for debugging
+        $cfHeaders = [
+            'cf-ray' => $request->header('CF-RAY'),
+            'cf-mitigated' => $request->header('cf-mitigated'),
+            'cf-connecting-ip' => $request->header('CF-Connecting-IP'),
+        ];
+        
         // Log raw callback
         $rawCallback = $request->all();
         Log::info('M-Pesa callback received', [
             'ip' => $clientIP,
+            'cf_headers' => $cfHeaders,
             'payload' => $rawCallback,
         ]);
 
         try {
+            // Check for Cloudflare challenge HTML in payload
+            $rawBody = $request->getContent();
+            if (is_string($rawBody) && (strpos($rawBody, '<!DOCTYPE') !== false || strpos($rawBody, 'cf-challenge') !== false || strpos($rawBody, 'cloudflare') !== false)) {
+                Log::error('M-Pesa callback blocked by Cloudflare challenge', [
+                    'ip' => $clientIP,
+                    'cf_headers' => $cfHeaders,
+                    'body_preview' => substr($rawBody, 0, 500),
+                ]);
+                // Return 200 quickly to avoid retries
+                return response()->json(['error' => 'Cloudflare challenge detected'], 200);
+            }
+
             // Validate callback structure
             $body = $request->json()->all();
             
             if (!isset($body['Body'])) {
-                Log::error('Invalid M-Pesa callback structure', ['payload' => $rawCallback]);
+                Log::error('Invalid M-Pesa callback structure', [
+                    'payload' => $rawCallback,
+                    'cf_headers' => $cfHeaders,
+                ]);
                 return response()->json(['error' => 'Invalid callback structure'], 400);
             }
 
@@ -213,13 +244,23 @@ class MpesaStkController extends Controller
             $resultDesc = $stkCallback['ResultDesc'] ?? '';
 
             // Find payment by checkout request ID
-            $payment = Payment::with('tenant', 'invoice')->where('checkout_request_id', $checkoutRequestID)->first();
+            $payment = Payment::with('tenant', 'invoice', 'subscription')->where('checkout_request_id', $checkoutRequestID)->first();
+
+            // If not found by checkout_request_id, try merchant_request_id
+            if (!$payment && isset($stkCallback['MerchantRequestID'])) {
+                $payment = Payment::with('tenant', 'invoice', 'subscription')
+                    ->where('merchant_request_id', $stkCallback['MerchantRequestID'])
+                    ->first();
+            }
 
             if (!$payment) {
                 Log::warning('M-Pesa callback for unknown payment', [
                     'checkout_request_id' => $checkoutRequestID,
+                    'merchant_request_id' => $stkCallback['MerchantRequestID'] ?? null,
+                    'cf_headers' => $cfHeaders,
                 ]);
-                return response()->json(['error' => 'Payment not found'], 404);
+                // Return 200 to avoid retries for unknown payments
+                return response()->json(['error' => 'Payment not found'], 200);
             }
 
             // Set tenant context
@@ -317,8 +358,72 @@ class MpesaStkController extends Controller
                         'payment_date' => $transactionDate ? date('Y-m-d', strtotime($transactionDate)) : now()->toDateString(),
                     ]);
 
-                    // Allocate payment to invoice
-                    if ($payment->invoice_id) {
+                    // Handle subscription payment
+                    if ($payment->subscription_id) {
+                        $subscription = $payment->subscription;
+                        
+                        // Store before state for audit log
+                        $subscriptionBefore = $subscription->getAttributes();
+                        
+                        // Activate subscription immediately
+                        $subscription->update([
+                            'status' => 'active',
+                            'started_at' => now(),
+                            'ends_at' => now()->addMonth(), // 1 month subscription
+                            'next_billing_at' => now()->addMonth(),
+                        ]);
+
+                        // Create audit log for subscription activation
+                        \App\Models\AuditLog::create([
+                            'tenant_id' => $payment->tenant_id,
+                            'model_type' => get_class($subscription),
+                            'model_id' => $subscription->id,
+                            'performed_by' => null, // System action
+                            'action' => 'subscription_activated',
+                            'before' => $subscriptionBefore,
+                            'after' => $subscription->fresh()->getAttributes(),
+                        ]);
+
+                        Log::info('Subscription activated via M-Pesa payment', [
+                            'subscription_id' => $subscription->id,
+                            'payment_id' => $payment->id,
+                            'plan' => $subscription->plan,
+                            'cf_headers' => $cfHeaders,
+                        ]);
+                        
+                        // Refresh subscription to ensure latest status
+                        $subscription->refresh();
+
+                        // Create journal entries for subscription payment (Debit Bank, Credit Revenue)
+                        try {
+                            $this->createSubscriptionJournalEntry($payment, $subscription);
+                        } catch (\Exception $e) {
+                            // Log but don't fail the payment processing
+                            Log::error('Failed to create subscription journal entry', [
+                                'payment_id' => $payment->id,
+                                'subscription_id' => $subscription->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // Create audit log for payment
+                    \App\Models\AuditLog::create([
+                        'tenant_id' => $payment->tenant_id,
+                        'model_type' => get_class($payment),
+                        'model_id' => $payment->id,
+                        'performed_by' => null, // System action
+                        'action' => 'payment_completed',
+                        'before' => ['transaction_status' => 'pending'],
+                        'after' => [
+                            'transaction_status' => 'completed',
+                            'mpesa_receipt' => $mpesaReceipt,
+                            'amount' => $actualAmount,
+                        ],
+                    ]);
+
+                    // Allocate payment to invoice (only for invoice payments, not subscription payments)
+                    if ($payment->invoice_id && !$payment->subscription_id) {
                         $invoice = $payment->invoice;
                         $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
 
@@ -342,12 +447,14 @@ class MpesaStkController extends Controller
                                 ]);
                             }
 
-                            // Process journaling
+                            // Process journaling for invoice payments
                             $this->paymentService->processPayment($payment, [
                                 ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
                             ]);
                         }
                     }
+                    
+                    // Subscription payments journal entries are created above in the subscription block
                 });
 
                 Log::info('M-Pesa payment processed successfully', [
@@ -388,6 +495,84 @@ class MpesaStkController extends Controller
                 'error' => 'Callback processing failed',
             ], 500);
         }
+    }
+
+    /**
+     * Create journal entry for subscription payment
+     * Debit: Bank/Cash (M-Pesa), Credit: Revenue
+     */
+    protected function createSubscriptionJournalEntry(Payment $payment, $subscription): void
+    {
+        $tenant = $payment->tenant;
+        
+        // Get M-Pesa account (bank/cash)
+        $mpesaAccount = $payment->account;
+        if (!$mpesaAccount) {
+            throw new \Exception('M-Pesa account not found for payment');
+        }
+        $mpesaCoa = $mpesaAccount->chartOfAccount;
+
+        // Get Revenue account (typically code 4100)
+        $revenueAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
+            ->where('code', '4100')
+            ->first();
+
+        if (!$revenueAccount) {
+            // Try alternative revenue codes
+            $revenueAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
+                ->whereIn('code', ['4000', '4100', '4200'])
+                ->where('type', 'revenue')
+                ->first();
+        }
+
+        if (!$revenueAccount) {
+            throw new \Exception('Revenue account not found for subscription payment');
+        }
+
+        // Create journal entry
+        $entryNumber = 'JE-' . date('Ymd') . '-' . str_pad(\App\Models\JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
+        
+        $journalEntry = \App\Models\JournalEntry::create([
+            'tenant_id' => $tenant->id,
+            'entry_number' => $entryNumber,
+            'entry_date' => $payment->payment_date ?? now()->toDateString(),
+            'reference_type' => Payment::class,
+            'reference_id' => $payment->id,
+            'description' => "Subscription payment for {$subscription->plan} plan",
+            'is_posted' => true,
+        ]);
+
+        // Debit Bank/Cash (M-Pesa)
+        \App\Models\JournalLine::create([
+            'journal_entry_id' => $journalEntry->id,
+            'chart_of_account_id' => $mpesaCoa->id,
+            'type' => 'debit',
+            'amount' => $payment->amount,
+            'description' => "Subscription payment received",
+        ]);
+
+        // Credit Revenue
+        \App\Models\JournalLine::create([
+            'journal_entry_id' => $journalEntry->id,
+            'chart_of_account_id' => $revenueAccount->id,
+            'type' => 'credit',
+            'amount' => $payment->amount,
+            'description' => "Subscription revenue - {$subscription->plan} plan",
+        ]);
+
+        // Verify balance
+        $journalEntry->calculateTotals();
+        $journalEntry->save();
+
+        if (!$journalEntry->isBalanced()) {
+            throw new \Exception('Subscription journal entry is not balanced');
+        }
+
+        Log::info('Subscription journal entry created', [
+            'journal_entry_id' => $journalEntry->id,
+            'payment_id' => $payment->id,
+            'subscription_id' => $subscription->id,
+        ]);
     }
 
     /**

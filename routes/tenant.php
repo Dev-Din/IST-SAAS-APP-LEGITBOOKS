@@ -30,6 +30,20 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::get('invoices/{invoice}/receipt', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
 
     Route::resource('payments', PaymentController::class);
+    
+    // Payment Receipts
+    Route::get('payments/receipts', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'index'])->name('payments.receipts');
+    Route::get('payments/receipts/{payment}', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'show'])->name('payments.receipts.show');
+    Route::post('payments/receipts/{payment}/validate', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'validate'])->name('payments.receipts.validate');
+    Route::post('payments/receipts/fetch', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'fetchByReceipt'])->name('payments.receipts.fetch');
+    Route::post('payments/receipts/validate-pending', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'validatePending'])->name('payments.receipts.validate-pending');
+    
+    // Payment JSON API
+    Route::get('payments/json/fetch', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'fetch'])->name('payments.json.fetch');
+    Route::post('payments/json/store', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'store'])->name('payments.json.store');
+    Route::get('payments/json/files', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'listFiles'])->name('payments.json.files');
+    Route::get('payments/json/download/{filename}', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'download'])->name('payments.json.download');
+    
     Route::resource('contacts', ContactController::class);
     Route::resource('products', ProductController::class);
     Route::resource('chart-of-accounts', ChartOfAccountController::class);
@@ -53,10 +67,15 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::get('billing', [\App\Http\Controllers\Tenant\BillingController::class, 'index'])->name('billing.index');
     Route::get('billing/page', [\App\Http\Controllers\Tenant\BillingController::class, 'page'])->name('billing.page');
     Route::post('billing/upgrade', [\App\Http\Controllers\Tenant\BillingController::class, 'upgrade'])->name('billing.upgrade');
+    Route::get('billing/payment-status', [\App\Http\Controllers\Tenant\BillingController::class, 'checkPaymentStatus'])->name('billing.payment-status');
     Route::post('billing/plan', [\App\Http\Controllers\Tenant\BillingController::class, 'updatePlan'])->name('billing.update-plan');
     Route::post('billing/payment-methods', [\App\Http\Controllers\Tenant\BillingController::class, 'storePaymentMethod'])->name('billing.payment-methods.store');
     Route::post('billing/payment-methods/{paymentMethod}/set-default', [\App\Http\Controllers\Tenant\BillingController::class, 'setDefaultPaymentMethod'])->name('billing.payment-methods.set-default');
     Route::delete('billing/payment-methods/{paymentMethod}', [\App\Http\Controllers\Tenant\BillingController::class, 'destroyPaymentMethod'])->name('billing.payment-methods.destroy');
+    
+    // Checkout & M-Pesa Payment Flow
+    Route::post('checkout/{plan}/pay-mpesa', [\App\Http\Controllers\Tenant\CheckoutController::class, 'payWithMpesa'])->name('checkout.pay-mpesa');
+    Route::get('checkout/{plan}/mpesa-status/{token}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'mpesaStatus'])->name('checkout.mpesa-status');
 });
 
 Route::post('/mpesa/callback', [MpesaController::class, 'callback'])->name('mpesa.callback');

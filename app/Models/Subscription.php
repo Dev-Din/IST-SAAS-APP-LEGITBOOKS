@@ -39,6 +39,11 @@ class Subscription extends Model
         return $this->belongsTo(Tenant::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     /**
      * Get masked payment method display for the subscription
      */

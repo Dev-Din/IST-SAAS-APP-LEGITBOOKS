@@ -11,6 +11,7 @@ class Payment extends BaseTenantModel
     protected $fillable = [
         'tenant_id',
         'invoice_id',
+        'subscription_id',
         'payment_number',
         'payment_date',
         'account_id',
@@ -26,6 +27,7 @@ class Payment extends BaseTenantModel
         'raw_callback',
         'checkout_request_id',
         'merchant_request_id',
+        'client_token',
     ];
 
     protected function casts(): array
@@ -61,5 +63,10 @@ class Payment extends BaseTenantModel
     public function journalEntry()
     {
         return $this->morphOne(JournalEntry::class, 'reference', 'reference_type', 'reference_id');
+    }
+
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class);
     }
 }
