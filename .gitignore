@@ -1,88 +1,565 @@
-# Laravel
-/.env
-/.env.backup
-/.env.production
-/.phpunit.result.cache
-/phpunit.xml
-Homestead.json
-Homestead.yaml
-auth.json
-npm-debug.log
-yarn-error.log
+# ============================================
+# Operating System Files
+# ============================================
 
-# Dependencies
-/node_modules
-/vendor
-/public/build
-/public/hot
-/public/storage
-
-# Storage
-/storage/*.key
-/storage/pail
-/storage/logs/*.log
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
-/storage/framework/testing/*
-!/storage/framework/cache/.gitignore
-!/storage/framework/sessions/.gitignore
-!/storage/framework/views/.gitignore
-!/storage/framework/testing/.gitignore
-
-# Bootstrap cache
-/bootstrap/cache/*
-!/bootstrap/cache/.gitignore
-
-# Database
-*.sqlite
-*.sqlite3
-*.db
-/database/*.sqlite
-/database/*.sqlite3
-
-# IDE & Editor files
-/.fleet
-/.idea
-/.nova
-/.phpactor.json
-/.vscode
-/.zed
-*.swp
-*.swo
-*~
-
-# OS files
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
 Thumbs.db
-Desktop.ini
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# Project specific
-/LegitBooks REQUIRMENTS.txt
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
 
-# Temporary files
+# ============================================
+# IDE & Editor Files
+# ============================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+.history/
+
+# JetBrains IDEs (IntelliJ IDEA, PhpStorm, WebStorm, PyCharm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+*.sublime-workspace.tmp
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+tags
+Session.vim
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+.recommenders
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+*.xcuserdata
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
+# Atom
+.atom/
+
+# Fleet
+.fleet/
+
+# Zed
+.zed/
+
+# ============================================
+# Dependency Directories
+# ============================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# PHP (Composer)
+vendor/
+composer.lock
+
+# Ruby
+vendor/bundle
+.bundle/
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+*.bundle
+*.so
+*.o
+*.a
+mkmf.log
+extconf.h
+extconf.rb
+*.jar
+*.war
+*.ear
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.classpath
+.settings/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.externalToolBuilders/
+.project
+.classpath
+.settings/
+.loadpath
+.recommenders
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.externalToolBuilders/
+.project
+.classpath
+.settings/
+.loadpath
+.recommenders
+
+# Java
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.classpath
+.settings/
+.loadpath
+.recommenders
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.externalToolBuilders/
+.project
+.classpath
+.settings/
+.loadpath
+.recommenders
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+
+# Rust
+target/
+Cargo.lock
+
+# ============================================
+# Build Artifacts & Compiled Files
+# ============================================
+
+# General
+*.o
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+dist/
+build/
+out/
+bin/
+obj/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Web
+*.min.js
+*.min.css
+*.map
+public/build/
+public/hot
+public/mix-manifest.json
+public/js/
+public/css/
+public/storage
+public/.htaccess
+
+# ============================================
+# Environment & Configuration Files
+# ============================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.template
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.backup
+.env.production
+
+# Configuration secrets
+config/secrets.yml
+secrets.yml
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+*.jks
+
+# ============================================
+# Log Files
+# ============================================
+
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+*.log.*
+log/
+logs/
+*.log
+
+# ============================================
+# Database Files
+# ============================================
+
+# SQLite
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Database dumps
+*.sql
+*.dump
+*.backup
+
+# ============================================
+# Cache & Temporary Files
+# ============================================
+
+# General cache
+.cache/
+*.cache
+.cache/
 *.tmp
 *.temp
 *.bak
-*.cache
+*.swp
+*~
+*.old
+*.orig
 
-# Compiled assets
-/public/mix-manifest.json
-/public/js
-/public/css
+# Application specific
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/logs/*.log
+bootstrap/cache/*
+!.gitkeep
 
-# Coverage reports
-/coverage
-/.phpunit.cache
+# ============================================
+# Testing & Coverage
+# ============================================
 
-# Laravel Sail
-/.docker
+# Test coverage
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.phpunit.result.cache
+.phpunit.cache
+*.cover
+*.coverprofile
+*.lcov
+test-results/
+coverage/
+
+# ============================================
+# Package Manager Lock Files (Optional)
+# ============================================
+
+# Uncomment if you want to ignore lock files
+# package-lock.json
+# yarn.lock
+# composer.lock
+# Pipfile.lock
+# poetry.lock
+
+# ============================================
+# Docker
+# ============================================
+
+.docker/
+docker-compose.override.yml
+*.dockerignore
+
+# ============================================
+# Miscellaneous
+# ============================================
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
 
 # Backup files
 *.backup
+*.bak
 *.old
+*.orig
+*.save
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Application specific
+*.pid
+*.seed
+*.pid.lock
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.sass-cache/
+.connect.lock
+.typings/
+typings/
+.npmrc
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
