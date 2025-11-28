@@ -10,6 +10,11 @@ use App\Http\Controllers\Marketing\ContactController;
 use App\Http\Controllers\Marketing\FaqController;
 use App\Http\Controllers\Marketing\LegalController;
 
+// Minimal login route (redirects to tenant login for compatibility)
+Route::get('/login', function () {
+    return redirect()->route('tenant.auth.login');
+})->name('login');
+
 // Marketing routes (public, no auth required)
 Route::get('/', [HomeController::class, 'index'])->name('marketing.home');
 Route::get('/features', [FeaturesController::class, 'index'])->name('marketing.features');

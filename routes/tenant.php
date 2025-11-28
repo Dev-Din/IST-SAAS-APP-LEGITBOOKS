@@ -73,6 +73,12 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::post('billing/payment-methods/{paymentMethod}/set-default', [\App\Http\Controllers\Tenant\BillingController::class, 'setDefaultPaymentMethod'])->name('billing.payment-methods.set-default');
     Route::delete('billing/payment-methods/{paymentMethod}', [\App\Http\Controllers\Tenant\BillingController::class, 'destroyPaymentMethod'])->name('billing.payment-methods.destroy');
     
+    // Profile Management
+    Route::get('profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'index'])->name('profile.index');
+    Route::put('profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('profile/password', [\App\Http\Controllers\Tenant\ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::put('profile/tenant', [\App\Http\Controllers\Tenant\ProfileController::class, 'updateTenant'])->name('profile.tenant');
+    
     // Checkout & M-Pesa Payment Flow
     Route::post('checkout/{plan}/pay-mpesa', [\App\Http\Controllers\Tenant\CheckoutController::class, 'payWithMpesa'])->name('checkout.pay-mpesa');
     Route::get('checkout/{plan}/mpesa-status/{token}', [\App\Http\Controllers\Tenant\CheckoutController::class, 'mpesaStatus'])->name('checkout.mpesa-status');

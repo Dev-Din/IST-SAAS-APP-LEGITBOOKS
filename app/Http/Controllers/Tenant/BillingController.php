@@ -52,90 +52,35 @@ class BillingController extends Controller
 
         $validated = $request->validate([
             'plan' => 'required|in:free,starter,business,enterprise',
-            'payment_method_id' => 'nullable|string', // Can be 'new' or an ID
-            // New payment method fields
-            'new_payment_type' => 'required_if:payment_method_id,new|nullable|in:mpesa,debit_card,credit_card,paypal',
-            'new_mpesa_phone' => 'required_if:new_payment_type,mpesa|nullable|string',
-            'new_mpesa_name' => 'required_if:new_payment_type,mpesa|nullable|string',
-            'new_card_number' => 'required_if:new_payment_type,debit_card,credit_card|nullable|string',
-            'new_cardholder_name' => 'required_if:new_payment_type,debit_card,credit_card|nullable|string',
-            'new_expiry_month' => 'required_if:new_payment_type,debit_card,credit_card|nullable|string',
-            'new_expiry_year' => 'required_if:new_payment_type,debit_card,credit_card|nullable|string',
-            'new_cvv' => 'required_if:new_payment_type,debit_card,credit_card|nullable|string',
-            'new_paypal_email' => 'required_if:new_payment_type,paypal|nullable|email',
-            'new_paypal_password' => 'required_if:new_payment_type,paypal|nullable|string',
         ]);
 
         if (!$subscription) {
             return back()->withErrors(['plan' => 'No active subscription found.']);
         }
 
+        // Plan pricing hierarchy
+        $planHierarchy = ['free' => 0, 'starter' => 1, 'business' => 2, 'enterprise' => 3];
+        $currentPlanLevel = $planHierarchy[$subscription->plan] ?? 0;
+        $newPlanLevel = $planHierarchy[$validated['plan']] ?? 0;
+
+        // If upgrading to a paid plan (higher level), require payment
+        $paidPlans = ['starter', 'business', 'enterprise'];
+        $isUpgradeToPaid = in_array($validated['plan'], $paidPlans) && $newPlanLevel > $currentPlanLevel;
+
+        if ($isUpgradeToPaid) {
+            // Redirect to upgrade page which requires payment
+            return redirect()->route('tenant.billing.page')
+                ->with('info', 'Please complete payment to upgrade to the ' . ucfirst($validated['plan']) . ' plan.');
+        }
+
+        // Allow downgrades or same plan changes without payment
         try {
             DB::beginTransaction();
 
-            $paymentGateway = $subscription->payment_gateway;
-            $settings = $subscription->settings ?? [];
-
-            // Handle payment method selection for paid plans
-            $paidPlans = ['starter', 'business', 'enterprise'];
-            if (in_array($validated['plan'], $paidPlans) && $validated['plan'] !== $subscription->plan) {
-                if ($request->has('payment_method_id') && $validated['payment_method_id'] === 'new') {
-                    // Create new payment method
-                    $details = [];
-                    if ($validated['new_payment_type'] === 'mpesa') {
-                        $details = [
-                            'phone_number' => $validated['new_mpesa_phone'] ?? null,
-                            'name' => $validated['new_mpesa_name'] ?? null,
-                        ];
-                        $paymentGateway = 'mpesa';
-                    } elseif (in_array($validated['new_payment_type'], ['debit_card', 'credit_card'])) {
-                        $details = [
-                            'card_number' => str_replace(' ', '', $validated['new_card_number'] ?? ''),
-                            'cardholder_name' => $validated['new_cardholder_name'] ?? null,
-                            'expiry_month' => $validated['new_expiry_month'] ?? null,
-                            'expiry_year' => $validated['new_expiry_year'] ?? null,
-                            'cvv' => $validated['new_cvv'] ?? null,
-                        ];
-                        $paymentGateway = $validated['new_payment_type'];
-                    } elseif ($validated['new_payment_type'] === 'paypal') {
-                        $details = [
-                            'email' => $validated['new_paypal_email'] ?? null,
-                            'password' => $validated['new_paypal_password'] ?? null,
-                        ];
-                        $paymentGateway = 'paypal';
-                    }
-
-                    // Store payment details in subscription settings for display
-                    $settings = array_merge($settings, $details);
-
-                    // Optionally create a PaymentMethod record
-                    PaymentMethod::create([
-                        'tenant_id' => $tenant->id,
-                        'type' => $validated['new_payment_type'],
-                        'name' => $validated['new_mpesa_name'] ?? $validated['new_cardholder_name'] ?? $validated['new_paypal_email'] ?? null,
-                        'is_default' => false,
-                        'is_active' => true,
-                        'details' => $details,
-                    ]);
-                } elseif ($request->has('payment_method_id') && $validated['payment_method_id'] !== 'new') {
-                    // Use existing payment method
-                    $paymentMethod = PaymentMethod::where('id', $validated['payment_method_id'])
-                        ->where('tenant_id', $tenant->id)
-                        ->first();
-
-                    if ($paymentMethod) {
-                        $paymentGateway = $paymentMethod->type;
-                        // Store payment details in subscription settings for display
-                        $settings = array_merge($settings, $paymentMethod->details ?? []);
-                    }
-                }
-            }
-
-            // Update subscription
+            // Update subscription (downgrade or same plan)
             $subscription->update([
                 'plan' => $validated['plan'],
-                'payment_gateway' => $paymentGateway,
-                'settings' => $settings,
+                // Keep existing payment_gateway and settings
             ]);
 
             DB::commit();

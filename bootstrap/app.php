@@ -24,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('admin/*')) {
                 return redirect()->route('admin.login');
             }
-            return null;
+            // For tenant routes, redirect to tenant login
+            if ($request->is('app/*')) {
+                return redirect()->route('tenant.auth.login');
+            }
+            // Fallback to generic login route
+            return redirect()->route('login');
         });
     })->create();
