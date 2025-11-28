@@ -1,64 +1,38 @@
 #!/bin/bash
 
-# Cloudflare Tunnel - Simple Setup
-# Uses system-installed cloudflared or downloads if needed
+# Start Cloudflare Tunnel for M-Pesa callback testing
+# This creates an ephemeral tunnel URL that forwards to localhost:5000
 
-echo "🌐 Cloudflare Tunnel for M-Pesa Callbacks"
-echo "=========================================="
-echo ""
+set -e
 
-# Check for system-installed cloudflared first
-if command -v cloudflared &> /dev/null; then
-    CLOUDFLARED_CMD="cloudflared"
-    echo "✅ Using system-installed cloudflared"
-elif [ -f "/usr/local/bin/cloudflared" ] && [ -x "/usr/local/bin/cloudflared" ]; then
-    CLOUDFLARED_CMD="/usr/local/bin/cloudflared"
-    echo "✅ Using /usr/local/bin/cloudflared"
-else
-    # Fallback: use local binary
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    CLOUDFLARED_BIN="$SCRIPT_DIR/cloudflared"
-    
-    if [ ! -f "$CLOUDFLARED_BIN" ]; then
-        echo "❌ cloudflared not found"
-        echo ""
-        echo "Install it using:"
-        echo "  wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"
-        echo "  sudo dpkg -i cloudflared-linux-amd64.deb"
-        echo ""
-        exit 1
-    fi
-    
-    CLOUDFLARED_CMD="$CLOUDFLARED_BIN"
-    echo "✅ Using local cloudflared binary"
+# Configuration
+LOCAL_PORT=${LOCAL_PORT:-5000}
+TUNNEL_URL="http://127.0.0.1:${LOCAL_PORT}"
+
+# Check if cloudflared is installed
+if ! command -v cloudflared &> /dev/null; then
+    echo "Error: cloudflared is not installed."
+    echo "Run: ./install-cloudflared.sh"
+    exit 1
 fi
 
-# Check version
-echo "Version:"
-"$CLOUDFLARED_CMD" --version | head -1
-echo ""
-
-# Check if server is running
-if ! curl -s http://localhost:5000 > /dev/null 2>&1; then
-    echo "⚠️  Warning: Laravel server may not be running on port 5000"
-    echo "   Start it in another terminal: ./serve-5000.sh"
+# Check if Laravel server is running
+if ! curl -s "http://127.0.0.1:${LOCAL_PORT}" > /dev/null 2>&1; then
+    echo "Warning: Laravel server doesn't appear to be running on port ${LOCAL_PORT}"
+    echo "Start it with: php artisan serve --host=127.0.0.1 --port=${LOCAL_PORT}"
     echo ""
-    read -p "Press Enter to continue anyway..."
+    echo "Press Ctrl+C to cancel, or wait 5 seconds to continue anyway..."
+    sleep 5
 fi
 
-echo "🚀 Starting Cloudflare Tunnel..."
+echo "Starting Cloudflare Tunnel..."
+echo "Local URL: ${TUNNEL_URL}"
 echo ""
-echo "📋 IMPORTANT:"
-echo "   1. Wait for the URL below (e.g., https://xxxxx.trycloudflare.com)"
-echo "   2. Copy that URL"
-echo "   3. Update .env file:"
-echo "      MPESA_CALLBACK_URL=https://xxxxx.trycloudflare.com/api/payments/mpesa/callback"
-echo "   4. Run: php artisan config:clear"
+echo "The tunnel URL will be displayed below. Copy it and update your .env:"
+echo "MPESA_CALLBACK_BASE=https://<tunnel-url>"
 echo ""
-echo "Press Ctrl+C to stop"
-echo "----------------------------------------"
+echo "Press Ctrl+C to stop the tunnel"
 echo ""
 
 # Start tunnel
-"$CLOUDFLARED_CMD" tunnel --url http://localhost:5000
-
+cloudflared tunnel --url "${TUNNEL_URL}"

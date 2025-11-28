@@ -78,8 +78,10 @@ class CheckoutController extends Controller
             // Create payment record
             $payment = Payment::create([
                 'tenant_id' => $tenant->id,
+                'user_id' => auth()->id(),
                 'subscription_id' => $subscription->id,
                 'amount' => $amount,
+                'currency' => 'KES',
                 'payment_method' => 'mpesa',
                 'phone' => $phoneNumber,
                 'transaction_status' => 'pending',
@@ -159,6 +161,15 @@ class CheckoutController extends Controller
             'failed', 'cancelled' => 'failed',
             default => 'pending',
         };
+
+        // Also check if subscription is active (for subscription payments)
+        if ($status === 'success' && $payment->subscription_id) {
+            $subscription = $payment->subscription;
+            if ($subscription && $subscription->status !== 'active') {
+                // Payment completed but subscription not yet activated - still pending
+                $status = 'pending';
+            }
+        }
 
         $response = [
             'status' => $status,

@@ -40,10 +40,10 @@
             </button>
         </div>
 
-        <!-- Manual Check Button (shown after timeout) -->
+        <!-- Manual Check Button (shown after timeout or always available) -->
         <div id="manual-check" class="hidden mt-4">
             <button onclick="checkStatus()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
-                I paid — check status
+                I paid — check now
             </button>
         </div>
     </div>
@@ -54,29 +54,36 @@ const clientToken = '{{ $client_token }}';
 const plan = '{{ $plan }}';
 const pollUrl = '{{ route("tenant.checkout.mpesa-status", ["plan" => $plan, "token" => $client_token]) }}';
 let pollCount = 0;
-const maxPolls = 150; // 5 minutes (150 * 2s)
-const initialInterval = 2000; // 2 seconds
-let currentInterval = initialInterval;
+const maxPolls = 150; // 5 minutes (150 * 2s = 300 seconds)
+const pollInterval = 2000; // 2 seconds (aggressive polling for dev)
 let pollIntervalId = null;
 let timeoutReached = false;
+const timeoutMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+let startTime = Date.now();
 
 function startPolling() {
+    // Initial check
+    checkStatus();
+    
+    // Poll every 2 seconds
     pollIntervalId = setInterval(() => {
         pollCount++;
         
-        // Exponential backoff after 60 seconds (30 polls)
-        if (pollCount > 30 && currentInterval < 10000) {
-            currentInterval = Math.min(currentInterval * 1.5, 10000); // Max 10 seconds
+        // Check if 5 minutes have elapsed
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= timeoutMs && !timeoutReached) {
+            timeoutReached = true;
             clearInterval(pollIntervalId);
-            startPolling(); // Restart with new interval
+            document.getElementById('status-message').textContent = 'Payment verification timeout. Please check manually if you have completed the payment.';
+            document.getElementById('manual-check').classList.remove('hidden');
             return;
         }
-
-        checkStatus();
-    }, currentInterval);
-
-    // Initial check
-    checkStatus();
+        
+        // Continue polling if not timed out
+        if (!timeoutReached) {
+            checkStatus();
+        }
+    }, pollInterval);
 }
 
 function checkStatus() {
@@ -106,6 +113,9 @@ function checkStatus() {
             document.getElementById('status-message').textContent = data.message || 'Payment successful! Redirecting...';
             document.getElementById('status-message').className = 'text-sm text-green-600 font-semibold mb-4';
 
+            // Show success alert
+            alert('Payment successful! Redirecting to dashboard...');
+            
             // Redirect after brief delay
             setTimeout(() => {
                 const redirectUrl = data.redirect || '{{ route("tenant.dashboard") }}?payment=success';
@@ -124,13 +134,14 @@ function checkStatus() {
             document.getElementById('error-text').textContent = data.error || 'Payment failed. Please try again.';
             document.getElementById('status-message').textContent = 'Payment failed';
         } else if (data.status === 'pending') {
-            // Continue polling
-            if (pollCount >= maxPolls && !timeoutReached) {
+            // Continue polling (timeout handled in setInterval)
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= timeoutMs && !timeoutReached) {
                 timeoutReached = true;
                 if (pollIntervalId) {
                     clearInterval(pollIntervalId);
                 }
-                document.getElementById('status-message').textContent = 'Payment verification timeout. Please check manually.';
+                document.getElementById('status-message').textContent = 'Payment verification timeout. Please check manually if you have completed the payment.';
                 document.getElementById('manual-check').classList.remove('hidden');
             }
         }

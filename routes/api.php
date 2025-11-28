@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 // M-Pesa STK Push routes
 Route::prefix('payments/mpesa')->group(function () {
     Route::post('/stk-push', [\App\Http\Controllers\Api\MpesaStkController::class, 'initiateSTKPush'])->name('api.mpesa.stk-push');
-    Route::post('/callback', [\App\Http\Controllers\Api\MpesaStkController::class, 'callback'])->name('api.mpesa.callback');
+    // Primary callback endpoint (idempotent, Cloudflare-aware, fallback search)
+    Route::post('/callback', [\App\Http\Controllers\Payments\MpesaController::class, 'callback'])->name('api.mpesa.callback');
 });
 

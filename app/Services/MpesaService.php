@@ -94,5 +94,94 @@ class MpesaService
             'payload' => $payload,
         ];
     }
+
+    /**
+     * Parse M-Pesa STK callback payload
+     * 
+     * @param array $body Raw callback body
+     * @return array Parsed callback data
+     */
+    public function parseCallback(array $body): array
+    {
+        $stkCallback = $body['Body']['stkCallback'] ?? null;
+        
+        if (!$stkCallback) {
+            return [
+                'valid' => false,
+                'error' => 'Missing stkCallback in payload',
+            ];
+        }
+
+        $checkoutRequestID = $stkCallback['CheckoutRequestID'] ?? null;
+        $merchantRequestID = $stkCallback['MerchantRequestID'] ?? null;
+        $resultCode = $stkCallback['ResultCode'] ?? null;
+        $resultDesc = $stkCallback['ResultDesc'] ?? '';
+
+        $parsed = [
+            'valid' => true,
+            'checkout_request_id' => $checkoutRequestID,
+            'merchant_request_id' => $merchantRequestID,
+            'result_code' => $resultCode,
+            'result_desc' => $resultDesc,
+            'success' => $resultCode == 0,
+        ];
+
+        // Extract callback metadata if successful
+        if ($resultCode == 0 && isset($stkCallback['CallbackMetadata']['Item'])) {
+            $metadata = [];
+            foreach ($stkCallback['CallbackMetadata']['Item'] as $item) {
+                $name = $item['Name'] ?? '';
+                $value = $item['Value'] ?? null;
+                $metadata[$name] = $value;
+            }
+            $parsed['metadata'] = $metadata;
+            $parsed['mpesa_receipt'] = $metadata['MpesaReceiptNumber'] ?? null;
+            $parsed['amount'] = $metadata['Amount'] ?? null;
+            $parsed['phone'] = $metadata['PhoneNumber'] ?? null;
+            $parsed['transaction_date'] = $metadata['TransactionDate'] ?? null;
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * Log Cloudflare headers for debugging
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return array Cloudflare headers
+     */
+    public function logCloudflareHeaders($request): array
+    {
+        $cfHeaders = [
+            'CF-RAY' => $request->header('CF-RAY'),
+            'cf-mitigated' => $request->header('cf-mitigated'),
+            'CF-Connecting-IP' => $request->header('CF-Connecting-IP'),
+            'X-Forwarded-For' => $request->header('X-Forwarded-For'),
+            'X-Real-IP' => $request->header('X-Real-IP'),
+        ];
+
+        Log::info('Cloudflare headers detected', [
+            'headers' => $cfHeaders,
+            'ip' => $request->ip(),
+        ]);
+
+        return $cfHeaders;
+    }
+
+    /**
+     * Verify callback IP address (production only)
+     * 
+     * @param string $ip
+     * @return bool
+     */
+    public function verifyCallbackIP(string $ip): bool
+    {
+        if (!config('mpesa.validate_callback_ip', false)) {
+            return true; // Skip validation in sandbox/development
+        }
+
+        $whitelist = config('mpesa.callback_ip_whitelist', []);
+        return in_array($ip, $whitelist);
+    }
 }
 

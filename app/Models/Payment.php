@@ -10,6 +10,7 @@ class Payment extends BaseTenantModel
 
     protected $fillable = [
         'tenant_id',
+        'user_id',
         'invoice_id',
         'subscription_id',
         'payment_number',
@@ -17,6 +18,7 @@ class Payment extends BaseTenantModel
         'account_id',
         'contact_id',
         'amount',
+        'currency',
         'payment_method',
         'reference',
         'notes',
@@ -38,6 +40,21 @@ class Payment extends BaseTenantModel
             'mpesa_metadata' => 'array',
             'raw_callback' => 'array',
         ];
+    }
+
+    /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate client_token if not provided
+        static::creating(function ($payment) {
+            if (empty($payment->client_token)) {
+                $payment->client_token = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
     }
 
     public function account()
@@ -68,5 +85,10 @@ class Payment extends BaseTenantModel
     public function subscription()
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

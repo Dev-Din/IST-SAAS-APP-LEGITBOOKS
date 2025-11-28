@@ -24,7 +24,7 @@ return [
     'stk_push_url' => env('MPESA_EXPRESS_API', 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'),
     
     'callback_base' => env('MPESA_CALLBACK_BASE', env('APP_URL')),
-    'callback_url' => env('MPESA_CALLBACK_URL', env('APP_URL') . '/api/payments/mpesa/callback'),
+    'callback_url' => env('MPESA_CALLBACK_URL', env('MPESA_CALLBACK_BASE', env('APP_URL')) . '/api/payments/mpesa/callback'),
     
     'transaction_type' => env('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
     
