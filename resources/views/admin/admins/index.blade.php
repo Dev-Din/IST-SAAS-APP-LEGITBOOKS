@@ -28,7 +28,13 @@
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $admin->name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $admin->email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap capitalize">{{ $admin->role }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($admin->role === 'owner')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Owner</span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">{{ $admin->role }}</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $admin->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                                 {{ $admin->is_active ? 'Active' : 'Inactive' }}

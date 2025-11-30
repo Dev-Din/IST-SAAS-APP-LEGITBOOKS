@@ -15,6 +15,8 @@ class PlatformAuditLog extends Model
         'target_type',
         'target_id',
         'details',
+        'created_at',
+        'updated_at',
     ];
 
     protected function casts(): array

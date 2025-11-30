@@ -9,16 +9,29 @@ use Illuminate\Support\Facades\Auth;
 
 class PlatformSettingsController extends Controller
 {
-    public function __construct()
+    /**
+     * Check if the authenticated admin has owner role
+     */
+    protected function ensureOwner(): void
     {
-        $this->middleware(function ($request, $next) {
-            abort_unless(Auth::guard('admin')->check() && Auth::guard('admin')->user()->hasRole('superadmin'), 403);
-            return $next($request);
-        })->only(['index', 'update']);
+        abort_unless(
+            Auth::guard('admin')->check() && Auth::guard('admin')->user()->hasRole('owner'),
+            403,
+            'Only owners can access platform settings.'
+        );
+    }
+
+    /**
+     * @deprecated Use ensureOwner() instead
+     */
+    protected function ensureSuperAdmin(): void
+    {
+        $this->ensureOwner();
     }
 
     public function index(PlatformSettings $settings)
     {
+        $this->ensureOwner();
         $data = [
             'branding_mode' => $settings->get('branding_mode', config('legitbooks.branding_mode')),
             'mailgun_domain' => $settings->get('mailgun_domain', config('services.mailgun.domain')),
@@ -35,6 +48,7 @@ class PlatformSettingsController extends Controller
 
     public function update(UpdatePlatformSettingsRequest $request, PlatformSettings $settings)
     {
+        $this->ensureOwner();
         $validated = $request->validated();
 
         foreach ($validated as $key => $value) {

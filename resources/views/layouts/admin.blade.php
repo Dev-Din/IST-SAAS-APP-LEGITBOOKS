@@ -53,7 +53,7 @@
     </script>
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
-    <div class="min-h-screen w-full max-w-full flex">
+    <div class="min-h-screen w-full max-w-full {{ request()->is('admin/login') ? '' : 'flex' }}">
         @auth('admin')
         <!-- Sidebar -->
         <aside class="hidden md:flex w-64 bg-white shadow-lg flex-col h-screen fixed left-0 top-0 z-50">
@@ -81,7 +81,7 @@
                     <span class="font-medium">Tenants</span>
                 </a>
                 
-                @if(auth('admin')->user()?->hasRole('superadmin'))
+                @if(auth('admin')->user()?->hasRole('owner'))
                 <a href="{{ route('admin.admins.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-md {{ request()->routeIs('admin.admins.*') ? 'text-white border-l-4' : 'text-gray-700 hover:bg-gray-50' }}" style="{{ request()->routeIs('admin.admins.*') ? 'background-color: #392a26; border-color: #392a26;' : '' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -97,6 +97,14 @@
                     <span class="font-medium">Settings</span>
                 </a>
                 @endif
+                
+                <!-- Profile Link (visible to all admins) -->
+                <a href="{{ route('admin.profile.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-md {{ request()->routeIs('admin.profile.*') ? 'text-white border-l-4' : 'text-gray-700 hover:bg-gray-50' }}" style="{{ request()->routeIs('admin.profile.*') ? 'background-color: #392a26; border-color: #392a26;' : '' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-medium">Profile</span>
+                </a>
             </nav>
             
             <!-- Logout Button -->
@@ -158,7 +166,7 @@
                             <span class="font-medium">Tenants</span>
                         </a>
                         
-                        @if(auth('admin')->user()?->hasRole('superadmin'))
+                        @if(auth('admin')->user()?->hasRole('owner'))
                         <a href="{{ route('admin.admins.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-md {{ request()->routeIs('admin.admins.*') ? 'text-white border-l-4' : 'text-gray-700 hover:bg-gray-50' }}" style="{{ request()->routeIs('admin.admins.*') ? 'background-color: #392a26; border-color: #392a26;' : '' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -174,6 +182,14 @@
                             <span class="font-medium">Settings</span>
                         </a>
                         @endif
+                        
+                        <!-- Profile Link (visible to all admins) -->
+                        <a href="{{ route('admin.profile.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-md {{ request()->routeIs('admin.profile.*') ? 'text-white border-l-4' : 'text-gray-700 hover:bg-gray-50' }}" style="{{ request()->routeIs('admin.profile.*') ? 'background-color: #392a26; border-color: #392a26;' : '' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="font-medium">Profile</span>
+                        </a>
                     </nav>
                     
                     <!-- Logout Button -->
@@ -201,6 +217,41 @@
         @endauth
 
         <!-- Main Content Area -->
+        @if(request()->is('admin/login'))
+        <main class="min-h-screen flex items-center justify-center px-4 sm:px-6">
+            @if(session('success'))
+                <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                        {{ session('success') }}
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        {{ session('error') }}
+                    </div>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4">
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <ul>
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
+
+            <div class="w-full max-w-md">
+                @yield('content')
+            </div>
+        </main>
+        @else
         <main class="flex-1 ml-0 md:ml-64 py-6 overflow-x-hidden">
             @if(session('success'))
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
@@ -234,6 +285,7 @@
                 @yield('content')
             </div>
         </main>
+        @endif
     </div>
 </body>
 </html>

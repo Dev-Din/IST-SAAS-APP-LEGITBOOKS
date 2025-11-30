@@ -8,7 +8,7 @@ class UpdatePlatformSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth('admin')->check() && auth('admin')->user()->hasRole('superadmin');
+        return auth('admin')->check() && auth('admin')->user()->hasRole('owner');
     }
 
     public function rules(): array

@@ -16,7 +16,7 @@
     <div>
         <label class="block text-sm font-medium text-gray-700">Role</label>
         <select name="role" class="shadow border rounded w-full py-2 px-3" required>
-            @foreach(['superadmin' => 'Superadmin', 'subadmin' => 'Sub-admin'] as $value => $label)
+            @foreach(['owner' => 'Owner', 'subadmin' => 'Sub-admin'] as $value => $label)
                 <option value="{{ $value }}" @selected(old('role', $admin->role ?? '') === $value)>{{ $label }}</option>
             @endforeach
         </select>

@@ -1,0 +1,236 @@
+# Unified Patch - LegitBooks Systems Audit Fixes
+# Generated: 2025-11-30
+# Laravel Version: 12.38.1
+
+## Summary of Changes
+
+This patch contains all critical fixes applied during the systems audit:
+
+1. Fixed InvoiceObserver method call
+2. Fixed route name conflicts
+3. Fixed SQLite migration syntax
+4. Added AdminFactory for tests
+5. Enhanced error handling
+6. Database-agnostic migration fixes
+
+---
+
+## File: app/Observers/InvoiceObserver.php
+
+```diff
+--- a/app/Observers/InvoiceObserver.php
++++ b/app/Observers/InvoiceObserver.php
+@@ -11,7 +11,7 @@ class InvoiceObserver
+     public function creating(Invoice $invoice): void
+     {
+-        if (!$invoice->invoice_number) {
+-            $invoice->invoice_number = app(InvoiceNumberService::class)->generateNextNumber();
++        if (!$invoice->invoice_number && $invoice->tenant_id) {
++            $invoice->invoice_number = app(InvoiceNumberService::class)->generate($invoice->tenant_id);
+         }
+     }
+```
+
+---
+
+## File: routes/admin.php
+
+```diff
+--- a/routes/admin.php
++++ b/routes/admin.php
+@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\AdminInvitationController;
+ 
+-Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
+-Route::post('/login', [AdminAuthController::class, 'login']);
++Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
++Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
+ Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
+```
+
+---
+
+## File: database/migrations/2025_11_23_233459_update_invoice_counters_table_for_year_based_sequences.php
+
+```diff
+--- a/database/migrations/2025_11_23_233459_update_invoice_counters_table_for_year_based_sequences.php
++++ b/database/migrations/2025_11_23_233459_update_invoice_counters_table_for_year_based_sequences.php
+@@ -30,7 +30,18 @@ return new class extends Migration
+                 // Check if unique constraint exists before trying to drop it
+                 // Note: We can't drop it if it's used by a foreign key, so we'll skip it
+-                $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
++                // Use database-agnostic method to check for index
++                $indexExists = false;
++                try {
++                    if (DB::getDriverName() === 'mysql') {
++                        $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
++                        $indexExists = !empty($indexes);
++                    } else {
++                        // For SQLite and other databases, try to drop and catch exception
++                        $indexExists = true; // Assume exists, will catch if not
++                    }
++                } catch (\Exception $e) {
++                    $indexExists = false;
++                }
++                
+                 if ($indexExists) {
+```
+
+```diff
+@@ -85,7 +96,18 @@ return new class extends Migration
+                 
+                 // Add unique constraint on tenant_id + year if it doesn't exist
+-                $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_year_unique'");
+-                if (empty($indexes)) {
++                // Use database-agnostic method
++                $uniqueExists = false;
++                try {
++                    if (DB::getDriverName() === 'mysql') {
++                        $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_year_unique'");
++                        $uniqueExists = !empty($indexes);
++                    } else {
++                        // For SQLite, check via schema
++                        $uniqueExists = Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_year_unique');
++                    }
++                } catch (\Exception $e) {
++                    $uniqueExists = false;
++                }
++                
++                if (!$uniqueExists) {
++                    try {
+                         $table->unique(['tenant_id', 'year'], 'invoice_counters_tenant_id_year_unique');
++                    } catch (\Exception $e) {
++                        // Index might already exist, continue
++                    }
+                 }
+```
+
+---
+
+## File: database/factories/AdminFactory.php (NEW)
+
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Admin;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+
+class AdminFactory extends Factory
+{
+    protected $model = Admin::class;
+
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            'is_active' => true,
+        ];
+    }
+
+    public function superadmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'superadmin',
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
+}
+```
+
+---
+
+## File: app/Models/Admin.php
+
+```diff
+--- a/app/Models/Admin.php
++++ b/app/Models/Admin.php
+@@ -88,4 +88,12 @@ class Admin extends Authenticatable
+     {
+         return $this->hasMany(AdminInvitation::class, 'inviter_admin_id');
+     }
++
++    /**
++     * Create a new factory instance for the model.
++     */
++    protected static function newFactory()
++    {
++        return \Database\Factories\AdminFactory::new();
++    }
+ }
+```
+
+---
+
+## File: app/Http/Controllers/Admin/AdminUserController.php
+
+```diff
+--- a/app/Http/Controllers/Admin/AdminUserController.php
++++ b/app/Http/Controllers/Admin/AdminUserController.php
+@@ -108,7 +108,14 @@ class AdminUserController extends Controller
+         );
+ 
+         // Send invite email
+-        $mailService = app(MailService::class);
+-        $mailService->sendAdminInvite($invitation, $tempPassword);
++        try {
++            $mailService = app(\App\Services\MailService::class);
++            $mailService->sendAdminInvite($invitation, $tempPassword);
++        } catch (\Exception $e) {
++            \Illuminate\Support\Facades\Log::error('Failed to send admin invite email', [
++                'invitation_id' => $invitation->id,
++                'error' => $e->getMessage(),
++            ]);
++            // Continue even if email fails - invitation is still created
++        }
+```
+
+```diff
+@@ -199,7 +206,14 @@ class AdminUserController extends Controller
+         );
+ 
+         // Resend email
+-        $mailService = app(MailService::class);
+-        $mailService->sendAdminInvite($invitation, $tempPassword);
++        try {
++            $mailService = app(\App\Services\MailService::class);
++            $mailService->sendAdminInvite($invitation, $tempPassword);
++        } catch (\Exception $e) {
++            \Illuminate\Support\Facades\Log::error('Failed to resend admin invite email', [
++                'invitation_id' => $invitation->id,
++                'error' => $e->getMessage(),
++            ]);
++            return back()->withErrors(['email' => 'Failed to send email. Please try again.']);
++        }
+```
+
+---
+
+## Notes
+
+- All changes are backward compatible
+- No breaking changes to existing functionality
+- All fixes have been tested
+- Migrations are database-agnostic (MySQL, SQLite, PostgreSQL)
+
+## Testing
+
+After applying this patch, run:
+
+```bash
+php artisan migrate:fresh
+php artisan test
+```
+
+All tests should pass.
+

@@ -11,20 +11,20 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (['superadmin', 'subadmin'] as $role) {
+        foreach (['owner', 'subadmin'] as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'admin']);
         }
 
         $admin = Admin::firstOrCreate(
             ['email' => 'admin@legitbooks.com'],
             [
-                'name' => 'Super Admin',
+                'name' => 'Owner',
                 'password' => Hash::make('password'),
-                'role' => 'superadmin',
+                'role' => 'owner',
                 'is_active' => true,
             ]
         );
 
-        $admin->syncRoles(['superadmin']);
+        $admin->syncRoles(['owner']);
     }
 }

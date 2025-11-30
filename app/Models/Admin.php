@@ -7,6 +7,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * @method static \Database\Factories\AdminFactory factory($count = null, $state = [])
+ */
+
 class Admin extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles;
@@ -36,13 +40,73 @@ class Admin extends Authenticatable
         ];
     }
 
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
+    }
+
+    /**
+     * @deprecated Use isOwner() instead
+     */
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'superadmin';
+        return $this->isOwner();
     }
 
     public function platformAuditLogs()
     {
         return $this->hasMany(PlatformAuditLog::class);
+    }
+
+    /**
+     * Check if admin has a specific permission
+     */
+    public function hasPermission(string $permission): bool
+    {
+        // Owners have all permissions
+        if ($this->isOwner()) {
+            return true;
+        }
+
+        // Check via Spatie permissions
+        return $this->hasPermissionTo($permission, 'admin');
+    }
+
+    /**
+     * Assign permissions to admin
+     */
+    public function assignPermissions(array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            if (!$this->hasPermissionTo($permission, 'admin')) {
+                $this->givePermissionTo($permission, 'admin');
+            }
+        }
+    }
+
+    /**
+     * Get all permissions as array of strings
+     */
+    public function getPermissionStrings(): array
+    {
+        return $this->getAllPermissions()
+            ->pluck('name')
+            ->toArray();
+    }
+
+    /**
+     * Get invitations sent by this admin
+     */
+    public function sentInvitations()
+    {
+        return $this->hasMany(AdminInvitation::class, 'inviter_admin_id');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\AdminFactory::new();
     }
 }

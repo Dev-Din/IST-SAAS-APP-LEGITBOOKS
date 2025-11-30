@@ -29,8 +29,21 @@ return new class extends Migration
             Schema::table('invoice_counters', function (Blueprint $table) {
                 // Check if unique constraint exists before trying to drop it
                 // Note: We can't drop it if it's used by a foreign key, so we'll skip it
-                $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
-                if (!empty($indexes)) {
+                // Use database-agnostic method to check for index
+                $indexExists = false;
+                try {
+                    if (DB::getDriverName() === 'mysql') {
+                        $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
+                        $indexExists = !empty($indexes);
+                    } else {
+                        // For SQLite and other databases, try to drop and catch exception
+                        $indexExists = true; // Assume exists, will catch if not
+                    }
+                } catch (\Exception $e) {
+                    $indexExists = false;
+                }
+                
+                if ($indexExists) {
                     // Check if it's used by a foreign key
                     $foreignKeys = DB::select("
                         SELECT CONSTRAINT_NAME 
@@ -83,9 +96,26 @@ return new class extends Migration
                 }
                 
                 // Add unique constraint on tenant_id + year if it doesn't exist
-                $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_year_unique'");
-                if (empty($indexes)) {
-                    $table->unique(['tenant_id', 'year'], 'invoice_counters_tenant_id_year_unique');
+                // Use database-agnostic method
+                $uniqueExists = false;
+                try {
+                    if (DB::getDriverName() === 'mysql') {
+                        $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_year_unique'");
+                        $uniqueExists = !empty($indexes);
+                    } else {
+                        // For SQLite, check via schema
+                        $uniqueExists = Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_year_unique');
+                    }
+                } catch (\Exception $e) {
+                    $uniqueExists = false;
+                }
+                
+                if (!$uniqueExists) {
+                    try {
+                        $table->unique(['tenant_id', 'year'], 'invoice_counters_tenant_id_year_unique');
+                    } catch (\Exception $e) {
+                        // Index might already exist, continue
+                    }
                 }
             });
         }
