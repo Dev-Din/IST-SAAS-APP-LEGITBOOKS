@@ -96,14 +96,20 @@
     <div class="card">
       <div class="header">
         <h1 class="header-title">You've Been Invited!</h1>
-        <p class="header-subtitle">{{ $tenant->name }} via LegitBooks</p>
+        @php
+            $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+        @endphp
+        <p class="header-subtitle">{{ $tenant->name }}@if($brandMode !== 'C') via LegitBooks@endif</p>
       </div>
       <div class="body">
         <div class="greeting">
           Hello {{ $invitation->first_name }},
         </div>
+        @php
+            $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+        @endphp
         <div class="message">
-          You've been invited to join <strong>{{ $tenant->name }}</strong> on LegitBooks, a comprehensive accounting and invoicing platform.
+          You've been invited to join <strong>{{ $tenant->name }}</strong>@if($brandMode !== 'C') on LegitBooks, a comprehensive accounting and invoicing platform@endif.
         </div>
         <div class="message">
           To get started, please click the button below to set up your account and create your password.
@@ -112,7 +118,7 @@
           Your invitation remains active for 14 days from the date it was sent.
         </div>
         <div style="text-align: center;">
-          <a href="{{ $acceptUrl }}" class="cta-button">Set up your LegitBooks account</a>
+          <a href="{{ $acceptUrl }}" class="cta-button">Set up your account</a>
         </div>
         <div class="info-box">
           <p><strong>Invitation Details:</strong></p>
@@ -125,7 +131,10 @@
       </div>
       <div class="footer">
         <p style="margin: 0;">
-          This invitation was sent by {{ $tenant->name }} via LegitBooks.<br>
+          @php
+              $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+          @endphp
+          This invitation was sent by {{ $tenant->name }}@if($brandMode !== 'C') via LegitBooks@endif.<br>
           If you have questions, please contact {{ $tenant->email ?? 'support' }}.
         </p>
       </div>

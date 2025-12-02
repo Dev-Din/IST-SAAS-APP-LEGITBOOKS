@@ -4,16 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'LegitBooks')</title>
     @php
         $tenant = app(\App\Services\TenantContext::class)->getTenant();
         $brandMode = $tenant ? $tenant->getBrandingMode() : env('BRANDING_MODE', 'A');
         $brandSettings = $tenant ? $tenant->getBrandSettings() : [];
         $brandColor = $brandSettings['primary_color'] ?? '#392a26';
+        $brandName = $brandSettings['name'] ?? ($tenant->name ?? 'LegitBooks');
+        $pageTitle = $brandMode === 'C' ? $brandName : 'LegitBooks';
+        $logoPath = ($brandMode === 'C' && !empty($brandSettings['logo_path'])) ? $brandSettings['logo_path'] : 'LegitBooks-tab-logo.png';
     @endphp
-    <link rel="icon" type="image/png" href="{{ asset('LegitBooks-tab-logo.png') }}" id="favicon">
-    <link rel="apple-touch-icon" href="{{ asset('LegitBooks-tab-logo.png') }}">
-    <link rel="mask-icon" href="{{ asset('LegitBooks-tab-logo.png') }}" color="{{ $brandColor }}">
+    <title>@yield('title', $pageTitle)</title>
+    <link rel="icon" type="image/png" href="{{ asset($logoPath) }}" id="favicon">
+    <link rel="apple-touch-icon" href="{{ asset($logoPath) }}">
+    <link rel="mask-icon" href="{{ asset($logoPath) }}" color="{{ $brandColor }}">
     @vite(['resources/css/tenant.css', 'resources/js/app.js'])
     <style>
         :root {
@@ -60,7 +63,7 @@
             img.onerror = function() {
                 console.warn('Failed to load favicon image');
             };
-            img.src = '{{ asset("LegitBooks-tab-logo.png") }}';
+            img.src = '{{ asset($logoPath) }}';
         })();
     </script>
 </head>
@@ -76,7 +79,11 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div class="flex justify-center items-center h-16">
                     <div class="flex items-center">
-                        <a href="{{ route('marketing.home') }}" class="text-lg sm:text-xl font-bold hover:opacity-80 transition-opacity" style="color: var(--brand-primary);">LegitBooks</a>
+                        @if($brandMode === 'C')
+                            <span class="text-lg sm:text-xl font-bold" style="color: var(--brand-primary);">{{ $brandName }}</span>
+                        @else
+                            <a href="{{ route('marketing.home') }}" class="text-lg sm:text-xl font-bold hover:opacity-80 transition-opacity" style="color: var(--brand-primary);">LegitBooks</a>
+                        @endif
                     </div>
                 </div>
             </div>

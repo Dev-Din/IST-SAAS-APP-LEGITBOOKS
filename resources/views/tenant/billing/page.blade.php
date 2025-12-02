@@ -100,7 +100,7 @@
             @else
                 <!-- Payment Method Selection for this plan -->
                 <div class="plan-checkout-{{ $planKey }}" data-plan-key="{{ $planKey }}" data-plan-name="{{ $plan['name'] }}" data-plan-price="{{ $plan['price'] }}">
-                    <form method="POST" action="{{ route('tenant.billing.upgrade') }}" class="plan-upgrade-form">
+                    <form method="POST" action="{{ route('tenant.billing.upgrade') }}" class="plan-upgrade-form" data-plan="{{ $planKey }}">
                         @csrf
                         <input type="hidden" name="plan" value="{{ $planKey }}">
 
@@ -438,62 +438,59 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(this);
             const paymentGateway = formData.get('payment_gateway');
             
-            // For M-Pesa, use AJAX to handle STK push response
+            // For M-Pesa, use dedicated STK initiation endpoint
             if (paymentGateway === 'mpesa') {
                 e.preventDefault();
                 
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalText = submitBtn.textContent;
+                const planKey = this.dataset.plan || this.closest('[class*="plan-checkout-"]')?.dataset.planKey;
+                
+                // Get phone number
+                const phoneInput = document.getElementById('mpesa_phone_' + planKey);
+                const phone = phoneInput ? phoneInput.value.trim() : '';
+                
+                // Validate phone
+                if (!phone || !/^2547\d{8}$/.test(phone)) {
+                    alert('Please enter a valid phone number in format 2547XXXXXXXX (e.g., 254712345678)');
+                    return;
+                }
                 
                 // Disable button and show loading
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Processing...';
                 
-                // Prepare form data
-                if (!prepareFormSubmission(this.closest('[class*="plan-checkout-"]').dataset.planKey, this)) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
-                    return;
-                }
-                
-                // Submit via AJAX
-                fetch(this.action, {
+                // Call STK initiation endpoint
+                fetch('{{ route("tenant.billing.mpesa.initiate") }}', {
                     method: 'POST',
-                    body: formData,
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
-                    }
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        plan: formData.get('plan'),
+                        phone: phone
+                    })
                 })
-                .then(response => {
-                    // Check if response is JSON
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json();
-                    } else {
-                        // If not JSON, return as text and show error
-                        return response.text().then(text => {
-                            throw new Error('Server returned HTML instead of JSON. Response: ' + text.substring(0, 200));
-                        });
-                    }
-                })
+                .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
+                    if (data.ok) {
                         // Show processing payment card
-                        showProcessingCard(data.message || 'M-Pesa STK push sent! Please check your phone to complete the payment.');
+                        showProcessingCard(data.message || 'STK Push sent. Enter your M-Pesa PIN.');
                         
                         // Start polling for payment status
-                        if (data.checkout_request_id) {
-                            pollPaymentStatus(data.checkout_request_id);
+                        if (data.checkoutRequestID) {
+                            pollPaymentStatus(data.checkoutRequestID);
                         } else {
                             // Fallback: redirect to billing page
                             setTimeout(() => {
-                                window.location.href = '{{ route("tenant.billing.page") }}?message=' + encodeURIComponent(data.message || 'M-Pesa STK push sent. Please complete payment on your phone.');
+                                window.location.href = '{{ route("tenant.billing.page") }}?message=' + encodeURIComponent(data.message || 'STK Push sent. Please complete payment on your phone.');
                             }, 3000);
                         }
                     } else {
-                        const errorMsg = data.error || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to initiate payment. Please try again.');
+                        const errorMsg = data.error || 'Failed to initiate payment. Please try again.';
                         alert(errorMsg);
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalText;
@@ -501,11 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    let errorMsg = 'An error occurred. Please try again.';
-                    if (error.message) {
-                        console.error('Error details:', error.message);
-                    }
-                    alert(errorMsg);
+                    alert('An error occurred. Please try again.');
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 });
@@ -555,9 +548,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to poll payment status
     function pollPaymentStatus(checkoutRequestId) {
         let pollCount = 0;
-        const maxPolls = 40; // Poll for up to 2 minutes (40 * 3 seconds)
-        const pollInterval = 3000; // Poll every 3 seconds (faster)
+        const maxPolls = 120; // Poll for up to 2 minutes (120 * 1 second)
+        const pollInterval = 1000; // Poll every 1 second for faster detection
         let lastStatus = 'pending';
+        let poll = null;
 
         // Start polling immediately (don't wait for first interval)
         const checkStatus = () => {
@@ -569,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProcessingCard('Processing', 'Waiting for payment confirmation...', progress);
             }
 
-            fetch('{{ route("tenant.billing.payment-status") }}?checkout_request_id=' + encodeURIComponent(checkoutRequestId) + '&_=' + Date.now(), {
+            fetch('{{ route("tenant.billing.mpesa.status", ["checkoutRequestID" => "PLACEHOLDER"]) }}'.replace('PLACEHOLDER', checkoutRequestId) + '?_=' + Date.now(), {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -585,8 +579,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                if (data.success && data.is_completed) {
-                    clearInterval(poll);
+                console.log('Payment status check:', data); // Debug log
+                
+                // Check if payment is completed
+                if (data.status === 'completed' || data.status === 'success') {
+                    if (poll) clearInterval(poll);
                     updateProcessingCard('Completed', 'Payment received! Activating subscription...', 100);
                     
                     // Payment completed - redirect immediately if subscription is active
@@ -594,31 +591,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Update card to show success
                         updateProcessingCard('Success', 'Payment successful! Redirecting...', 100);
                         
-                        // Redirect immediately (no delay)
-                        window.location.href = '{{ route("tenant.users.index") }}';
+                        // Redirect to dashboard with success message
+                        setTimeout(() => {
+                            window.location.href = '{{ route("tenant.dashboard") }}?paid=1';
+                        }, 500);
                     } else {
                         // Payment completed but subscription not active yet - check again quickly
                         updateProcessingCard('Processing', 'Payment received! Activating subscription...', 95);
                         lastStatus = 'processing';
-                        // Check again in 1 second
+                        // Check again in 500ms (faster)
                         setTimeout(() => {
                             checkStatus();
-                        }, 1000);
+                        }, 500);
                     }
+                } else if (data.status === 'failed') {
+                    if (poll) clearInterval(poll);
+                    updateProcessingCard('Failed', 'Payment failed. Please try again.', 100);
+                    setTimeout(() => {
+                        window.location.href = '{{ route("tenant.billing.page") }}';
+                    }, 3000);
                 } else if (pollCount >= maxPolls) {
                     // Timeout - stop polling
-                    clearInterval(poll);
+                    if (poll) clearInterval(poll);
                     updateProcessingCard('Timeout', 'Payment verification timeout. Please check your payment status manually.', 100);
                     setTimeout(() => {
                         window.location.href = '{{ route("tenant.billing.page") }}';
                     }, 3000);
                 } else {
-                    // Update status if changed
-                    if (data.payment_status && data.payment_status !== lastStatus) {
-                        lastStatus = data.payment_status;
-                        if (data.payment_status === 'processing') {
-                            updateProcessingCard('Processing', 'Payment is being processed...', progress);
-                        }
+                    // Still pending - update progress
+                    if (data.status && data.status !== lastStatus) {
+                        lastStatus = data.status;
                     }
                 }
             })
@@ -626,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error checking payment status:', error);
                 // Continue polling on error (might be temporary network issue)
                 if (pollCount >= maxPolls) {
-                    clearInterval(poll);
+                    if (poll) clearInterval(poll);
                     updateProcessingCard('Error', 'Unable to verify payment status. Please check manually.', 100);
                     setTimeout(() => {
                         window.location.href = '{{ route("tenant.billing.page") }}';
@@ -639,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkStatus();
         
         // Then continue polling at intervals
-        const poll = setInterval(checkStatus, pollInterval);
+        poll = setInterval(checkStatus, pollInterval);
     }
 });
 </script>

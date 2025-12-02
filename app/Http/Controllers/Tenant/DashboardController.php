@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index(TenantContext $tenantContext)
+    public function index(TenantContext $tenantContext, Request $request)
     {
         $tenant = $tenantContext->getTenant();
         
@@ -19,6 +19,9 @@ class DashboardController extends Controller
             'outstanding_invoices' => \App\Models\Invoice::where('status', '!=', 'paid')->count(),
         ];
 
-        return view('tenant.dashboard', compact('tenant', 'stats'));
+        // Check for payment success message
+        $paymentSuccess = $request->query('paid') === '1';
+
+        return view('tenant.dashboard', compact('tenant', 'stats', 'paymentSuccess'));
     }
 }

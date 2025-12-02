@@ -2,29 +2,25 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use App\Services\Mail\PHPMailerService;
+use Illuminate\Support\Facades\Log;
 
 class EmailService
 {
+    protected PHPMailerService $phpMailer;
+
+    public function __construct(PHPMailerService $phpMailer)
+    {
+        $this->phpMailer = $phpMailer;
+    }
+
     public function send(string $to, string $subject, string $html): bool
     {
-        $domain = config('services.mailgun.domain');
-        $apiKey = config('services.mailgun.secret');
-        $from = 'LegitBooks <no-reply@' . ($domain ?? 'legitbooks.test') . '>';
-
-        if (!$domain || !$apiKey) {
-            return false;
-        }
-
-        $response = Http::withBasicAuth('api', $apiKey)
-            ->asForm()
-            ->post("https://api.mailgun.net/v3/{$domain}/messages", [
-                'from' => $from,
-                'to' => $to,
-                'subject' => $subject,
-                'html' => $html,
-            ]);
-
-        return $response->successful();
+        return $this->phpMailer->send([
+            'to' => $to,
+            'subject' => $subject,
+            'html' => $html,
+            'text' => strip_tags($html),
+        ]);
     }
 }

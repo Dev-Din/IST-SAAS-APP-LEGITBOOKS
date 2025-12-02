@@ -256,7 +256,279 @@ class BillingController extends Controller
     }
 
     /**
+     * Initiate M-Pesa STK Push for subscription payment
+     * POST /tenant/billing/mpesa/initiate
+     */
+    public function initiateMpesaPayment(Request $request, TenantContext $tenantContext)
+    {
+        $tenant = $tenantContext->getTenant();
+        $subscription = $tenant->subscription;
+
+        $validated = $request->validate([
+            'plan' => 'required|in:starter,business,enterprise',
+            'phone' => 'required|string|regex:/^2547\d{8}$/',
+        ], [
+            'phone.regex' => 'Phone number must be in format 2547XXXXXXXX (e.g., 254712345678)',
+        ]);
+
+        // Get plan pricing
+        $planPrices = [
+            'starter' => 2500,
+            'business' => 5000,
+            'enterprise' => 0, // Custom pricing
+        ];
+        $amount = $planPrices[$validated['plan']] ?? 0;
+
+        if ($amount <= 0) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Invalid plan selected',
+            ], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $mpesaService = app(MpesaStkService::class);
+            
+            if (!$mpesaService->isConfigured()) {
+                DB::rollBack();
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'M-Pesa is not configured. Please contact support.',
+                ], 400);
+            }
+
+            // Get or create M-Pesa account
+            $mpesaAccount = Account::where('tenant_id', $tenant->id)
+                ->where('type', 'mpesa')
+                ->first();
+
+            if (!$mpesaAccount) {
+                $cashAccount = ChartOfAccount::where('tenant_id', $tenant->id)
+                    ->where('code', '1400')
+                    ->first();
+
+                if ($cashAccount) {
+                    $mpesaAccount = Account::create([
+                        'tenant_id' => $tenant->id,
+                        'name' => 'M-Pesa',
+                        'type' => 'mpesa',
+                        'chart_of_account_id' => $cashAccount->id,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            // Generate payment number
+            $paymentNumber = 'SUB-' . date('Ymd') . '-' . str_pad(
+                Payment::where('tenant_id', $tenant->id)->count() + 1,
+                4,
+                '0',
+                STR_PAD_LEFT
+            );
+
+            // Create payment record (pending)
+            $payment = Payment::create([
+                'tenant_id' => $tenant->id,
+                'subscription_id' => $subscription->id,
+                'payment_number' => $paymentNumber,
+                'payment_date' => now()->toDateString(),
+                'account_id' => $mpesaAccount->id ?? null,
+                'amount' => $amount,
+                'payment_method' => 'mpesa',
+                'phone' => $validated['phone'],
+                'transaction_status' => 'pending',
+            ]);
+
+            // Initiate STK Push
+            $stkResult = $mpesaService->initiateSTKPush([
+                'phone_number' => $validated['phone'],
+                'amount' => $amount,
+                'account_reference' => 'SUB-' . $subscription->id,
+                'transaction_desc' => 'Subscription payment for ' . ucfirst($validated['plan']) . ' plan',
+            ]);
+
+            if (!$stkResult['success']) {
+                DB::rollBack();
+                return response()->json([
+                    'ok' => false,
+                    'error' => $stkResult['error'] ?? 'Failed to initiate M-Pesa payment. Please try again.',
+                ], 400);
+            }
+
+            // Update payment with STK push details
+            $payment->update([
+                'checkout_request_id' => $stkResult['checkoutRequestID'],
+                'merchant_request_id' => $stkResult['merchantRequestID'],
+            ]);
+
+            // Update subscription (pending payment)
+            $subscription->update([
+                'plan' => $validated['plan'],
+                'status' => 'pending', // Will be activated on payment confirmation
+                'payment_gateway' => 'mpesa',
+                'settings' => array_merge($subscription->settings ?? [], [
+                    'phone_number' => $validated['phone'],
+                ]),
+            ]);
+
+            DB::commit();
+
+            Log::info('M-Pesa STK Push initiated for subscription', [
+                'tenant_id' => $tenant->id,
+                'subscription_id' => $subscription->id,
+                'plan' => $validated['plan'],
+                'checkout_request_id' => $stkResult['checkoutRequestID'],
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'checkoutRequestID' => $stkResult['checkoutRequestID'],
+                'message' => 'STK Push sent. Enter your M-Pesa PIN.',
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'ok' => false,
+                'error' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('M-Pesa STK initiation failed', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'An error occurred while processing your payment. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Check payment status by checkout request ID (Polling endpoint)
+     * GET /tenant/billing/mpesa/status/{checkoutRequestID}
+     */
+    public function checkMpesaStatus(string $checkoutRequestID, TenantContext $tenantContext)
+    {
+        $tenant = $tenantContext->getTenant();
+        
+        $payment = Payment::where('checkout_request_id', $checkoutRequestID)
+            ->where('tenant_id', $tenant->id)
+            ->with('subscription')
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'status' => 'not_found',
+                'error' => 'Payment not found',
+            ], 404);
+        }
+
+        // If payment is still pending, query Daraja API to get latest status
+        // Only query if payment has been pending for at least 15 seconds (give user time to enter PIN)
+        $secondsSinceCreated = $payment->created_at->diffInSeconds(now());
+        if ($payment->transaction_status === 'pending' && $secondsSinceCreated >= 15) {
+            $mpesaService = app(MpesaStkService::class);
+            $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestID);
+            
+            if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
+                // Payment was successful - process it
+                try {
+                    DB::beginTransaction();
+                    
+                    $payment->update([
+                        'transaction_status' => 'completed',
+                        'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestID,
+                    ]);
+                    
+                    // Activate subscription
+                    if ($payment->subscription_id) {
+                        $subscription = $payment->subscription;
+                        $subscription->update([
+                            'status' => 'active',
+                            'started_at' => now(),
+                            'ends_at' => now()->addMonth(),
+                            'next_billing_at' => now()->addMonth(),
+                        ]);
+                    }
+                    
+                    DB::commit();
+                    
+                    Log::info('Payment status updated via polling query', [
+                        'payment_id' => $payment->id,
+                        'checkout_request_id' => $checkoutRequestID,
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to update payment status from polling', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                
+                $payment->refresh();
+            } elseif ($queryResult['success'] && isset($queryResult['result_code'])) {
+                // Check if result_code indicates actual failure (not just pending)
+                // Known failure codes: 1032 (cancelled), 1037 (timeout), 2001 (insufficient funds), etc.
+                $failureCodes = ['1032', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009'];
+                $resultCode = (string) $queryResult['result_code'];
+                $resultDesc = strtolower($queryResult['result_desc'] ?? '');
+                
+                // Check if it's a known failure code OR if description indicates failure
+                $isFailure = in_array($resultCode, $failureCodes) || 
+                             str_contains($resultDesc, 'cancelled') ||
+                             str_contains($resultDesc, 'insufficient') ||
+                             str_contains($resultDesc, 'failed') ||
+                             str_contains($resultDesc, 'declined');
+                
+                if ($isFailure) {
+                    // Actual failure - mark as failed
+                    $payment->update([
+                        'transaction_status' => 'failed',
+                    ]);
+                    $payment->refresh();
+                    
+                    Log::info('Payment marked as failed from Daraja query', [
+                        'payment_id' => $payment->id,
+                        'result_code' => $resultCode,
+                        'result_desc' => $queryResult['result_desc'] ?? '',
+                    ]);
+                }
+                // If result_code is not '0' but not a failure, keep as pending
+                // (might be still processing, timeout waiting for user, etc.)
+            }
+        }
+
+        $subscription = $payment->subscription;
+        if ($subscription) {
+            $subscription->refresh();
+        }
+
+        return response()->json([
+            'status' => $payment->transaction_status,
+            'transaction' => [
+                'id' => $payment->id,
+                'amount' => $payment->amount,
+                'payment_number' => $payment->payment_number,
+                'mpesa_receipt' => $payment->mpesa_receipt,
+            ],
+            'subscription_active' => $subscription && $subscription->status === 'active',
+        ], 200, [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
+    }
+
+    /**
      * Check payment status by checkout request ID
+     * If payment is still pending, query Daraja API to fetch latest status
      */
     public function checkPaymentStatus(Request $request, TenantContext $tenantContext)
     {
@@ -279,6 +551,58 @@ class BillingController extends Controller
                 'success' => false,
                 'error' => 'Payment not found',
             ], 404);
+        }
+
+        // If payment is still pending, query Daraja API to get latest status
+        if ($payment->transaction_status === 'pending') {
+            $mpesaService = app(MpesaStkService::class);
+            $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
+            
+            if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
+                // Payment was successful - process it as if callback was received
+                // This simulates the callback processing
+                try {
+                    DB::beginTransaction();
+                    
+                    // Update payment status
+                    $payment->update([
+                        'transaction_status' => 'completed',
+                        'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
+                    ]);
+                    
+                    // Activate subscription if this is a subscription payment
+                    if ($payment->subscription_id) {
+                        $subscription = $payment->subscription;
+                        $subscription->update([
+                            'status' => 'active',
+                            'started_at' => now(),
+                            'ends_at' => now()->addMonth(),
+                            'next_billing_at' => now()->addMonth(),
+                        ]);
+                    }
+                    
+                    DB::commit();
+                    
+                    Log::info('Payment status updated via Daraja query', [
+                        'payment_id' => $payment->id,
+                        'checkout_request_id' => $checkoutRequestId,
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to update payment status from query', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } elseif ($queryResult['success'] && isset($queryResult['result_code']) && $queryResult['result_code'] != '0') {
+                // Payment failed or cancelled
+                $payment->update([
+                    'transaction_status' => 'failed',
+                ]);
+            }
+            
+            // Refresh payment to get latest status
+            $payment->refresh();
         }
 
         $isCompleted = $payment->transaction_status === 'completed';

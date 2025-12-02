@@ -34,8 +34,6 @@ class PlatformSettingsController extends Controller
         $this->ensureOwner();
         $data = [
             'branding_mode' => $settings->get('branding_mode', config('legitbooks.branding_mode')),
-            'mailgun_domain' => $settings->get('mailgun_domain', config('services.mailgun.domain')),
-            'mailgun_secret' => $settings->get('mailgun_secret', config('services.mailgun.secret')),
             'mpesa_consumer_key' => $settings->get('mpesa_consumer_key', config('legitbooks.mpesa.consumer_key', env('MPESA_CONSUMER_KEY'))),
             'mpesa_consumer_secret' => $settings->get('mpesa_consumer_secret', config('legitbooks.mpesa.consumer_secret', env('MPESA_CONSUMER_SECRET'))),
             'mpesa_shortcode' => $settings->get('mpesa_shortcode', config('legitbooks.mpesa.shortcode', env('MPESA_SHORTCODE'))),

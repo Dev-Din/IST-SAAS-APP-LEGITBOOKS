@@ -78,10 +78,14 @@
         @php
             $tenant = app(\App\Services\TenantContext::class)->getTenant();
             $brandMode = $tenant ? $tenant->getBrandingMode() : env('BRANDING_MODE', 'A');
-            $brandName = $brandMode === 'B' ? 'LegitBooks' : ($tenant->name ?? 'LegitBooks');
         @endphp
-        Thank you for your business.<br>
-        Powered by {{ $brandName }}
+        Thank you for your business.
+        @if($brandMode !== 'C')
+            @php
+                $brandName = $brandMode === 'B' ? 'LegitBooks' : ($tenant->name ?? 'LegitBooks');
+            @endphp
+            <br>Powered by {{ $brandName }}
+        @endif
     </div>
 </body>
 </html>

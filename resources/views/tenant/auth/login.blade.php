@@ -13,6 +13,10 @@
         
         @if($brandMode === 'B')
             <h2 class="text-2xl font-bold text-center mb-6">LegitBooks</h2>
+        @elseif($brandMode === 'C')
+            <h2 class="text-2xl font-bold text-center mb-6" style="color: var(--brand-primary);">
+                {{ $brandSettings['name'] ?? ($tenant->name ?? 'Login') }}
+            </h2>
         @else
             <h2 class="text-2xl font-bold text-center mb-6" style="color: var(--brand-primary);">
                 {{ $brandSettings['name'] ?? ($tenant->name ?? 'Login') }}

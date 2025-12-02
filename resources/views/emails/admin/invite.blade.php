@@ -104,7 +104,7 @@
         </div>
     </div>
     <div class="footer">
-        <p>This email was sent from {{ $tenantName }} via LegitBooks</p>
+        <p>This email was sent from {{ $tenantName }}</p>
         <p>If you did not expect this invitation, please ignore this email.</p>
     </div>
 </body>

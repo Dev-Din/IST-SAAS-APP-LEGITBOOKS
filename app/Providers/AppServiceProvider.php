@@ -54,8 +54,6 @@ class AppServiceProvider extends ServiceProvider
                 $brandingMode = $platformSettings->get('branding_mode', config('legitbooks.branding_mode'));
                 config(['legitbooks.branding_mode' => $brandingMode]);
                 config([
-                    'services.mailgun.domain' => $platformSettings->get('mailgun_domain', config('services.mailgun.domain')),
-                    'services.mailgun.secret' => $platformSettings->get('mailgun_secret', config('services.mailgun.secret')),
                     'legitbooks.mpesa.consumer_key' => $platformSettings->get('mpesa_consumer_key', env('MPESA_CONSUMER_KEY')),
                     'legitbooks.mpesa.consumer_secret' => $platformSettings->get('mpesa_consumer_secret', env('MPESA_CONSUMER_SECRET')),
                     'legitbooks.mpesa.shortcode' => $platformSettings->get('mpesa_shortcode', env('MPESA_SHORTCODE')),

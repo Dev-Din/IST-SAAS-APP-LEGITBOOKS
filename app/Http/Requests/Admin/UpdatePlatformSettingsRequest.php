@@ -15,8 +15,6 @@ class UpdatePlatformSettingsRequest extends FormRequest
     {
         return [
             'branding_mode' => ['required', 'in:A,B,C'],
-            'mailgun_domain' => ['nullable', 'string', 'max:255'],
-            'mailgun_secret' => ['nullable', 'string', 'max:255'],
             'mpesa_consumer_key' => ['nullable', 'string', 'max:255'],
             'mpesa_consumer_secret' => ['nullable', 'string', 'max:255'],
             'mpesa_shortcode' => ['nullable', 'string', 'max:255'],

@@ -45,7 +45,7 @@ class MailService
             'subject' => "You've been invited to join {$tenantName} as an Admin",
             'html' => $html,
             'text' => $text,
-            'from_name' => "{$tenantName} via LegitBooks",
+            'from_name' => $tenantName,
         ]);
     }
 }

@@ -180,6 +180,36 @@ class MpesaStkService
 
             $responseData = $response->json();
 
+            // Check for error response format (errorCode/errorMessage)
+            if (isset($responseData['errorCode']) || isset($responseData['errorMessage'])) {
+                $errorMessage = $responseData['errorMessage'] ?? 'M-Pesa API error';
+                $errorCode = $responseData['errorCode'] ?? 'UNKNOWN';
+                
+                Log::error('M-Pesa STK Push API error', [
+                    'error_code' => $errorCode,
+                    'error_message' => $errorMessage,
+                    'status' => $response->status(),
+                    'response' => $responseData,
+                    'callback_url' => $this->callbackUrl,
+                ]);
+
+                // Provide user-friendly error messages
+                if (str_contains($errorMessage, 'Invalid CallBackURL') || str_contains($errorMessage, 'CallbackURL')) {
+                    return [
+                        'success' => false,
+                        'error' => 'Invalid callback URL. Please ensure your Cloudflare tunnel is running and MPESA_CALLBACK_BASE is set correctly in .env',
+                        'error_code' => $errorCode,
+                        'callback_url' => $this->callbackUrl,
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'error' => $errorMessage,
+                    'error_code' => $errorCode,
+                ];
+            }
+
             if ($response->successful() && isset($responseData['ResponseCode'])) {
                 if ($responseData['ResponseCode'] == '0') {
                     Log::info('M-Pesa STK Push initiated successfully', [
@@ -216,7 +246,7 @@ class MpesaStkService
 
             return [
                 'success' => false,
-                'error' => 'Unexpected response from M-Pesa API',
+                'error' => 'Unexpected response from M-Pesa API: ' . ($responseData['errorMessage'] ?? json_encode($responseData)),
                 'response' => $responseData,
             ];
         } catch (\Exception $e) {
@@ -251,6 +281,107 @@ class MpesaStkService
         }
 
         return $phone;
+    }
+
+    /**
+     * Query STK Push payment status using CheckoutRequestID
+     * This allows fetching payment details directly from Daraja API
+     */
+    public function querySTKPushStatus(string $checkoutRequestID): array
+    {
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'M-Pesa is not configured.',
+            ];
+        }
+
+        $accessToken = $this->getAccessToken();
+        $timestamp = $this->getTimestamp();
+        $password = $this->generatePassword();
+
+        $queryUrl = $this->baseUrl . '/mpesa/stkpushquery/v1/query';
+
+        $payload = [
+            'BusinessShortCode' => $this->shortcode,
+            'Password' => $password,
+            'Timestamp' => $timestamp,
+            'CheckoutRequestID' => $checkoutRequestID,
+        ];
+
+        Log::info('M-Pesa STK Push query request', [
+            'checkout_request_id' => $checkoutRequestID,
+            'payload' => $payload,
+        ]);
+
+        try {
+            $response = Http::withToken($accessToken)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($queryUrl, $payload);
+
+            $responseData = $response->json();
+
+            if ($response->successful() && isset($responseData['ResponseCode'])) {
+                if ($responseData['ResponseCode'] == '0') {
+                    // Payment found
+                    $resultCode = $responseData['ResultCode'] ?? null;
+                    $resultDesc = $responseData['ResultDesc'] ?? '';
+
+                    Log::info('M-Pesa STK Push query successful', [
+                        'checkout_request_id' => $checkoutRequestID,
+                        'result_code' => $resultCode,
+                        'result_desc' => $resultDesc,
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'result_code' => $resultCode,
+                        'result_desc' => $resultDesc,
+                        'response_code' => $responseData['ResponseCode'],
+                        'merchant_request_id' => $responseData['MerchantRequestID'] ?? null,
+                        'checkout_request_id' => $responseData['CheckoutRequestID'] ?? $checkoutRequestID,
+                        'customer_message' => $responseData['CustomerMessage'] ?? '',
+                        'is_paid' => $resultCode == '0', // ResultCode 0 means payment successful
+                    ];
+                } else {
+                    Log::error('M-Pesa STK Push query failed', [
+                        'checkout_request_id' => $checkoutRequestID,
+                        'response_code' => $responseData['ResponseCode'] ?? '',
+                        'error_message' => $responseData['ErrorMessage'] ?? '',
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'error' => $responseData['ErrorMessage'] ?? 'Query request failed',
+                        'response_code' => $responseData['ResponseCode'] ?? '',
+                    ];
+                }
+            }
+
+            Log::error('M-Pesa STK Push query unexpected response', [
+                'checkout_request_id' => $checkoutRequestID,
+                'status' => $response->status(),
+                'response' => $responseData,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Unexpected response from M-Pesa API',
+                'response' => $responseData,
+            ];
+        } catch (\Exception $e) {
+            Log::error('M-Pesa STK Push query exception', [
+                'checkout_request_id' => $checkoutRequestID,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to query STK Push status: ' . $e->getMessage(),
+            ];
+        }
     }
 
     /**

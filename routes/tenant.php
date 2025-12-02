@@ -68,6 +68,11 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
     Route::get('billing/page', [\App\Http\Controllers\Tenant\BillingController::class, 'page'])->name('billing.page');
     Route::post('billing/upgrade', [\App\Http\Controllers\Tenant\BillingController::class, 'upgrade'])->name('billing.upgrade');
     Route::get('billing/payment-status', [\App\Http\Controllers\Tenant\BillingController::class, 'checkPaymentStatus'])->name('billing.payment-status');
+    
+    // M-Pesa STK Push endpoints
+    Route::post('billing/mpesa/initiate', [\App\Http\Controllers\Tenant\BillingController::class, 'initiateMpesaPayment'])->name('billing.mpesa.initiate');
+    Route::get('billing/mpesa/status/{checkoutRequestID}', [\App\Http\Controllers\Tenant\BillingController::class, 'checkMpesaStatus'])->name('billing.mpesa.status');
+    
     Route::post('billing/plan', [\App\Http\Controllers\Tenant\BillingController::class, 'updatePlan'])->name('billing.update-plan');
     Route::post('billing/payment-methods', [\App\Http\Controllers\Tenant\BillingController::class, 'storePaymentMethod'])->name('billing.payment-methods.store');
     Route::post('billing/payment-methods/{paymentMethod}/set-default', [\App\Http\Controllers\Tenant\BillingController::class, 'setDefaultPaymentMethod'])->name('billing.payment-methods.set-default');

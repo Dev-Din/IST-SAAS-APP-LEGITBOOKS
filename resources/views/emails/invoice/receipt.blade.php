@@ -43,8 +43,13 @@
 
         <p style="font-size: 14px; color: #666; margin-bottom: 0;">
             Thank you for your business!<br>
-            <strong>{{ $tenant->name }}</strong><br>
-            via LegitBooks
+            <strong>{{ $tenant->name }}</strong>
+            @php
+                $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+            @endphp
+            @if($brandMode !== 'C')
+                <br>via LegitBooks
+            @endif
         </p>
     </div>
 </body>

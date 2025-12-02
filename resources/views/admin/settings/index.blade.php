@@ -21,20 +21,6 @@
                 </div>
 
                 <div>
-                    <h3 class="text-lg font-semibold mb-2">Mailgun</h3>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Domain</label>
-                            <input type="text" name="mailgun_domain" value="{{ old('mailgun_domain', $data['mailgun_domain']) }}" class="shadow border rounded w-full py-2 px-3">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">API Key</label>
-                            <input type="text" name="mailgun_secret" value="{{ old('mailgun_secret', $data['mailgun_secret']) }}" class="shadow border rounded w-full py-2 px-3">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
                     <h3 class="text-lg font-semibold mb-2">M-Pesa Sandbox</h3>
                     <div class="grid grid-cols-1 gap-4">
                         <div>
