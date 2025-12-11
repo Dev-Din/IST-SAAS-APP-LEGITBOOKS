@@ -98,8 +98,11 @@
         <h1 class="header-title">You've Been Invited!</h1>
         @php
             $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+            $brandText = $brandMode !== 'C' ? ' via LegitBooks' : '';
         @endphp
-        <p class="header-subtitle">{{ $tenant->name }}@if($brandMode !== 'C') via LegitBooks@endif</p>
+        <p class="header-subtitle">
+          {{ $tenant->name }}{{ $brandText }}
+        </p>
       </div>
       <div class="body">
         <div class="greeting">
@@ -107,9 +110,10 @@
         </div>
         @php
             $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+            $platformText = $brandMode !== 'C' ? ' on LegitBooks, a comprehensive accounting and invoicing platform' : '';
         @endphp
         <div class="message">
-          You've been invited to join <strong>{{ $tenant->name }}</strong>@if($brandMode !== 'C') on LegitBooks, a comprehensive accounting and invoicing platform@endif.
+          You've been invited to join <strong>{{ $tenant->name }}</strong>{{ $platformText }}.
         </div>
         <div class="message">
           To get started, please click the button below to set up your account and create your password.
@@ -133,8 +137,9 @@
         <p style="margin: 0;">
           @php
               $brandMode = $tenant ? $tenant->getBrandingMode() : 'A';
+              $brandText = $brandMode !== 'C' ? ' via LegitBooks' : '';
           @endphp
-          This invitation was sent by {{ $tenant->name }}@if($brandMode !== 'C') via LegitBooks@endif.<br>
+          This invitation was sent by {{ $tenant->name }}{{ $brandText }}.<br>
           If you have questions, please contact {{ $tenant->email ?? 'support' }}.
         </p>
       </div>

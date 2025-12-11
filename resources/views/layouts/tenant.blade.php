@@ -155,9 +155,21 @@
                             @anyperm(['manage_invoices', 'view_invoices'])
                             <a href="{{ route('tenant.invoices.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.invoices.*') ? 'text-gray-900' : '' }}">Invoices</a>
                             @endanyperm
+                            @anyperm(['manage_payments', 'view_payments'])
+                            <a href="{{ route('tenant.payments.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.payments.*') ? 'text-gray-900' : '' }}">Payments</a>
+                            @endanyperm
                             @anyperm(['manage_contacts', 'view_contacts'])
                             <a href="{{ route('tenant.contacts.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.contacts.*') ? 'text-gray-900' : '' }}">Contacts</a>
                             @endanyperm
+                            @anyperm(['manage_products', 'view_products'])
+                            <a href="{{ route('tenant.products.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.products.*') ? 'text-gray-900' : '' }}">Products</a>
+                            @endanyperm
+                            @anyperm(['manage_chart_of_accounts', 'view_chart_of_accounts'])
+                            <a href="{{ route('tenant.chart-of-accounts.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.chart-of-accounts.*') ? 'text-gray-900' : '' }}">Chart of Accounts</a>
+                            @endanyperm
+                            @perm('view_reports')
+                            <a href="{{ route('tenant.reports.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.reports.*') ? 'text-gray-900' : '' }}">Reports</a>
+                            @endperm
                             @perm('manage_users')
                             @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
                             @if(!$isFree)
@@ -256,9 +268,21 @@
                         @anyperm(['manage_invoices', 'view_invoices'])
                         <a href="{{ route('tenant.invoices.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Invoices</a>
                         @endanyperm
+                        @anyperm(['manage_payments', 'view_payments'])
+                        <a href="{{ route('tenant.payments.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Payments</a>
+                        @endanyperm
                         @anyperm(['manage_contacts', 'view_contacts'])
                         <a href="{{ route('tenant.contacts.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Contacts</a>
                         @endanyperm
+                        @anyperm(['manage_products', 'view_products'])
+                        <a href="{{ route('tenant.products.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Products</a>
+                        @endanyperm
+                        @anyperm(['manage_chart_of_accounts', 'view_chart_of_accounts'])
+                        <a href="{{ route('tenant.chart-of-accounts.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Chart of Accounts</a>
+                        @endanyperm
+                        @perm('view_reports')
+                        <a href="{{ route('tenant.reports.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Reports</a>
+                        @endperm
                         @perm('manage_users')
                         @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
                         @if(!$isFree)
