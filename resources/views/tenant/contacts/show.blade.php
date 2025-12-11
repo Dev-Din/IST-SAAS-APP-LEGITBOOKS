@@ -56,6 +56,10 @@
                         <dd class="mt-1 text-sm text-gray-900">{{ $contact->tax_id }}</dd>
                     </div>
                     @endif
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Tax Rate</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ number_format($contact->tax_rate ?? 0, 2) }}%</dd>
+                    </div>
                 </dl>
             </div>
         </div>

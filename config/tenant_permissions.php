@@ -25,6 +25,14 @@ return [
             'label' => 'View Invoices',
             'description' => 'View invoices (read-only)',
         ],
+        'manage_bills' => [
+            'label' => 'Manage Bills',
+            'description' => 'Create, edit, and delete bills from suppliers',
+        ],
+        'view_bills' => [
+            'label' => 'View Bills',
+            'description' => 'View bills (read-only)',
+        ],
         'manage_payments' => [
             'label' => 'Manage Payments',
             'description' => 'Create, edit, and delete payments',
@@ -87,7 +95,7 @@ return [
         ],
         'invoicing' => [
             'label' => 'Invoicing',
-            'permissions' => ['manage_invoices', 'view_invoices', 'manage_payments', 'view_payments'],
+            'permissions' => ['manage_invoices', 'view_invoices', 'manage_bills', 'view_bills', 'manage_payments', 'view_payments'],
         ],
         'contacts' => [
             'label' => 'Contacts',

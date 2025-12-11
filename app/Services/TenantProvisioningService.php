@@ -22,8 +22,9 @@ class TenantProvisioningService
                 'last_number' => 0,
             ]);
 
-            // Seed default Chart of Accounts
-            $this->seedDefaultCOA($tenant);
+            // Chart of Accounts - tenants will create their own accounts
+            // Default accounts are no longer seeded automatically
+            // $this->seedDefaultCOA($tenant);
 
             // Create tenant admin user if requested
             if ($options['create_admin'] ?? false) {
@@ -100,9 +101,10 @@ class TenantProvisioningService
             'type' => 'customer',
         ]);
 
-        // Demo product
+        // Demo product - only create if a sales account exists
+        // Since default COA is no longer seeded, this will only work if tenant has created accounts
         $salesAccount = ChartOfAccount::where('tenant_id', $tenant->id)
-            ->where('code', '4100')
+            ->where('type', 'revenue')
             ->first();
 
         if ($salesAccount) {

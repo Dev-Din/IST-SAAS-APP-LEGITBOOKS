@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Tenant\InvoiceController;
+use App\Http\Controllers\Tenant\BillController;
 use App\Http\Controllers\Tenant\PaymentController;
 use App\Http\Controllers\Tenant\ContactController;
 use App\Http\Controllers\Tenant\ProductController;
@@ -36,22 +37,29 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
         Route::get('invoices/{invoice}/receipt', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     });
 
+    // Bills
+    Route::middleware(['anypermission:manage_bills,view_bills'])->group(function () {
+        Route::resource('bills', BillController::class);
+        Route::post('bills/{bill}/mark-received', [BillController::class, 'markReceived'])->name('bills.mark-received');
+    });
+
     // Payments
     Route::middleware(['anypermission:manage_payments,view_payments'])->group(function () {
-        Route::resource('payments', PaymentController::class);
-        
-        // Payment Receipts
+        // Payment Receipts - Must be defined BEFORE resource route to avoid route conflicts
         Route::get('payments/receipts', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'index'])->name('payments.receipts');
         Route::get('payments/receipts/{payment}', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'show'])->name('payments.receipts.show');
         Route::post('payments/receipts/{payment}/validate', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'validate'])->name('payments.receipts.validate');
         Route::post('payments/receipts/fetch', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'fetchByReceipt'])->name('payments.receipts.fetch');
         Route::post('payments/receipts/validate-pending', [\App\Http\Controllers\Tenant\PaymentReceiptController::class, 'validatePending'])->name('payments.receipts.validate-pending');
         
-        // Payment JSON API
+        // Payment JSON API - Must be defined BEFORE resource route to avoid route conflicts
         Route::get('payments/json/fetch', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'fetch'])->name('payments.json.fetch');
         Route::post('payments/json/store', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'store'])->name('payments.json.store');
         Route::get('payments/json/files', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'listFiles'])->name('payments.json.files');
         Route::get('payments/json/download/{filename}', [\App\Http\Controllers\Tenant\PaymentJsonController::class, 'download'])->name('payments.json.download');
+        
+        // Payment Resource Routes - Must be defined AFTER specific routes
+        Route::resource('payments', PaymentController::class);
     });
     
     // Contacts

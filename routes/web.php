@@ -49,6 +49,7 @@ Route::prefix('pay')
     ->name('invoice.')
     ->group(function () {
         Route::get('/{invoice}/{token}', [\App\Http\Controllers\InvoicePaymentController::class, 'show'])->name('pay');
+        Route::get('/{invoice}/{token}/success', [\App\Http\Controllers\InvoicePaymentController::class, 'success'])->name('pay.success');
         Route::post('/{invoice}/{token}/mpesa', [\App\Http\Controllers\InvoicePaymentController::class, 'processMpesa'])->name('pay.mpesa');
         Route::post('/{invoice}/{token}/card', [\App\Http\Controllers\InvoicePaymentController::class, 'processCard'])->name('pay.card');
     });

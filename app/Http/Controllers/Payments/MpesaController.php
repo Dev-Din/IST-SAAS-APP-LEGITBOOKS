@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\AuditLog;
 use App\Models\Subscription;
+use App\Models\Invoice;
 use App\Services\MpesaService;
+use App\Services\PaymentService;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,7 @@ class MpesaController extends Controller
 {
     public function __construct(
         protected MpesaService $mpesaService,
+        protected PaymentService $paymentService,
         protected TenantContext $tenantContext
     ) {}
 
@@ -252,6 +255,85 @@ class MpesaController extends Controller
                                 'plan' => $subscription->plan,
                                 'cf_headers' => $cfHeaders,
                             ]);
+                        }
+                    }
+
+                    // Allocate payment to invoice (only for invoice payments, not subscription payments)
+                    $invoice = null;
+                    if ($payment->invoice_id && !$payment->subscription_id) {
+                        $invoice = $payment->invoice;
+                    } elseif (!$payment->subscription_id) {
+                        // Fallback: Try to find invoice by phone + amount + recent timestamp
+                        // This handles cases where payment was created without invoice_id
+                        $invoice = Invoice::where('tenant_id', $payment->tenant_id)
+                            ->where('contact_id', $payment->contact_id)
+                            ->where('status', '!=', 'paid')
+                            ->where('created_at', '>=', now()->subDays(7)) // Within last 7 days
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+                        
+                        if ($invoice) {
+                            // Update payment with invoice_id for future reference
+                            $payment->invoice_id = $invoice->id;
+                            $payment->save();
+                            
+                            Log::info('Payment linked to invoice via fallback', [
+                                'payment_id' => $payment->id,
+                                'invoice_id' => $invoice->id,
+                                'cf_headers' => $cfHeaders,
+                            ]);
+                        }
+                    }
+
+                    if ($invoice && !$payment->subscription_id) {
+                        // Check if allocation already exists (idempotency)
+                        $existingAllocation = $invoice->paymentAllocations()
+                            ->where('payment_id', $payment->id)
+                            ->first();
+                        
+                        if (!$existingAllocation) {
+                            $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
+
+                            if ($allocatedAmount > 0) {
+                                // Process payment with allocation (PaymentService will create the allocation and journal entries)
+                                $this->paymentService->processPayment($payment, [
+                                    ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
+                                ]);
+
+                                // Update invoice status after allocation
+                                $outstanding = $invoice->fresh()->getOutstandingAmount();
+                                if ($outstanding <= 0) {
+                                    $invoice->update([
+                                        'status' => 'paid',
+                                        'payment_status' => 'paid',
+                                    ]);
+                                } elseif ($outstanding < $invoice->total) {
+                                    $invoice->update([
+                                        'payment_status' => 'partial',
+                                    ]);
+                                }
+
+                                Log::info('Payment allocated to invoice', [
+                                    'payment_id' => $payment->id,
+                                    'invoice_id' => $invoice->id,
+                                    'allocated_amount' => $allocatedAmount,
+                                    'invoice_status' => $invoice->fresh()->status,
+                                    'cf_headers' => $cfHeaders,
+                                ]);
+                            }
+                        } else {
+                            // Allocation already exists, just update invoice status
+                            $outstanding = $invoice->fresh()->getOutstandingAmount();
+                            if ($outstanding <= 0 && $invoice->status !== 'paid') {
+                                $invoice->update([
+                                    'status' => 'paid',
+                                    'payment_status' => 'paid',
+                                ]);
+                            } elseif ($outstanding < $invoice->total && $invoice->payment_status !== 'partial') {
+                                $invoice->update([
+                                    'payment_status' => 'partial',
+                                ]);
+                            }
                         }
                     }
 

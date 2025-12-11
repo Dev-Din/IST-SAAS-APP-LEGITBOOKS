@@ -12,6 +12,7 @@ use App\Services\InvoiceNumberService;
 use App\Services\InvoiceSendService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use RuntimeException;
 
 class InvoiceController extends Controller
@@ -63,51 +64,104 @@ class InvoiceController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        try {
-            // Generate invoice number with concurrency safety
-            $invoiceNumber = $invoiceNumberService->generate($tenant->id);
-        } catch (RuntimeException $e) {
-            return back()
-                ->withErrors(['invoice' => 'Unable to generate invoice number, please try again.'])
-                ->withInput();
+        $maxRetries = 3;
+        $retryCount = 0;
+
+        while ($retryCount < $maxRetries) {
+            try {
+                $result = DB::transaction(function () use ($tenant, $validated, $invoiceNumberService) {
+                    // Generate invoice number with concurrency safety
+                    try {
+                        $invoiceNumber = $invoiceNumberService->generate($tenant->id);
+                    } catch (RuntimeException $e) {
+                        throw new \Exception('Unable to generate invoice number: ' . $e->getMessage());
+                    }
+
+                    // Check if invoice number already exists (race condition check)
+                    if (Invoice::where('invoice_number', $invoiceNumber)->exists()) {
+                        // If it exists, generate a new number
+                        $invoiceNumber = $invoiceNumberService->generate($tenant->id);
+                    }
+
+                    $invoice = Invoice::create([
+                        'tenant_id' => $tenant->id,
+                        'invoice_number' => $invoiceNumber,
+                        'contact_id' => $validated['contact_id'],
+                        'invoice_date' => $validated['invoice_date'],
+                        'due_date' => $validated['due_date'] ?? null,
+                        'status' => 'draft',
+                        'notes' => $validated['notes'] ?? null,
+                    ]);
+
+                    $subtotal = 0;
+                    $taxAmount = 0;
+
+                    foreach ($validated['line_items'] as $item) {
+                        $lineTotal = $item['quantity'] * $item['unit_price'];
+                        $lineTax = $lineTotal * ($item['tax_rate'] ?? 0) / 100;
+                        
+                        $invoice->lineItems()->create([
+                            'product_id' => $item['product_id'] ?? null,
+                            'description' => $item['description'],
+                            'quantity' => $item['quantity'],
+                            'unit_price' => $item['unit_price'],
+                            'tax_rate' => $item['tax_rate'] ?? 0,
+                            'line_total' => $lineTotal + $lineTax,
+                            'sales_account_id' => $item['sales_account_id'] ?? null,
+                        ]);
+
+                        $subtotal += $lineTotal;
+                        $taxAmount += $lineTax;
+                    }
+
+                    $invoice->update([
+                        'subtotal' => $subtotal,
+                        'tax_amount' => $taxAmount,
+                        'total' => $subtotal + $taxAmount,
+                    ]);
+
+                    return $invoice;
+                });
+
+                // If we get here, the transaction succeeded
+                return redirect()->route('tenant.invoices.show', $result)
+                    ->with('success', 'Invoice created successfully.');
+                    
+            } catch (QueryException $e) {
+                // Check if it's a duplicate key error for invoice_number
+                if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'invoice_number')) {
+                    $retryCount++;
+                    if ($retryCount >= $maxRetries) {
+                        return back()
+                            ->withErrors(['invoice' => 'Unable to create invoice due to a duplicate invoice number. Please try again.'])
+                            ->withInput();
+                    }
+                    // Retry with a new number
+                    continue;
+                }
+                // If it's a different database error, log it and return with error
+                \Log::error('Invoice creation failed', [
+                    'error' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return back()
+                    ->withErrors(['invoice' => 'Database error occurred. Please try again or contact support.'])
+                    ->withInput();
+            } catch (\Exception $e) {
+                \Log::error('Invoice creation failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return back()
+                    ->withErrors(['invoice' => 'An error occurred: ' . $e->getMessage()])
+                    ->withInput();
+            }
         }
 
-        $invoice = Invoice::create([
-            'tenant_id' => $tenant->id,
-            'invoice_number' => $invoiceNumber,
-            'contact_id' => $validated['contact_id'],
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'] ?? null,
-            'status' => 'draft',
-            'notes' => $validated['notes'] ?? null,
-        ]);
-
-        $subtotal = 0;
-        $taxAmount = 0;
-
-        foreach ($validated['line_items'] as $item) {
-            $lineTotal = $item['quantity'] * $item['unit_price'];
-            $lineTax = $lineTotal * ($item['tax_rate'] ?? 0) / 100;
-            
-            $invoice->lineItems()->create([
-                'product_id' => $item['product_id'] ?? null,
-                'description' => $item['description'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'tax_rate' => $item['tax_rate'] ?? 0,
-                'line_total' => $lineTotal + $lineTax,
-                'sales_account_id' => $item['sales_account_id'] ?? null,
-            ]);
-
-            $subtotal += $lineTotal;
-            $taxAmount += $lineTax;
-        }
-
-        $invoice->update([
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'total' => $subtotal + $taxAmount,
-        ]);
+        return back()
+            ->withErrors(['invoice' => 'Unable to create invoice after multiple attempts. Please try again.'])
+            ->withInput();
 
         return redirect()->route('tenant.invoices.show', $invoice)
             ->with('success', 'Invoice created successfully.');

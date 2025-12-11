@@ -43,6 +43,7 @@ class ContactController extends Controller
             'type' => 'required|in:customer,supplier',
             'address' => 'nullable|string',
             'tax_id' => 'nullable|string|max:255',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         Contact::create([
@@ -53,6 +54,7 @@ class ContactController extends Controller
             'type' => $validated['type'],
             'address' => $validated['address'] ?? null,
             'tax_id' => $validated['tax_id'] ?? null,
+            'tax_rate' => $validated['tax_rate'] ?? 0,
         ]);
 
         return redirect()->route('tenant.contacts.index')
@@ -91,6 +93,7 @@ class ContactController extends Controller
             'type' => 'required|in:customer,supplier',
             'address' => 'nullable|string',
             'tax_id' => 'nullable|string|max:255',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $contact->update($validated);

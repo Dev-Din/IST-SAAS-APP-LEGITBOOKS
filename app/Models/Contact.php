@@ -16,7 +16,15 @@ class Contact extends BaseTenantModel
         'type',
         'address',
         'tax_id',
+        'tax_rate',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tax_rate' => 'decimal:2',
+        ];
+    }
 
     public function invoices()
     {

@@ -51,7 +51,7 @@ class ReportsController extends Controller
         // Total revenue from invoices
         $totalRevenue = Invoice::where('tenant_id', $tenantId)
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
-            ->sum('total_amount');
+            ->sum('total');
 
         // Paid revenue
         $paidRevenue = Payment::where('tenant_id', $tenantId)
@@ -103,16 +103,19 @@ class ReportsController extends Controller
             ->whereBetween('payment_date', [$dateFromCarbon, $dateToCarbon])
             ->sum('amount');
 
-        // Outstanding invoices
+        // Outstanding invoices - calculate using payment allocations
         $outstanding = Invoice::where('tenant_id', $tenantId)
             ->where('status', '!=', 'paid')
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
-            ->sum(DB::raw('total_amount - COALESCE((SELECT SUM(amount) FROM payments WHERE payments.invoice_id = invoices.id AND payments.transaction_status = "completed"), 0)'));
+            ->get()
+            ->sum(function ($invoice) {
+                return $invoice->getOutstandingAmount();
+            });
 
         // Collection rate
         $totalInvoiced = Invoice::where('tenant_id', $tenantId)
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
-            ->sum('total_amount');
+            ->sum('total');
         
         $collectionRate = $totalInvoiced > 0 ? ($totalCollected / $totalInvoiced) * 100 : 0;
 
@@ -172,12 +175,12 @@ class ReportsController extends Controller
         // Total invoiced amount
         $totalInvoiced = Invoice::where('tenant_id', $tenantId)
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
-            ->sum('total_amount');
+            ->sum('total');
 
         // Invoices by status
         $byStatus = Invoice::where('tenant_id', $tenantId)
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total_amount) as total'))
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
             ->groupBy('status')
             ->get()
             ->mapWithKeys(function ($item) {

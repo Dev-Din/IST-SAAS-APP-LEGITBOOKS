@@ -141,6 +141,32 @@
                                         Subscription and billing
                                     </a>
                                     @endperm
+                                    
+                                    @perm('manage_users')
+                                    @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
+                                    @if(!$isFree)
+                                        <a href="{{ route('tenant.users.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'bg-gray-50 font-medium' : '' }}">
+                                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                            </svg>
+                                            Users
+                                        </a>
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="flex items-center w-full px-4 py-2 text-sm text-gray-700 opacity-60 cursor-not-allowed"
+                                            aria-disabled="true"
+                                            tabindex="-1"
+                                            title="Invite users available on paid plans - Upgrade now to add team members."
+                                            onclick="openBillingModal()"
+                                        >
+                                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                            </svg>
+                                            Users
+                                        </button>
+                                    @endif
+                                    @endperm
                                 </div>
                             </div>
                         </div>
@@ -154,6 +180,9 @@
                             @endperm
                             @anyperm(['manage_invoices', 'view_invoices'])
                             <a href="{{ route('tenant.invoices.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.invoices.*') ? 'text-gray-900' : '' }}">Invoices</a>
+                            @endanyperm
+                            @anyperm(['manage_bills', 'view_bills'])
+                            <a href="{{ route('tenant.bills.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.bills.*') ? 'text-gray-900' : '' }}">Bills</a>
                             @endanyperm
                             @anyperm(['manage_payments', 'view_payments'])
                             <a href="{{ route('tenant.payments.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.payments.*') ? 'text-gray-900' : '' }}">Payments</a>
@@ -169,23 +198,6 @@
                             @endanyperm
                             @perm('view_reports')
                             <a href="{{ route('tenant.reports.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.reports.*') ? 'text-gray-900' : '' }}">Reports</a>
-                            @endperm
-                            @perm('manage_users')
-                            @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
-                            @if(!$isFree)
-                                <a href="{{ route('tenant.users.index') }}" class="text-gray-700 hover:text-gray-900 font-medium py-2 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'text-gray-900' : '' }}">Users</a>
-                            @else
-                                <button
-                                    type="button"
-                                    class="text-gray-700 font-medium py-2 opacity-60 cursor-not-allowed"
-                                    aria-disabled="true"
-                                    tabindex="-1"
-                                    title="Invite users available on paid plans - Upgrade now to add team members."
-                                    onclick="openBillingModal()"
-                                >
-                                    Users
-                                </button>
-                            @endif
                             @endperm
                         </nav>
                     </div>
@@ -248,6 +260,32 @@
                                         Subscription and billing
                                     </a>
                                     @endperm
+                                    
+                                    @perm('manage_users')
+                                    @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
+                                    @if(!$isFree)
+                                        <a href="{{ route('tenant.users.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {{ request()->routeIs('tenant.users.*') || request()->routeIs('tenant.invitations.*') ? 'bg-gray-50 font-medium' : '' }}">
+                                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                            </svg>
+                                            Users
+                                        </a>
+                                    @else
+                                        <button
+                                            type="button"
+                                            class="flex items-center w-full px-4 py-2 text-sm text-gray-700 opacity-60 cursor-not-allowed"
+                                            aria-disabled="true"
+                                            tabindex="-1"
+                                            title="Invite users available on paid plans - Upgrade now to add team members."
+                                            onclick="openBillingModal()"
+                                        >
+                                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                            </svg>
+                                            Users
+                                        </button>
+                                    @endif
+                                    @endperm
                                 </div>
                             </div>
                         </div>
@@ -268,6 +306,9 @@
                         @anyperm(['manage_invoices', 'view_invoices'])
                         <a href="{{ route('tenant.invoices.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Invoices</a>
                         @endanyperm
+                        @anyperm(['manage_bills', 'view_bills'])
+                        <a href="{{ route('tenant.bills.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Bills</a>
+                        @endanyperm
                         @anyperm(['manage_payments', 'view_payments'])
                         <a href="{{ route('tenant.payments.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Payments</a>
                         @endanyperm
@@ -282,23 +323,6 @@
                         @endanyperm
                         @perm('view_reports')
                         <a href="{{ route('tenant.reports.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Reports</a>
-                        @endperm
-                        @perm('manage_users')
-                        @php $isFree = $tenant ? $tenant->onFreePlan() : false; @endphp
-                        @if(!$isFree)
-                            <a href="{{ route('tenant.users.index') }}" class="block px-3 py-2 text-gray-700 hover:text-gray-900">Users</a>
-                        @else
-                            <button
-                                type="button"
-                                class="block w-full text-left px-3 py-2 text-gray-700 opacity-60 cursor-not-allowed"
-                                aria-disabled="true"
-                                tabindex="-1"
-                                title="Invite users available on paid plans - Upgrade now to add team members."
-                                onclick="openBillingModal()"
-                            >
-                                Users
-                            </button>
-                        @endif
                         @endperm
                         <form method="POST" action="{{ route('tenant.auth.logout') }}">
                             @csrf

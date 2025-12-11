@@ -1,34 +1,23 @@
 @extends('layouts.tenant')
 
-@section('title', 'Create Invoice')
+@section('title', 'Create Bill')
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="py-6">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Create Invoice</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Create Bill</h1>
 
-        @if($errors->any())
-        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
-            <strong class="font-bold">Please fix the following errors:</strong>
-            <ul class="list-disc list-inside mt-2">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-        @endif
-
-        <form method="POST" action="{{ route('tenant.invoices.store') }}" class="bg-white shadow-sm rounded-lg p-6" id="invoice-form">
+        <form method="POST" action="{{ route('tenant.bills.store') }}" class="bg-white shadow-sm rounded-lg p-6">
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label for="contact_id" class="block text-sm font-medium text-gray-700">Contact *</label>
+                    <label for="contact_id" class="block text-sm font-medium text-gray-700">Supplier *</label>
                     <select name="contact_id" id="contact_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="">Select a contact</option>
+                        <option value="">Select a supplier</option>
                         @foreach($contacts as $contact)
                         <option value="{{ $contact->id }}" data-tax-rate="{{ $contact->tax_rate ?? 0 }}" {{ old('contact_id') == $contact->id ? 'selected' : '' }}>
-                            {{ $contact->name }} ({{ $contact->type }})
+                            {{ $contact->name }}
                         </option>
                         @endforeach
                     </select>
@@ -38,9 +27,9 @@
                 </div>
 
                 <div>
-                    <label for="invoice_date" class="block text-sm font-medium text-gray-700">Invoice Date *</label>
-                    <input type="date" name="invoice_date" id="invoice_date" value="{{ old('invoice_date', date('Y-m-d')) }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    @error('invoice_date')
+                    <label for="bill_date" class="block text-sm font-medium text-gray-700">Bill Date *</label>
+                    <input type="date" name="bill_date" id="bill_date" value="{{ old('bill_date', date('Y-m-d')) }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    @error('bill_date')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -87,11 +76,11 @@
                                     <input type="number" name="line_items[0][tax_rate]" value="0" step="0.01" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm tax-rate-input">
                                 </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Sales Account</label>
-                                <select name="line_items[0][sales_account_id]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <label class="block text-sm font-medium text-gray-700">Expense Account</label>
+                                <select name="line_items[0][expense_account_id]" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                     <option value="">Select account</option>
-                                    @foreach($salesAccounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                    @foreach($expenseAccounts as $account)
+                                    <option value="{{ $account->id }}">{{ $account->code }} - {{ $account->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -107,11 +96,11 @@
             </div>
 
             <div class="flex justify-end space-x-3">
-                <a href="{{ route('tenant.invoices.index') }}" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <a href="{{ route('tenant.bills.index') }}" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Cancel
                 </a>
-                <button type="submit" id="submit-btn" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
-                    Create Invoice
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
+                    Create Bill
                 </button>
             </div>
         </form>
@@ -172,20 +161,9 @@ document.getElementById('contact_id').addEventListener('change', function() {
 // Auto-populate tax rate on page load if contact is pre-selected
 document.addEventListener('DOMContentLoaded', function() {
     const contactSelect = document.getElementById('contact_id');
-    if (contactSelect && contactSelect.value) {
+    if (contactSelect.value) {
         contactSelect.dispatchEvent(new Event('change'));
     }
 });
-
-// Form submission handler - ensure form can submit
-document.getElementById('invoice-form').addEventListener('submit', function(e) {
-    const submitBtn = document.getElementById('submit-btn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Creating...';
-    }
-    // Let the form submit normally
-});
 </script>
 @endsection
-
