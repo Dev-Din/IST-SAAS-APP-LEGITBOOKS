@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
+use App\Models\Invoice;
+use App\Models\Bill;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 
@@ -67,9 +69,28 @@ class ContactController extends Controller
     public function show(Contact $contact, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        $contact->load('invoices', 'payments');
         
-        return view('tenant.contacts.show', compact('contact', 'tenant'));
+        // Load invoices with payment allocations for customers
+        $invoices = [];
+        if ($contact->type === 'customer') {
+            $invoices = Invoice::where('contact_id', $contact->id)
+                ->with('paymentAllocations')
+                ->orderBy('invoice_date', 'desc')
+                ->get();
+        }
+        
+        // Load bills with payment allocations for suppliers
+        $bills = [];
+        if ($contact->type === 'supplier') {
+            $bills = Bill::where('contact_id', $contact->id)
+                ->with('paymentAllocations')
+                ->orderBy('bill_date', 'desc')
+                ->get();
+        }
+        
+        $contact->load('payments');
+        
+        return view('tenant.contacts.show', compact('contact', 'tenant', 'invoices', 'bills'));
     }
 
     /**

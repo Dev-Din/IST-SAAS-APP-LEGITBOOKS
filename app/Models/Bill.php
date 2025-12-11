@@ -68,3 +68,4 @@ class Bill extends BaseTenantModel
         return max(0, $this->total - $allocated);
     }
 }
+

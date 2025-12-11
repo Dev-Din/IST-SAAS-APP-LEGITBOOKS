@@ -19,13 +19,19 @@
                         <span class="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50">
                             Sent on {{ $invoice->sent_at ? $invoice->sent_at->format('d/m/Y H:i') : 'N/A' }}
                         </span>
+                        <form method="POST" action="{{ route('tenant.invoices.send', $invoice) }}" class="inline" onsubmit="return confirm('Are you sure you want to resend this invoice to {{ $invoice->contact->email ?? $invoice->contact->name }}?');">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Resend
+                            </button>
+                        </form>
                         @if($invoice->mail_status === 'failed')
-                            <form method="POST" action="{{ route('tenant.invoices.send', $invoice) }}" class="inline">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700">
-                                    Resend Email
-                                </button>
-                            </form>
+                            <span class="inline-flex items-center px-3 py-2 border border-red-300 rounded-md shadow-sm text-xs font-medium text-red-700 bg-red-50">
+                                Email Failed
+                            </span>
                         @endif
                     @else
                         <form method="POST" action="{{ route('tenant.invoices.send', $invoice) }}" class="inline" onsubmit="return confirm('Are you sure you want to send this invoice to {{ $invoice->contact->email ?? $invoice->contact->name }}?');">

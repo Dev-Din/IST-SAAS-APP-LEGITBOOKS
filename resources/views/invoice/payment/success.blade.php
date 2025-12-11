@@ -73,21 +73,33 @@
                 </div>
                 @else
                 <div class="bg-blue-600 px-6 py-4">
-                    <h1 class="text-2xl font-bold text-white">Payment Processing</h1>
+                    <h1 class="text-2xl font-bold text-white">Awaiting Payment Confirmation</h1>
                 </div>
                 <div class="px-6 py-8 text-center">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+                        <svg class="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                         </svg>
+                        <div class="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
                     </div>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-2">Payment is Being Processed</h2>
-                    <p class="text-gray-600 mb-4">Your payment for Invoice {{ $invoice->invoice_number }} is being processed.</p>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">Please Confirm Payment on Your Phone</h2>
+                    <p class="text-gray-600 mb-4">An M-Pesa payment request has been sent to your phone.</p>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm font-medium text-yellow-800 mb-2">📱 Next Steps:</p>
+                        <ol class="text-sm text-yellow-700 list-decimal list-inside space-y-1">
+                            <li>Check your phone for the M-Pesa prompt</li>
+                            <li>Enter your M-Pesa PIN to confirm</li>
+                            <li>This page will automatically update once payment is confirmed</li>
+                        </ol>
+                    </div>
                     @if($outstanding > 0)
-                    <p class="text-sm text-gray-500 mb-6">Outstanding: KES {{ number_format($outstanding, 2) }}</p>
+                    <p class="text-sm text-gray-500 mb-4">Amount: <span class="font-semibold">KES {{ number_format($outstanding, 2) }}</span></p>
                     @endif
-                    <p class="text-sm text-gray-500 mb-6">Please wait while we confirm your payment. This page will refresh automatically.</p>
+                    <p class="text-sm text-gray-500 mb-6">Waiting for payment confirmation... This page will update automatically.</p>
                     @if(isset($recentPayments) && $recentPayments->count() > 0)
                     <div class="bg-yellow-50 rounded-lg p-4 mb-6 text-left">
                         <p class="text-sm font-medium text-yellow-800 mb-2">Pending Payments:</p>
@@ -114,50 +126,106 @@
                     </a>
                 </div>
                 <script>
+                    // Get checkout_request_id from URL parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const checkoutRequestId = urlParams.get('checkout_request_id');
+                    
+                    if (!checkoutRequestId) {
+                        console.warn('No checkout_request_id found in URL');
+                    }
+
                     let pollCount = 0;
-                    const maxPolls = 60; // Poll for up to 5 minutes (60 * 5 seconds)
-                    const pollInterval = 5000; // 5 seconds
+                    const maxPolls = 120; // Poll for up to 2 minutes (120 * 1 second)
+                    const pollInterval = 1000; // Poll every 1 second for faster detection (like subscription flow)
+                    let poll = null;
+                    let paymentConfirmed = false;
 
                     function checkPaymentStatus() {
+                        if (paymentConfirmed || !checkoutRequestId) {
+                            return; // Stop if already confirmed or no checkout ID
+                        }
+
                         pollCount++;
                         
                         if (pollCount >= maxPolls) {
                             // Stop polling after max attempts
-                            document.querySelector('.animate-spin').classList.remove('animate-spin');
-                            document.querySelector('h2').textContent = 'Payment Status Unknown';
-                            document.querySelector('p').textContent = 'Please check your payment status manually or contact support.';
+                            if (poll) clearInterval(poll);
+                            const heading = document.querySelector('h2');
+                            if (heading) heading.textContent = 'Payment Status Unknown';
+                            const message = document.querySelector('.text-gray-600');
+                            if (message) message.textContent = 'Please check your payment status manually or contact support.';
                             return;
                         }
 
-                        // Reload page to check updated status
-                        fetch(window.location.href, {
+                        // Check payment status via dedicated status endpoint (like subscription flow)
+                        const statusUrl = '/pay/{{ $invoice->id }}/{{ $invoice->payment_token }}/status?checkout_request_id=' + encodeURIComponent(checkoutRequestId) + '&_=' + Date.now();
+                        
+                        fetch(statusUrl, {
                             method: 'GET',
                             headers: {
+                                'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'text/html',
                             },
+                            credentials: 'same-origin',
                             cache: 'no-cache'
                         })
-                        .then(response => response.text())
-                        .then(html => {
-                            // Check if the response contains "Payment Confirmed" (paid status)
-                            if (html.includes('Payment Confirmed') || html.includes('is Paid')) {
-                                // Payment confirmed - reload page to show success
-                                window.location.reload();
-                            } else {
-                                // Still processing - continue polling
-                                setTimeout(checkPaymentStatus, pollInterval);
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
                             }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Payment status check:', data);
+                            
+                            // Check if payment is completed (like subscription flow)
+                            if (data.status === 'success' || (data.status === 'processing' && data.invoice_paid === true)) {
+                                // Payment confirmed - stop polling and redirect immediately
+                                if (poll) clearInterval(poll);
+                                paymentConfirmed = true;
+                                
+                                // Redirect immediately to show success (like subscription flow)
+                                window.location.reload();
+                            } else if (data.status === 'failed') {
+                                // Payment failed
+                                if (poll) clearInterval(poll);
+                                paymentConfirmed = true;
+                                const heading = document.querySelector('h2');
+                                if (heading) heading.textContent = 'Payment Failed';
+                                const message = document.querySelector('.text-gray-600');
+                                if (message) message.textContent = 'Payment failed. Please try again.';
+                            } else if (pollCount >= maxPolls) {
+                                // Timeout
+                                if (poll) clearInterval(poll);
+                                const heading = document.querySelector('h2');
+                                if (heading) heading.textContent = 'Payment Status Unknown';
+                                const message = document.querySelector('.text-gray-600');
+                                if (message) message.textContent = 'Please check your payment status manually or contact support.';
+                            }
+                            // If still pending, continue polling (handled by setInterval)
                         })
                         .catch(error => {
                             console.error('Error checking payment status:', error);
-                            // Continue polling on error
-                            setTimeout(checkPaymentStatus, pollInterval);
+                            // Continue polling on error (might be temporary network issue)
+                            if (pollCount >= maxPolls) {
+                                if (poll) clearInterval(poll);
+                            }
                         });
                     }
 
-                    // Start polling after initial delay
-                    setTimeout(checkPaymentStatus, pollInterval);
+                    // Start polling immediately if checkout_request_id is available (like subscription flow)
+                    if (checkoutRequestId) {
+                        checkPaymentStatus();
+                        // Then continue polling at intervals
+                        poll = setInterval(checkPaymentStatus, pollInterval);
+                    } else {
+                        // Fallback: use the old method if no checkout_request_id
+                        setTimeout(() => {
+                            if (!paymentConfirmed) {
+                                checkPaymentStatus();
+                            }
+                        }, 2000);
+                    }
                 </script>
                 @endif
             </div>
@@ -165,3 +233,4 @@
     </div>
 </body>
 </html>
+

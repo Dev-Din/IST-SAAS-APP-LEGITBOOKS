@@ -45,3 +45,4 @@ class BillLineItem extends Model
         return $this->belongsTo(ChartOfAccount::class, 'expense_account_id');
     }
 }
+

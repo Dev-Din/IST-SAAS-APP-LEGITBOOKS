@@ -114,6 +114,17 @@ class InvoicePaymentController extends Controller
             $outstanding = $invoice->getOutstandingAmount();
             $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
 
+            // If request wants JSON (for polling), return JSON response
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'isPaid' => $isPaid,
+                    'status' => $invoice->status,
+                    'outstanding' => $outstanding,
+                    'total' => $invoice->total,
+                    'invoice_number' => $invoice->invoice_number,
+                ]);
+            }
+
             return view('invoice.payment.success', compact('invoice', 'isPaid', 'outstanding', 'recentPayments'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             abort(404, 'Invoice not found.');
@@ -242,6 +253,7 @@ class InvoicePaymentController extends Controller
                 'checkoutRequestID' => $result['checkoutRequestID'],
                 'customerMessage' => $result['customerMessage'],
                 'merchantRequestID' => $result['merchantRequestID'],
+                'payment_id' => $payment->id,
                 'message' => 'STK push initiated. Please check your phone to complete the payment.',
             ]);
         } catch (\Exception $e) {
@@ -274,6 +286,137 @@ class InvoicePaymentController extends Controller
         return response()->json([
             'message' => 'Card/PayPal payment integration coming soon.',
         ], 501);
+    }
+
+    /**
+     * Check invoice payment status by checkout request ID
+     * Similar to subscription payment status check
+     */
+    public function checkPaymentStatus($invoiceId, string $token, Request $request)
+    {
+        $checkoutRequestId = $request->input('checkout_request_id');
+        
+        if (!$checkoutRequestId) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'Checkout request ID is required',
+            ], 400);
+        }
+
+        // Find invoice and validate token
+        $invoice = Invoice::findOrFail($invoiceId);
+        if ($invoice->payment_token !== $token) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'Invalid payment link',
+            ], 404);
+        }
+
+        // Set tenant context
+        if ($invoice->tenant) {
+            $this->tenantContext->setTenant($invoice->tenant);
+        }
+
+        // Find payment by checkout_request_id
+        $payment = Payment::where('checkout_request_id', $checkoutRequestId)
+            ->where('invoice_id', $invoice->id)
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'Payment not found',
+            ], 404);
+        }
+
+        // If payment is still pending or failed (might be incorrectly marked), query Daraja API to get latest status
+        if ($payment->transaction_status === 'pending' || $payment->transaction_status === 'failed') {
+            $mpesaService = app(\App\Services\MpesaStkService::class);
+            $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
+            
+            if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
+                // Payment was successful - update payment status
+                try {
+                    DB::beginTransaction();
+                    
+                    $payment->update([
+                        'transaction_status' => 'completed',
+                        'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
+                    ]);
+
+                    // Allocate payment to invoice if not already allocated
+                    $invoice->load('paymentAllocations');
+                    $existingAllocation = $invoice->paymentAllocations()
+                        ->where('payment_id', $payment->id)
+                        ->first();
+                    
+                    if (!$existingAllocation && $payment->invoice_id) {
+                        $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
+                        if ($allocatedAmount > 0) {
+                            $paymentService = app(\App\Services\PaymentService::class);
+                            $paymentService->processPayment($payment, [
+                                ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
+                            ]);
+
+                            // Update invoice status
+                            $outstanding = $invoice->fresh()->getOutstandingAmount();
+                            if ($outstanding <= 0) {
+                                $invoice->update([
+                                    'status' => 'paid',
+                                    'payment_status' => 'paid',
+                                ]);
+                            } elseif ($outstanding < $invoice->total) {
+                                $invoice->update([
+                                    'payment_status' => 'partial',
+                                ]);
+                            }
+                        }
+                    }
+                    
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to process payment from status check', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } elseif ($queryResult['success'] && isset($queryResult['result_code']) && $queryResult['result_code'] != '0') {
+                // Only mark as failed if result_code explicitly indicates failure
+                // Don't update if it's still processing (result_code 4999)
+                if ($queryResult['result_code'] != '4999') {
+                    $payment->update([
+                        'transaction_status' => 'failed',
+                    ]);
+                }
+            }
+            
+            // Refresh payment to get latest status
+            $payment->refresh();
+        }
+
+        // Check invoice payment status
+        $invoice->refresh();
+        $outstanding = $invoice->getOutstandingAmount();
+        $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+
+        // Return status similar to subscription payment check
+        $status = match($payment->transaction_status) {
+            'completed' => $isPaid ? 'success' : 'processing',
+            'failed', 'cancelled' => 'failed',
+            default => 'pending',
+        };
+
+        return response()->json([
+            'status' => $status,
+            'payment_status' => $payment->transaction_status,
+            'invoice_paid' => $isPaid,
+            'outstanding' => $outstanding,
+        ], 200, [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
     }
 
     /**

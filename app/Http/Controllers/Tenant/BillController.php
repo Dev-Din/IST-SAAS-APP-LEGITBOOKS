@@ -283,3 +283,4 @@ class BillController extends Controller
             ->with('error', 'Only draft bills can be marked as received.');
     }
 }
+

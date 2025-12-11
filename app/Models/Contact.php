@@ -31,6 +31,11 @@ class Contact extends BaseTenantModel
         return $this->hasMany(Invoice::class);
     }
 
+    public function bills()
+    {
+        return $this->hasMany(Bill::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);

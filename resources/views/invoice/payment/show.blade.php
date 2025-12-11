@@ -162,14 +162,9 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    messageDiv.textContent = data.message || 'Payment processed successfully!';
-                    messageDiv.className = 'mt-2 text-sm text-green-600';
-                    messageDiv.classList.remove('hidden');
-                    
-                    // Redirect after 3 seconds
-                    setTimeout(() => {
-                        window.location.href = '/pay/{{ $invoice->id }}/{{ $invoice->payment_token }}/success';
-                    }, 3000);
+                    // Redirect immediately to confirmation page with checkout request ID
+                    const checkoutId = data.checkoutRequestID || '';
+                    window.location.href = '/pay/{{ $invoice->id }}/{{ $invoice->payment_token }}/success?checkout_request_id=' + encodeURIComponent(checkoutId);
                 } else {
                     messageDiv.textContent = data.error || 'Payment failed. Please try again.';
                     messageDiv.className = 'mt-2 text-sm text-red-600';

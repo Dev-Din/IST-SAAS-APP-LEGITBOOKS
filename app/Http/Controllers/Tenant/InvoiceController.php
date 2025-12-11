@@ -11,6 +11,7 @@ use App\Services\TenantContext;
 use App\Services\InvoiceNumberService;
 use App\Services\InvoiceSendService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use RuntimeException;
@@ -319,5 +320,140 @@ class InvoiceController extends Controller
 
             return redirect()->back()->withErrors(['invoice' => 'An error occurred while sending the invoice: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Export invoices in various formats
+     */
+    public function export(Request $request, TenantContext $tenantContext)
+    {
+        $tenant = $tenantContext->getTenant();
+        $format = $request->get('format', 'csv'); // csv, xlsx, pdf
+        
+        // Get all invoices for this tenant (not paginated for export)
+        $invoices = Invoice::where('tenant_id', $tenant->id)
+            ->with('contact', 'paymentAllocations')
+            ->orderBy('invoice_date', 'desc')
+            ->get();
+
+        switch ($format) {
+            case 'csv':
+                return $this->exportCsv($invoices, $tenant);
+            case 'pdf':
+                return $this->exportPdf($invoices, $tenant);
+            default:
+                return redirect()->back()->withErrors(['export' => 'Invalid export format. Only CSV and PDF are supported.']);
+        }
+    }
+
+    /**
+     * Export invoices as CSV
+     */
+    protected function exportCsv($invoices, $tenant)
+    {
+        $filename = "invoices_" . now()->format('Y-m-d_His') . '.csv';
+
+        return response()->streamDownload(function () use ($invoices) {
+            $file = fopen('php://output', 'w');
+
+            // Write CSV headers
+            fputcsv($file, [
+                'Invoice Number',
+                'Date',
+                'Due Date',
+                'Customer',
+                'Status',
+                'Subtotal',
+                'Tax',
+                'Total',
+                'Outstanding',
+                'Payment Status'
+            ]);
+
+            // Write invoice data
+            foreach ($invoices as $invoice) {
+                $outstanding = $invoice->getOutstandingAmount();
+                fputcsv($file, [
+                    $invoice->invoice_number,
+                    $invoice->invoice_date->format('d/m/Y'),
+                    $invoice->due_date ? $invoice->due_date->format('d/m/Y') : 'N/A',
+                    $invoice->contact->name,
+                    ucfirst($invoice->status),
+                    number_format($invoice->subtotal, 2),
+                    number_format($invoice->tax_amount, 2),
+                    number_format($invoice->total, 2),
+                    number_format($outstanding, 2),
+                    $outstanding <= 0 ? 'Paid' : ($outstanding < $invoice->total ? 'Partial' : 'Unpaid')
+                ]);
+            }
+
+            fclose($file);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    /**
+     * Export invoices as Excel
+     */
+    protected function exportExcel($invoices, $tenant)
+    {
+        // Check if Laravel Excel 3.x interfaces exist (modern version)
+        // Must check BEFORE trying to load InvoiceExport class to avoid fatal error
+        // The old version 1.1.5 doesn't have these interfaces
+        if (!interface_exists('Maatwebsite\\Excel\\Concerns\\FromCollection')) {
+            \Log::info('Laravel Excel 3.x not available (old version 1.x installed), using CSV export instead');
+            // Return CSV but with .xlsx extension so user gets a file
+            // They can rename it or we can change the extension
+            $response = $this->exportCsv($invoices, $tenant);
+            // Note: CSV response will have .csv extension, which is fine
+            return $response;
+        }
+
+        // Try to use Excel export if interfaces are available
+        // Use string class name and check if class can be safely loaded
+        try {
+            $exportClassName = 'App\\Exports\\InvoiceExport';
+            
+            // Only proceed if class exists and interfaces are available
+            if (!class_exists($exportClassName, false)) {
+                // Try with autoload, but this might fail if interfaces don't exist
+                if (!class_exists($exportClassName, true)) {
+                    throw new \RuntimeException('InvoiceExport class cannot be loaded');
+                }
+            }
+            
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new $exportClassName($invoices),
+                "invoices_" . now()->format('Y-m-d_His') . '.xlsx'
+            );
+        } catch (\Error $e) {
+            // Catch fatal errors (class not found, interface not found, etc.)
+            \Log::warning('Excel export failed due to missing dependencies, using CSV', [
+                'error' => $e->getMessage(),
+                'exception' => get_class($e)
+            ]);
+            return $this->exportCsv($invoices, $tenant);
+        } catch (\Throwable $e) {
+            \Log::warning('Excel export failed, falling back to CSV', [
+                'error' => $e->getMessage(),
+                'exception' => get_class($e)
+            ]);
+            return $this->exportCsv($invoices, $tenant);
+        }
+    }
+
+    /**
+     * Export invoices as PDF
+     */
+    protected function exportPdf($invoices, $tenant)
+    {
+        $html = view('tenant.invoices.export-pdf', compact('invoices', 'tenant'))->render();
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+        
+        $filename = "invoices_" . now()->format('Y-m-d_His') . '.pdf';
+        
+        return $pdf->download($filename);
     }
 }

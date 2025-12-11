@@ -31,6 +31,8 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
 
     // Invoices
     Route::middleware(['anypermission:manage_invoices,view_invoices'])->group(function () {
+        // Export route must come before resource route to avoid conflicts
+        Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
         Route::resource('invoices', InvoiceController::class);
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');

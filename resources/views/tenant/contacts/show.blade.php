@@ -68,6 +68,126 @@
             You do not have permission to view this contact.
         </div>
         @endanyperm
+
+        {{-- Invoices Section (for customers) --}}
+        @if($contact->type === 'customer' && isset($invoices))
+        <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Invoices</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                @forelse($invoices as $invoice)
+                <a href="{{ route('tenant.invoices.show', $invoice) }}" class="block hover:bg-gray-50">
+                    <div class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <p class="text-sm font-medium text-indigo-600">
+                                    {{ $invoice->invoice_number }}
+                                </p>
+                                @php
+                                    $outstanding = $invoice->getOutstandingAmount();
+                                    $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+                                @endphp
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    @if($isPaid) bg-green-100 text-green-800
+                                    @else bg-yellow-100 text-yellow-800
+                                    @endif">
+                                    @if($isPaid) Paid @else Pending @endif
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <p class="text-sm font-medium text-gray-900">
+                                    KES {{ number_format($invoice->total, 2) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 sm:flex sm:justify-between">
+                            <div class="sm:flex">
+                                <p class="text-sm text-gray-500">
+                                    Date: {{ $invoice->invoice_date->format('d/m/Y') }}
+                                    @if($invoice->due_date)
+                                    | Due: {{ $invoice->due_date->format('d/m/Y') }}
+                                    @endif
+                                </p>
+                            </div>
+                            @if(!$isPaid && $outstanding > 0)
+                            <div class="mt-2 sm:mt-0">
+                                <p class="text-xs text-orange-600">
+                                    Outstanding: KES {{ number_format($outstanding, 2) }}
+                                </p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </a>
+                @empty
+                <div class="px-4 py-8 text-center text-gray-500">
+                    No invoices found for this customer.
+                </div>
+                @endforelse
+            </div>
+        </div>
+        @endif
+
+        {{-- Bills Section (for suppliers) --}}
+        @if($contact->type === 'supplier' && isset($bills))
+        <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Bills</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                @forelse($bills as $bill)
+                <a href="{{ route('tenant.bills.show', $bill) }}" class="block hover:bg-gray-50">
+                    <div class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <p class="text-sm font-medium text-indigo-600">
+                                    {{ $bill->bill_number }}
+                                </p>
+                                @php
+                                    $outstanding = $bill->getOutstandingAmount();
+                                    $isPaid = $bill->status === 'paid' || $outstanding <= 0;
+                                @endphp
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    @if($isPaid) bg-green-100 text-green-800
+                                    @else bg-yellow-100 text-yellow-800
+                                    @endif">
+                                    @if($isPaid) Paid @else Pending @endif
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <p class="text-sm font-medium text-gray-900">
+                                    KES {{ number_format($bill->total, 2) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 sm:flex sm:justify-between">
+                            <div class="sm:flex">
+                                <p class="text-sm text-gray-500">
+                                    Date: {{ $bill->bill_date->format('d/m/Y') }}
+                                    @if($bill->due_date)
+                                    | Due: {{ $bill->due_date->format('d/m/Y') }}
+                                    @endif
+                                </p>
+                            </div>
+                            @if(!$isPaid && $outstanding > 0)
+                            <div class="mt-2 sm:mt-0">
+                                <p class="text-xs text-orange-600">
+                                    Outstanding: KES {{ number_format($outstanding, 2) }}
+                                </p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </a>
+                @empty
+                <div class="px-4 py-8 text-center text-gray-500">
+                    No bills found for this supplier.
+                </div>
+                @endforelse
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection
