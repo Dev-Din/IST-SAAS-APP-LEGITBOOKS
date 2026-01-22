@@ -19,7 +19,8 @@ class TenantProvisioningService
             // Create invoice counter
             InvoiceCounter::create([
                 'tenant_id' => $tenant->id,
-                'last_number' => 0,
+                'year' => now()->year,
+                'sequence' => 0,
             ]);
 
             // Chart of Accounts - tenants will create their own accounts

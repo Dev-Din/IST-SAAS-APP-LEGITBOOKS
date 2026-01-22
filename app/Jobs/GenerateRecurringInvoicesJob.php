@@ -29,7 +29,7 @@ class GenerateRecurringInvoicesJob implements ShouldQueue
 
                     $invoice = Invoice::create([
                         'tenant_id' => $template->tenant_id,
-                        'invoice_number' => $numberService->generateNextNumber(),
+                        'invoice_number' => $numberService->generate($template->tenant_id),
                         'contact_id' => $template->contact_id,
                         'invoice_date' => now()->toDateString(),
                         'due_date' => now()->addDays(14)->toDateString(),
@@ -61,12 +61,14 @@ class GenerateRecurringInvoicesJob implements ShouldQueue
     {
         $next = Carbon::parse($template->next_run_at ?? now());
 
-        return match ($template->frequency) {
+        $result = match ($template->frequency) {
             'daily' => $next->addDay(),
             'weekly' => $next->addWeek(),
             'monthly' => $next->addMonth(),
             'yearly' => $next->addYear(),
             default => $next->addMonth(),
-        }->toDateTimeString();
+        };
+
+        return $result->toDateTimeString();
     }
 }

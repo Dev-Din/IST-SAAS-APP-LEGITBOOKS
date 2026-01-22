@@ -158,8 +158,18 @@ MPESA_PASSKEY=your-passkey
 MPESA_ENVIRONMENT=sandbox
 ```
 
-### Step 5: Run Migrations and Seeders
+### Step 5: Database Setup
 
+**Option 1: Using SQL File (Recommended for Quick Setup)**
+```bash
+# Create database
+mysql -u root -p -e "CREATE DATABASE legitbooks;"
+
+# Import complete setup SQL
+mysql -u root -p legitbooks < database/setup.sql
+```
+
+**Option 2: Using Laravel Migrations**
 ```bash
 # Run migrations
 php artisan migrate
@@ -167,6 +177,8 @@ php artisan migrate
 # Seed initial data (creates admin user and roles)
 php artisan db:seed --class=SuperAdminSeeder
 ```
+
+The `database/setup.sql` file contains both schema and seed data, making it ideal for fresh installations or XAMPP users.
 
 **Default Admin Credentials:**
 - Email: `admin@legitbooks.com`
@@ -415,14 +427,41 @@ php artisan test --filter=TenantUserManagementTest
 php artisan test --filter=TenantInvoicesAdminTest
 php artisan test --filter=ExportInvoicesTest
 
+# Run unit tests only
+php artisan test --testsuite=Unit
+
+# Run feature tests only
+php artisan test --testsuite=Feature
+
 # Run with coverage
 php artisan test --coverage
 ```
+
+### Test Coverage
+
+The test suite includes comprehensive coverage for:
+- **Services:** InvoiceNumberService, InvoicePostingService, PaymentService, TenantProvisioningService
+- **Models:** Invoice, Payment, JournalEntry, Tenant, User, Contact, Product
+- **Controllers:** InvoiceController, PaymentController, BillingController
+- **Integration:** Complete workflows (tenant creation, invoice payment, subscription)
+
+### New Tests Created
+
+- `InvoicePostingServiceTest` - Journal entry creation and balancing
+- `PaymentServiceTest` - Payment processing and allocation
+- `TenantProvisioningServiceTest` - Tenant setup validation
+- `InvoiceModelTest` - Model relationships and methods
+- `JournalEntryModelTest` - Balancing validation
+- `TenantModelTest` - Tenant methods and branding
+- `UserModelTest` - Permission checks
+- `ContactModelTest` - Contact relationships
+- `ProductModelTest` - Product relationships
 
 ### Test Structure
 
 - **Feature Tests**: HTTP request testing for controllers
 - **Unit Tests**: Model and service testing
+- **Integration Tests**: Complete workflow testing
 - **Factories**: Model factories for test data generation
 
 ### Common Test Scenarios
@@ -433,6 +472,8 @@ php artisan test --coverage
 - Subscription management
 - Report generation and export
 - Permission and authorization checks
+- Journal entry balancing
+- Payment allocation logic
 
 ## 📝 Examples
 
