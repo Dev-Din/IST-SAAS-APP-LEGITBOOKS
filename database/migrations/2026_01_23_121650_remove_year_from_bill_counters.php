@@ -12,7 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, consolidate existing counters per tenant
+        // First, make year nullable temporarily to allow consolidation
+        if (Schema::hasColumn('bill_counters', 'year')) {
+            Schema::table('bill_counters', function (Blueprint $table) {
+                $table->integer('year')->nullable()->change();
+            });
+        }
+
+        // Consolidate existing counters per tenant
         // For each tenant, find the maximum counter across all years
         $tenants = DB::table('bill_counters')
             ->select('tenant_id')
@@ -30,10 +37,11 @@ return new class extends Migration
                 ->where('tenant_id', $tenant->tenant_id)
                 ->delete();
 
-            // Create a single counter with the maximum counter value
+            // Create a single counter with the maximum counter value (year is nullable now)
             DB::table('bill_counters')->insert([
                 'tenant_id' => $tenant->tenant_id,
                 'counter' => $maxCounter ?? 0,
+                'year' => null, // Set to null since we're removing this column
                 'prefix' => 'Bill',
                 'format' => 'Bill-{COUNTER}',
                 'created_at' => now(),
@@ -43,8 +51,36 @@ return new class extends Migration
 
         // Now update the table structure
         Schema::table('bill_counters', function (Blueprint $table) {
+            // First, make year nullable temporarily
+            if (Schema::hasColumn('bill_counters', 'year')) {
+                $table->integer('year')->nullable()->change();
+            }
+        });
+
+        // Drop foreign keys that might reference the unique index
+        // Check for any foreign keys on tenant_id
+        try {
+            $foreignKeys = DB::select("
+                SELECT CONSTRAINT_NAME 
+                FROM information_schema.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'bill_counters' 
+                AND CONSTRAINT_NAME != 'PRIMARY'
+                AND REFERENCED_TABLE_NAME IS NOT NULL
+            ");
+
+            foreach ($foreignKeys as $fk) {
+                DB::statement("ALTER TABLE `bill_counters` DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
+            }
+        } catch (\Exception $e) {
+            // No foreign keys or already dropped
+        }
+
+        Schema::table('bill_counters', function (Blueprint $table) {
             // Drop the composite unique constraint on tenant_id + year
-            $table->dropUnique(['tenant_id', 'year']);
+            if (Schema::hasIndex('bill_counters', 'bill_counters_tenant_id_year_unique')) {
+                $table->dropUnique(['tenant_id', 'year']);
+            }
 
             // Drop the year column
             if (Schema::hasColumn('bill_counters', 'year')) {
@@ -52,7 +88,9 @@ return new class extends Migration
             }
 
             // Add unique constraint on tenant_id only (one counter per tenant)
-            $table->unique('tenant_id');
+            if (! Schema::hasIndex('bill_counters', 'bill_counters_tenant_id_unique')) {
+                $table->unique('tenant_id');
+            }
         });
     }
 

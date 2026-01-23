@@ -12,7 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, consolidate existing counters per tenant
+        // First, update the table structure to make year nullable temporarily
+        // This allows us to consolidate data
+        if (Schema::hasColumn('invoice_counters', 'year')) {
+            Schema::table('invoice_counters', function (Blueprint $table) {
+                // Make year nullable temporarily to allow consolidation
+                $table->smallInteger('year')->nullable()->change();
+            });
+        }
+
+        // Consolidate existing counters per tenant
         // For each tenant, find the maximum sequence across all years
         $tenants = DB::table('invoice_counters')
             ->select('tenant_id')
@@ -30,16 +39,17 @@ return new class extends Migration
                 ->where('tenant_id', $tenant->tenant_id)
                 ->delete();
 
-            // Create a single counter with the maximum sequence
+            // Create a single counter with the maximum sequence (year is nullable now)
             DB::table('invoice_counters')->insert([
                 'tenant_id' => $tenant->tenant_id,
                 'sequence' => $maxSequence ?? 0,
+                'year' => null, // Set to null since we're removing this column
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
 
-        // Now update the table structure
+        // Now update the table structure to remove year column
         Schema::table('invoice_counters', function (Blueprint $table) {
             // Drop the composite unique constraint on tenant_id + year
             if (Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_year_unique')) {
@@ -52,7 +62,10 @@ return new class extends Migration
             }
 
             // Add unique constraint on tenant_id only (one counter per tenant)
-            $table->unique('tenant_id');
+            // Check if it doesn't already exist
+            if (! Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_unique')) {
+                $table->unique('tenant_id');
+            }
         });
     }
 
