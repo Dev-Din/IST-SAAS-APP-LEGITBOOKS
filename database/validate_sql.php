@@ -2,14 +2,13 @@
 
 /**
  * SQL File Validation Script
- * 
+ *
  * This script validates the setup.sql file structure without requiring a database connection.
  * Run this before importing the SQL file to catch syntax errors early.
  */
+$sqlFile = __DIR__.'/setup.sql';
 
-$sqlFile = __DIR__ . '/setup.sql';
-
-if (!file_exists($sqlFile)) {
+if (! file_exists($sqlFile)) {
     echo "ERROR: setup.sql file not found!\n";
     exit(1);
 }
@@ -47,19 +46,19 @@ foreach ($tables as $table) {
 // Check for foreign key constraints
 preg_match_all('/FOREIGN KEY.*REFERENCES `([^`]+)`/i', $content, $fkMatches);
 $referencedTables = array_unique($fkMatches[1] ?? []);
-echo "\nForeign key references found: " . count($referencedTables) . "\n";
+echo "\nForeign key references found: ".count($referencedTables)."\n";
 
 // Check for INSERT statements
 preg_match_all('/INSERT INTO `([^`]+)`/i', $content, $insertMatches);
 $insertTables = array_unique($insertMatches[1] ?? []);
-echo "Seed data tables: " . count($insertTables) . "\n";
+echo 'Seed data tables: '.count($insertTables)."\n";
 foreach ($insertTables as $table) {
     echo "  - $table\n";
 }
 
 // Validate foreign key references
 foreach ($referencedTables as $refTable) {
-    if (!in_array($refTable, $tables)) {
+    if (! in_array($refTable, $tables)) {
         $warnings[] = "Foreign key references non-existent table: $refTable";
     }
 }
@@ -74,11 +73,11 @@ if ($fkChecksOff !== $fkChecksOn) {
 
 // Check for SQL syntax issues (basic checks)
 if (preg_match('/CREATE TABLE[^;]*\([^)]*\)[^;]/i', $content)) {
-    $warnings[] = "Possible unclosed CREATE TABLE statement";
+    $warnings[] = 'Possible unclosed CREATE TABLE statement';
 }
 
 // Report results
-echo "\n" . str_repeat("=", 50) . "\n";
+echo "\n".str_repeat('=', 50)."\n";
 
 if (empty($errors) && empty($warnings)) {
     echo "✅ SQL file validation PASSED\n";
@@ -86,21 +85,21 @@ if (empty($errors) && empty($warnings)) {
     exit(0);
 }
 
-if (!empty($errors)) {
+if (! empty($errors)) {
     echo "❌ ERRORS FOUND:\n";
     foreach ($errors as $error) {
         echo "  - $error\n";
     }
 }
 
-if (!empty($warnings)) {
+if (! empty($warnings)) {
     echo "\n⚠️  WARNINGS:\n";
     foreach ($warnings as $warning) {
         echo "  - $warning\n";
     }
 }
 
-if (!empty($errors)) {
+if (! empty($errors)) {
     exit(1);
 }
 

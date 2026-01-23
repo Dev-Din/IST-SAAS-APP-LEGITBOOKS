@@ -2,15 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\Invoice;
 use App\Models\AuditLog;
+use App\Models\Invoice;
 use App\Services\Mail\PHPMailerService;
-use App\Services\TenantContext;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceSendService
 {
@@ -26,7 +25,7 @@ class InvoiceSendService
     public function sendInvoice(Invoice $invoice, ?int $userId = null): array
     {
         $tenant = $this->tenantContext->getTenant();
-        
+
         return DB::transaction(function () use ($invoice, $tenant, $userId) {
             try {
                 // Load relationships
@@ -34,10 +33,10 @@ class InvoiceSendService
 
                 // 1. Generate PDF
                 $pdfPath = $this->generatePdf($invoice);
-                
+
                 // 2. Generate payment token if not exists
                 $paymentToken = $invoice->payment_token;
-                if (!$paymentToken) {
+                if (! $paymentToken) {
                     $paymentToken = $this->generatePaymentToken();
                 }
 
@@ -55,7 +54,7 @@ class InvoiceSendService
                 ]);
 
                 // 5. Create journal entry (accrual basis)
-                if (!$invoice->journalEntry) {
+                if (! $invoice->journalEntry) {
                     $this->postingService->postInvoice($invoice);
                 }
 
@@ -110,10 +109,10 @@ class InvoiceSendService
 
         // Generate PDF
         $pdf = Pdf::loadView('tenant.invoices.pdf', compact('invoice', 'tenant'));
-        
+
         // Store in tenant-specific directory
         $directory = "tenants/{$tenant->id}/invoices";
-        $filename = "invoice-{$invoice->invoice_number}-" . now()->format('YmdHis') . ".pdf";
+        $filename = "invoice-{$invoice->invoice_number}-".now()->format('YmdHis').'.pdf';
         $path = "{$directory}/{$filename}";
 
         // Ensure directory exists
@@ -141,11 +140,12 @@ class InvoiceSendService
         $tenant = $this->tenantContext->getTenant();
         $contact = $invoice->contact;
 
-        if (!$contact->email) {
+        if (! $contact->email) {
             Log::warning('Invoice contact has no email', [
                 'invoice_id' => $invoice->id,
                 'contact_id' => $contact->id,
             ]);
+
             return ['status' => 'failed', 'message' => 'Contact has no email address'];
         }
 
@@ -179,7 +179,7 @@ class InvoiceSendService
 
         return [
             'status' => $sent ? 'sent' : 'failed',
-            'message_id' => $sent ? 'msg-' . Str::random(16) : null,
+            'message_id' => $sent ? 'msg-'.Str::random(16) : null,
         ];
     }
 
@@ -188,7 +188,7 @@ class InvoiceSendService
      */
     public function getPaymentUrl(Invoice $invoice): ?string
     {
-        if (!$invoice->payment_token) {
+        if (! $invoice->payment_token) {
             return null;
         }
 
@@ -198,4 +198,3 @@ class InvoiceSendService
         ]);
     }
 }
-

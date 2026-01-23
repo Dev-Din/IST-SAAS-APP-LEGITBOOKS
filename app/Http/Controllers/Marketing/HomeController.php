@@ -11,4 +11,3 @@ class HomeController extends Controller
         return view('marketing.home');
     }
 }
-

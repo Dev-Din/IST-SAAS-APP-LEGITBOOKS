@@ -86,6 +86,7 @@ class User extends Authenticatable
         }
 
         $permissions = is_array($this->permissions) ? $this->permissions : [];
+
         return in_array($permission, $permissions, true);
     }
 
@@ -101,6 +102,7 @@ class User extends Authenticatable
         }
 
         $current = is_array($this->permissions) ? $this->permissions : [];
+
         return count(array_intersect($permissions, $current)) > 0;
     }
 
@@ -110,8 +112,9 @@ class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         if ($this->first_name || $this->last_name) {
-            return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+            return trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
         }
+
         return $this->name ?? '';
     }
 }

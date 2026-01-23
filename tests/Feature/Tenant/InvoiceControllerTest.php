@@ -16,12 +16,13 @@ class InvoiceControllerTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->tenant = Tenant::create([
             'name' => 'Test Tenant',
             'email' => 'test@example.com',

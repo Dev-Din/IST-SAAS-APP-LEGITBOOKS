@@ -11,4 +11,3 @@ class SolutionsController extends Controller
         return view('marketing.solutions');
     }
 }
-

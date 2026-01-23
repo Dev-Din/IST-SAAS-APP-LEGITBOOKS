@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Helpers\PaymentHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Subscription;
 use App\Services\TenantProvisioningService;
-use App\Helpers\PaymentHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class TenantRegistrationController extends Controller
 {
@@ -63,7 +63,7 @@ class TenantRegistrationController extends Controller
             // Create user account - this is the account owner
             // Grant all available permissions to the owner
             $allPermissions = array_keys(config('tenant_permissions.permissions', []));
-            
+
             $user = User::create([
                 'tenant_id' => $tenant->id,
                 'name' => $validated['name'],
@@ -78,7 +78,7 @@ class TenantRegistrationController extends Controller
             ]);
 
             // Create default free plan subscription if one doesn't exist
-            if (!$tenant->subscription) {
+            if (! $tenant->subscription) {
                 Subscription::create([
                     'tenant_id' => $tenant->id,
                     'plan' => 'plan_free',
@@ -105,20 +105,20 @@ class TenantRegistrationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             // Log the actual error for debugging
-            \Log::error('Tenant registration failed: ' . $e->getMessage(), [
+            \Log::error('Tenant registration failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString(),
                 'input' => $request->except('password', 'password_confirmation'),
             ]);
-            
+
             // Return more specific error message
             $errorMessage = 'An error occurred during registration. Please try again.';
             if (config('app.debug')) {
-                $errorMessage .= ' Error: ' . $e->getMessage();
+                $errorMessage .= ' Error: '.$e->getMessage();
             }
-            
+
             return back()->withErrors([
                 'email' => $errorMessage,
             ])->withInput();
@@ -128,7 +128,7 @@ class TenantRegistrationController extends Controller
     public function showBillingForm(Request $request)
     {
         // Check if registration data exists in session
-        if (!$request->session()->has('registration.tenant_id')) {
+        if (! $request->session()->has('registration.tenant_id')) {
             return redirect()->route('tenant.auth.register')
                 ->with('error', 'Please complete account registration first.');
         }
@@ -162,7 +162,7 @@ class TenantRegistrationController extends Controller
 
         $isTestMode = PaymentHelper::isTestMode();
         $demoPaymentDetails = [];
-        
+
         if ($isTestMode) {
             foreach (['mpesa', 'debit_card', 'credit_card', 'paypal'] as $gateway) {
                 $demoPaymentDetails[$gateway] = PaymentHelper::getDemoPaymentDetails($gateway);
@@ -175,7 +175,7 @@ class TenantRegistrationController extends Controller
     public function processBilling(Request $request)
     {
         // Check if registration data exists in session
-        if (!$request->session()->has('registration.tenant_id')) {
+        if (! $request->session()->has('registration.tenant_id')) {
             return redirect()->route('tenant.auth.register')
                 ->with('error', 'Please complete account registration first.');
         }
@@ -272,7 +272,7 @@ class TenantRegistrationController extends Controller
             if ($paymentResult && isset($paymentResult['is_demo'])) {
                 $settings['is_demo_payment'] = $paymentResult['is_demo'];
             }
-            if (!empty($settings)) {
+            if (! empty($settings)) {
                 $subscription->update(['settings' => $settings]);
             }
 
@@ -294,7 +294,7 @@ class TenantRegistrationController extends Controller
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
-            \Log::error('Billing processing failed: ' . $e->getMessage(), [
+            \Log::error('Billing processing failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -305,4 +305,3 @@ class TenantRegistrationController extends Controller
         }
     }
 }
-

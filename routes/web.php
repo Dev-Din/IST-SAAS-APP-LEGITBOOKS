@@ -1,14 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Marketing\HomeController;
-use App\Http\Controllers\Marketing\FeaturesController;
-use App\Http\Controllers\Marketing\PricingController;
-use App\Http\Controllers\Marketing\SolutionsController;
 use App\Http\Controllers\Marketing\AboutController;
 use App\Http\Controllers\Marketing\ContactController;
 use App\Http\Controllers\Marketing\FaqController;
+use App\Http\Controllers\Marketing\FeaturesController;
+use App\Http\Controllers\Marketing\HomeController;
 use App\Http\Controllers\Marketing\LegalController;
+use App\Http\Controllers\Marketing\PricingController;
+use App\Http\Controllers\Marketing\SolutionsController;
+use Illuminate\Support\Facades\Route;
 
 // Minimal login route (redirects to tenant login for compatibility)
 Route::get('/login', function () {

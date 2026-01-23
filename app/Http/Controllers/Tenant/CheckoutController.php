@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Subscription;
-use App\Services\TenantContext;
 use App\Services\MpesaStkService;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,10 +26,10 @@ class CheckoutController extends Controller
     public function payWithMpesa(Request $request, string $plan)
     {
         $tenant = $this->tenantContext->getTenant();
-        
+
         // Validate plan
         $validPlans = ['starter', 'business', 'enterprise'];
-        if (!in_array($plan, $validPlans)) {
+        if (! in_array($plan, $validPlans)) {
             return back()->withErrors(['plan' => 'Invalid plan selected.']);
         }
 
@@ -57,7 +57,7 @@ class CheckoutController extends Controller
 
             // Get or create subscription
             $subscription = $tenant->subscription;
-            if (!$subscription) {
+            if (! $subscription) {
                 $subscription = Subscription::create([
                     'tenant_id' => $tenant->id,
                     'plan' => $plan,
@@ -90,18 +90,19 @@ class CheckoutController extends Controller
             ]);
 
             // Generate merchant reference
-            $merchantReference = 'SUB-' . $subscription->id . '-' . time();
+            $merchantReference = 'SUB-'.$subscription->id.'-'.time();
 
             // Initiate STK Push
             $stkResult = $this->mpesaService->initiateSTKPush([
                 'phone_number' => $phoneNumber,
                 'amount' => $amount,
                 'account_reference' => $merchantReference,
-                'transaction_desc' => 'Subscription payment for ' . ucfirst($plan) . ' plan',
+                'transaction_desc' => 'Subscription payment for '.ucfirst($plan).' plan',
             ]);
 
-            if (!$stkResult['success']) {
+            if (! $stkResult['success']) {
                 DB::rollBack();
+
                 return back()->withErrors(['payment' => $stkResult['error'] ?? 'Failed to initiate M-Pesa payment.']);
             }
 
@@ -148,7 +149,7 @@ class CheckoutController extends Controller
             ->where('tenant_id', $tenant->id)
             ->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json([
                 'status' => 'failed',
                 'error' => 'Payment not found',
@@ -156,7 +157,7 @@ class CheckoutController extends Controller
         }
 
         // Return status based on transaction_status
-        $status = match($payment->transaction_status) {
+        $status = match ($payment->transaction_status) {
             'completed' => 'success',
             'failed', 'cancelled' => 'failed',
             default => 'pending',
@@ -176,7 +177,7 @@ class CheckoutController extends Controller
         ];
 
         if ($status === 'success') {
-            $response['redirect'] = route('tenant.dashboard') . '?payment=success';
+            $response['redirect'] = route('tenant.dashboard').'?payment=success';
             $response['message'] = 'Payment received — redirecting...';
         } elseif ($status === 'failed') {
             $response['error'] = 'Payment failed. Please try again.';
@@ -195,15 +196,14 @@ class CheckoutController extends Controller
 
         // If starts with 0, replace with 254
         if (substr($phone, 0, 1) === '0') {
-            $phone = '254' . substr($phone, 1);
+            $phone = '254'.substr($phone, 1);
         }
 
         // If doesn't start with 254, add it
         if (substr($phone, 0, 3) !== '254') {
-            $phone = '254' . $phone;
+            $phone = '254'.$phone;
         }
 
         return $phone;
     }
 }
-

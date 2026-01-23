@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Payment;
-use App\Models\PaymentAllocation;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
-use App\Services\TenantContext;
+use App\Models\Payment;
+use App\Models\PaymentAllocation;
 use Illuminate\Support\Facades\DB;
 
 class PaymentService
@@ -25,8 +24,8 @@ class PaymentService
             $coa = $account->chartOfAccount;
 
             // Create journal entry
-            $entryNumber = 'JE-' . date('Ymd') . '-' . str_pad(JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
-            
+            $entryNumber = 'JE-'.date('Ymd').'-'.str_pad(JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
+
             $journalEntry = JournalEntry::create([
                 'tenant_id' => $tenant->id,
                 'entry_number' => $entryNumber,
@@ -51,7 +50,7 @@ class PaymentService
                 ->where('code', '1200')
                 ->first();
 
-            if (!$arAccount) {
+            if (! $arAccount) {
                 throw new \Exception('Accounts Receivable account not found');
             }
 
@@ -88,7 +87,7 @@ class PaymentService
                         'chart_of_account_id' => $unappliedAccount->id,
                         'type' => 'credit',
                         'amount' => $overpayment,
-                        'description' => "Unapplied payment amount",
+                        'description' => 'Unapplied payment amount',
                     ]);
                 }
             }
@@ -96,7 +95,7 @@ class PaymentService
             $journalEntry->calculateTotals();
             $journalEntry->save();
 
-            if (!$journalEntry->isBalanced()) {
+            if (! $journalEntry->isBalanced()) {
                 throw new \Exception('Journal entry is not balanced');
             }
 
@@ -104,4 +103,3 @@ class PaymentService
         });
     }
 }
-

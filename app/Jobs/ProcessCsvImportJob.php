@@ -20,7 +20,7 @@ class ProcessCsvImportJob implements ShouldQueue
     {
         $job = CsvImportJob::find($this->jobId);
 
-        if (!$job) {
+        if (! $job) {
             return;
         }
 

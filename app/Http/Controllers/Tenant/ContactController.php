@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
 use App\Models\Contact;
 use App\Models\Invoice;
-use App\Models\Bill;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 
@@ -28,6 +28,7 @@ class ContactController extends Controller
     public function create(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
+
         return view('tenant.contacts.create', compact('tenant'));
     }
 
@@ -37,7 +38,7 @@ class ContactController extends Controller
     public function store(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -69,7 +70,7 @@ class ContactController extends Controller
     public function show(Contact $contact, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         // Load invoices with payment allocations for customers
         $invoices = [];
         if ($contact->type === 'customer') {
@@ -78,7 +79,7 @@ class ContactController extends Controller
                 ->orderBy('invoice_date', 'desc')
                 ->get();
         }
-        
+
         // Load bills with payment allocations for suppliers
         $bills = [];
         if ($contact->type === 'supplier') {
@@ -87,9 +88,9 @@ class ContactController extends Controller
                 ->orderBy('bill_date', 'desc')
                 ->get();
         }
-        
+
         $contact->load('payments');
-        
+
         return view('tenant.contacts.show', compact('contact', 'tenant', 'invoices', 'bills'));
     }
 
@@ -99,6 +100,7 @@ class ContactController extends Controller
     public function edit(Contact $contact, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
+
         return view('tenant.contacts.edit', compact('contact', 'tenant'));
     }
 
@@ -129,6 +131,7 @@ class ContactController extends Controller
     public function destroy(Contact $contact)
     {
         $contact->delete();
+
         return redirect()->route('tenant.contacts.index')
             ->with('success', 'Contact deleted successfully.');
     }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('payments', 'client_token')) {
+            if (! Schema::hasColumn('payments', 'client_token')) {
                 $table->string('client_token')->nullable()->unique()->after('merchant_request_id');
             }
         });

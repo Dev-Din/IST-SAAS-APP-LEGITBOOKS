@@ -3,14 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\PaymentAllocation;
+use App\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class TenantInvoiceAdminController extends Controller
 {
@@ -20,7 +18,7 @@ class TenantInvoiceAdminController extends Controller
     protected function ensurePermission(): void
     {
         $admin = Auth::guard('admin')->user();
-        if (!$admin || (!$admin->hasRole('owner') && !$admin->hasPermission('tenants.view'))) {
+        if (! $admin || (! $admin->hasRole('owner') && ! $admin->hasPermission('tenants.view'))) {
             abort(403, 'You do not have permission to view tenant invoices.');
         }
     }
@@ -59,7 +57,7 @@ class TenantInvoiceAdminController extends Controller
 
         // Payment method filter
         if ($request->has('payment_method') && $request->payment_method) {
-            $query->whereHas('paymentAllocations.payment', function($q) use ($request) {
+            $query->whereHas('paymentAllocations.payment', function ($q) use ($request) {
                 $q->where('payment_method', $request->payment_method);
             });
         }
@@ -83,7 +81,7 @@ class TenantInvoiceAdminController extends Controller
         ];
 
         return response()->json([
-            'invoices' => $invoices->map(function($invoice) {
+            'invoices' => $invoices->map(function ($invoice) {
                 return $this->formatInvoiceData($invoice);
             }),
             'status_counts' => $statusCounts,
@@ -151,14 +149,14 @@ class TenantInvoiceAdminController extends Controller
         }
 
         if ($request->has('payment_method') && $request->payment_method) {
-            $query->whereHas('paymentAllocations.payment', function($q) use ($request) {
+            $query->whereHas('paymentAllocations.payment', function ($q) use ($request) {
                 $q->where('payment_method', $request->payment_method);
             });
         }
 
         $invoices = $query->orderBy('invoice_date', 'desc')->get();
 
-        $filename = "tenant_{$tenant->id}_invoices_" . now()->format('Y-m-d_His') . '.csv';
+        $filename = "tenant_{$tenant->id}_invoices_".now()->format('Y-m-d_His').'.csv';
 
         return response()->streamDownload(function () use ($invoices) {
             $file = fopen('php://output', 'w');
@@ -184,7 +182,7 @@ class TenantInvoiceAdminController extends Controller
             // Data rows
             foreach ($invoices as $invoice) {
                 $paymentNarration = $this->getPaymentNarration($invoice);
-                
+
                 fputcsv($file, [
                     $this->escapeCsvField($invoice->invoice_number),
                     $this->escapeCsvField($invoice->contact->name ?? ''),
@@ -265,7 +263,7 @@ class TenantInvoiceAdminController extends Controller
         $allocation = $allocations->first();
         $payment = $allocation->payment;
 
-        if (!$payment) {
+        if (! $payment) {
             return [
                 'payment_amount' => null,
                 'plan_name' => null,
@@ -283,16 +281,16 @@ class TenantInvoiceAdminController extends Controller
         }
 
         // Get transaction code
-        $transactionCode = $payment->mpesa_receipt 
-            ?? $payment->reference 
-            ?? $payment->checkout_request_id 
-            ?? $payment->merchant_request_id 
+        $transactionCode = $payment->mpesa_receipt
+            ?? $payment->reference
+            ?? $payment->checkout_request_id
+            ?? $payment->merchant_request_id
             ?? null;
 
         // Build narration
         $narrationParts = [];
         if ($includeFull) {
-            $narrationParts[] = "Payment Amount: KES " . number_format($payment->amount, 2);
+            $narrationParts[] = 'Payment Amount: KES '.number_format($payment->amount, 2);
             if ($planName) {
                 $narrationParts[] = "Plan: {$planName}";
             }
@@ -300,10 +298,10 @@ class TenantInvoiceAdminController extends Controller
                 $narrationParts[] = "Transaction Code: {$transactionCode}";
             }
             if ($payment->payment_method) {
-                $narrationParts[] = "Payment Method: " . ucfirst(str_replace('_', ' ', $payment->payment_method));
+                $narrationParts[] = 'Payment Method: '.ucfirst(str_replace('_', ' ', $payment->payment_method));
             }
             if ($payment->payment_date) {
-                $narrationParts[] = "Payment Date: " . $payment->payment_date->format('d/m/Y H:i:s');
+                $narrationParts[] = 'Payment Date: '.$payment->payment_date->format('d/m/Y H:i:s');
             }
             if ($payment->notes) {
                 $narrationParts[] = "Notes: {$payment->notes}";
@@ -325,11 +323,11 @@ class TenantInvoiceAdminController extends Controller
      */
     protected function getPlanName(?string $plan): ?string
     {
-        if (!$plan) {
+        if (! $plan) {
             return null;
         }
 
-        return match($plan) {
+        return match ($plan) {
             'plan_free' => 'Free',
             'plan_starter' => 'Starter',
             'plan_business' => 'Business',
@@ -349,10 +347,9 @@ class TenantInvoiceAdminController extends Controller
 
         // Escape quotes and wrap in quotes if contains comma, quote, or newline
         if (strpos($field, ',') !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false) {
-            return '"' . str_replace('"', '""', $field) . '"';
+            return '"'.str_replace('"', '""', $field).'"';
         }
 
         return $field;
     }
 }
-

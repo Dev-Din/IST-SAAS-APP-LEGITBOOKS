@@ -24,48 +24,48 @@ class JournalEntryModelTest extends TestCase
     public function test_is_balanced_returns_true_when_debits_equal_credits(): void
     {
         $entry = $this->createTestJournalEntry();
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => 1,
             'type' => 'debit',
             'amount' => 1000.00,
         ]);
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => 2,
             'type' => 'credit',
             'amount' => 1000.00,
         ]);
-        
+
         $entry->calculateTotals();
         $entry->save();
-        
+
         $this->assertTrue($entry->isBalanced());
     }
 
     public function test_is_balanced_returns_false_when_debits_not_equal_credits(): void
     {
         $entry = $this->createTestJournalEntry();
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => 1,
             'type' => 'debit',
             'amount' => 1000.00,
         ]);
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => 2,
             'type' => 'credit',
             'amount' => 500.00,
         ]);
-        
+
         $entry->calculateTotals();
         $entry->save();
-        
+
         $this->assertFalse($entry->isBalanced());
     }
 
@@ -74,24 +74,24 @@ class JournalEntryModelTest extends TestCase
         $entry = $this->createTestJournalEntry();
         $coa1 = $this->createTestCOA();
         $coa2 = $this->createTestCOA();
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => $coa1->id,
             'type' => 'debit',
             'amount' => 1000.00,
         ]);
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => $coa2->id,
             'type' => 'credit',
             'amount' => 1000.00,
         ]);
-        
+
         $entry->calculateTotals();
         $entry->save();
-        
+
         $this->assertEquals(1000.00, $entry->total_debits);
         $this->assertEquals(1000.00, $entry->total_credits);
     }
@@ -100,14 +100,14 @@ class JournalEntryModelTest extends TestCase
     {
         $entry = $this->createTestJournalEntry();
         $coa = $this->createTestCOA();
-        
+
         JournalLine::create([
             'journal_entry_id' => $entry->id,
             'chart_of_account_id' => $coa->id,
             'type' => 'debit',
             'amount' => 1000.00,
         ]);
-        
+
         $this->assertCount(1, $entry->lines);
     }
 
@@ -126,7 +126,7 @@ class JournalEntryModelTest extends TestCase
     {
         return ChartOfAccount::create([
             'tenant_id' => $this->tenant->id,
-            'code' => 'TEST' . uniqid(),
+            'code' => 'TEST'.uniqid(),
             'name' => 'Test Account',
             'type' => 'asset',
             'category' => 'current_asset',

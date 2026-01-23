@@ -11,4 +11,3 @@ class LegalController extends Controller
         return view('marketing.legal.privacy');
     }
 }
-

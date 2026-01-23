@@ -29,10 +29,10 @@ class ContactController extends Controller
 
         try {
             $validated = $request->validate([
-                'name'    => 'required|string|max:255',
-                'email'   => 'required|email|max:255',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
                 'company' => 'nullable|string|max:255',
-                'phone'   => 'nullable|string|max:50',
+                'phone' => 'nullable|string|max:50',
                 'message' => 'required|string|min:5',
             ]);
 
@@ -42,14 +42,14 @@ class ContactController extends Controller
 
             // Create fingerprint to detect duplicate submissions
             $fingerprint = sha1(
-                $validated['email'] . '|' .
-                ($validated['company'] ?? '') . '|' .
-                ($validated['phone'] ?? '') . '|' .
+                $validated['email'].'|'.
+                ($validated['company'] ?? '').'|'.
+                ($validated['phone'] ?? '').'|'.
                 $validated['message']
             );
 
             // Check if this exact submission was sent recently (within 60 seconds)
-            $cacheKey = 'contact_form_' . $fingerprint;
+            $cacheKey = 'contact_form_'.$fingerprint;
             if (Cache::has($cacheKey)) {
                 Log::warning('Duplicate contact form submission detected', [
                     'fingerprint' => $fingerprint,
@@ -79,21 +79,21 @@ class ContactController extends Controller
 
             // Render internal notification email template
             $html = view('emails.contact.internal', [
-                'submission' => $submission
+                'submission' => $submission,
             ])->render();
 
             // Send email using PHPMailer
             $supportEmail = env('CONTACT_SUPPORT_EMAIL', 'nurudiin222@gmail.com');
-            
+
             Log::info('Attempting to send notification email via PHPMailer', [
                 'submission_id' => $submission->id,
                 'recipient' => $supportEmail,
             ]);
 
             $mailSent = $mailer->send([
-                'to'       => $supportEmail,
-                'subject'  => "New LegitBooks Enquiry — {$submission->name}",
-                'html'     => $html,
+                'to' => $supportEmail,
+                'subject' => "New LegitBooks Enquiry — {$submission->name}",
+                'html' => $html,
                 'reply_to' => $submission->email,
             ]);
 
@@ -134,6 +134,4 @@ class ContactController extends Controller
             throw $e;
         }
     }
-
 }
-

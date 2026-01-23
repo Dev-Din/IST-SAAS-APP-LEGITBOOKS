@@ -11,4 +11,3 @@ class FeaturesController extends Controller
         return view('marketing.features');
     }
 }
-

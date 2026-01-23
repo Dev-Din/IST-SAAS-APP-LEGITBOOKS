@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('prefix')->default('BILL');
             $table->string('format')->default('BILL-{YEAR}-{COUNTER}');
             $table->timestamps();
-            
+
             // Unique constraint: one counter per tenant per year
             $table->unique(['tenant_id', 'year']);
         });

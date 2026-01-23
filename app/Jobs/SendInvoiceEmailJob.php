@@ -24,7 +24,7 @@ class SendInvoiceEmailJob implements ShouldQueue
     {
         $invoice = Invoice::with(['lineItems', 'contact'])->find($this->invoiceId);
 
-        if (!$invoice) {
+        if (! $invoice) {
             return;
         }
 

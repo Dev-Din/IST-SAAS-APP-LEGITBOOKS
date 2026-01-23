@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 class ReportExport implements FromArray, WithHeadings, WithTitle
 {
     protected array $data;
+
     protected string $report;
 
     public function __construct(array $data, string $report)
@@ -51,6 +52,7 @@ class ReportExport implements FromArray, WithHeadings, WithTitle
                         $rows[] = [$trend['date'], $trend['revenue']];
                     }
                 }
+
                 return $rows;
             case 'subscription':
                 $rows = [];
@@ -59,6 +61,7 @@ class ReportExport implements FromArray, WithHeadings, WithTitle
                         $rows[] = [$plan, $count];
                     }
                 }
+
                 return $rows;
             case 'payment':
                 $rows = [];
@@ -67,6 +70,7 @@ class ReportExport implements FromArray, WithHeadings, WithTitle
                         $rows[] = [$status, $info['count'] ?? 0, $info['total'] ?? 0];
                     }
                 }
+
                 return $rows;
             default:
                 return [];
@@ -89,4 +93,3 @@ class ReportExport implements FromArray, WithHeadings, WithTitle
         }
     }
 }
-

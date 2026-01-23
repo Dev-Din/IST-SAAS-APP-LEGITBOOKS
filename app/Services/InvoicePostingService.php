@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
-use App\Services\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 class InvoicePostingService
@@ -17,20 +16,20 @@ class InvoicePostingService
     public function postInvoice(Invoice $invoice): JournalEntry
     {
         $tenant = $this->tenantContext->getTenant();
-        
+
         return DB::transaction(function () use ($invoice, $tenant) {
             // Get AR account
             $arAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                 ->where('code', '1200')
                 ->first();
 
-            if (!$arAccount) {
+            if (! $arAccount) {
                 throw new \Exception('Accounts Receivable account not found');
             }
 
             // Create journal entry
-            $entryNumber = 'JE-' . date('Ymd') . '-' . str_pad(JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
-            
+            $entryNumber = 'JE-'.date('Ymd').'-'.str_pad(JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
+
             $journalEntry = JournalEntry::create([
                 'tenant_id' => $tenant->id,
                 'entry_number' => $entryNumber,
@@ -52,7 +51,7 @@ class InvoicePostingService
 
             // Credit revenue accounts per line item (use subtotal, not line_total which includes tax)
             foreach ($invoice->lineItems as $lineItem) {
-                $salesAccount = $lineItem->salesAccount ?? 
+                $salesAccount = $lineItem->salesAccount ??
                     \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                         ->where('code', '4100')
                         ->first();
@@ -60,7 +59,7 @@ class InvoicePostingService
                 if ($salesAccount) {
                     // Calculate line subtotal (quantity * unit_price) without tax
                     $lineSubtotal = $lineItem->quantity * $lineItem->unit_price;
-                    
+
                     JournalLine::create([
                         'journal_entry_id' => $journalEntry->id,
                         'chart_of_account_id' => $salesAccount->id,
@@ -91,7 +90,7 @@ class InvoicePostingService
             $journalEntry->calculateTotals();
             $journalEntry->save();
 
-            if (!$journalEntry->isBalanced()) {
+            if (! $journalEntry->isBalanced()) {
                 throw new \Exception('Journal entry is not balanced');
             }
 
@@ -99,4 +98,3 @@ class InvoicePostingService
         });
     }
 }
-

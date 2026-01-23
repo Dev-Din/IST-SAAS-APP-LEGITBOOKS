@@ -13,7 +13,7 @@ class TenantModelTest extends TestCase
     public function test_generate_tenant_hash_returns_base64_encoded_uuid(): void
     {
         $hash = Tenant::generateTenantHash();
-        
+
         $this->assertNotEmpty($hash);
         $this->assertIsString($hash);
         // Base64 encoded UUID should be 24 characters
@@ -24,7 +24,7 @@ class TenantModelTest extends TestCase
     {
         $hash1 = Tenant::generateTenantHash();
         $hash2 = Tenant::generateTenantHash();
-        
+
         $this->assertNotEquals($hash1, $hash2);
     }
 
@@ -37,7 +37,7 @@ class TenantModelTest extends TestCase
             'status' => 'active',
             'settings' => [],
         ]);
-        
+
         $this->assertTrue($tenant->isActive());
     }
 
@@ -50,7 +50,7 @@ class TenantModelTest extends TestCase
             'status' => 'suspended',
             'settings' => [],
         ]);
-        
+
         $this->assertFalse($tenant->isActive());
     }
 
@@ -65,14 +65,14 @@ class TenantModelTest extends TestCase
                 'branding_override' => 'C',
             ],
         ]);
-        
+
         $this->assertEquals('C', $tenant->getBrandingMode());
     }
 
     public function test_get_branding_mode_returns_config_default_when_no_override(): void
     {
         config(['legitbooks.branding_mode' => 'B']);
-        
+
         $tenant = Tenant::create([
             'name' => 'Test Tenant',
             'email' => 'test@example.com',
@@ -80,7 +80,7 @@ class TenantModelTest extends TestCase
             'status' => 'active',
             'settings' => [],
         ]);
-        
+
         $this->assertEquals('B', $tenant->getBrandingMode());
     }
 
@@ -100,9 +100,9 @@ class TenantModelTest extends TestCase
                 ],
             ],
         ]);
-        
+
         $brandSettings = $tenant->getBrandSettings();
-        
+
         $this->assertEquals('Custom Brand', $brandSettings['name']);
         $this->assertEquals('/path/to/logo.png', $brandSettings['logo_path']);
         $this->assertEquals('#ff0000', $brandSettings['primary_color']);
@@ -117,9 +117,9 @@ class TenantModelTest extends TestCase
             'status' => 'active',
             'settings' => [],
         ]);
-        
+
         $brandSettings = $tenant->getBrandSettings();
-        
+
         $this->assertEquals('Test Tenant', $brandSettings['name']);
         $this->assertNull($brandSettings['logo_path']);
         $this->assertEquals('#392a26', $brandSettings['primary_color']);

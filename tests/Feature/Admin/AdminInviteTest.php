@@ -4,13 +4,11 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
 use App\Models\AdminInvitation;
-use App\Models\PlatformAuditLog;
 use App\Services\Mail\PHPMailerService;
-use App\Services\MailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
 use Mockery;
+use Tests\TestCase;
 
 class AdminInviteTest extends TestCase
 {
@@ -19,7 +17,7 @@ class AdminInviteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create superadmin role if using Spatie
         if (class_exists(\Spatie\Permission\Models\Role::class)) {
             \Spatie\Permission\Models\Role::firstOrCreate([
@@ -37,7 +35,7 @@ class AdminInviteTest extends TestCase
             'role' => 'superadmin',
             'is_active' => true,
         ]);
-        
+
         if (class_exists(\Spatie\Permission\Models\Role::class)) {
             $superadmin->assignRole('superadmin');
         }
@@ -47,7 +45,7 @@ class AdminInviteTest extends TestCase
         $phpMailerMock->shouldReceive('send')
             ->once()
             ->with(Mockery::on(function ($data) {
-                return isset($data['to']) 
+                return isset($data['to'])
                     && isset($data['subject'])
                     && isset($data['html'])
                     && str_contains($data['html'], 'Temporary Password')
@@ -291,4 +289,3 @@ class AdminInviteTest extends TestCase
         $response->assertStatus(403);
     }
 }
-

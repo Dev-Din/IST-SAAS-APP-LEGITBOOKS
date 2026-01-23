@@ -29,7 +29,7 @@ class TenantUserAdminController extends Controller
     protected function ensurePermission(): void
     {
         $admin = Auth::guard('admin')->user();
-        if (!$admin || (!$admin->hasRole('owner') && !$admin->hasPermission('tenants.view'))) {
+        if (! $admin || (! $admin->hasRole('owner') && ! $admin->hasPermission('tenants.view'))) {
             abort(403, 'You do not have permission to manage tenant users.');
         }
     }
@@ -47,11 +47,11 @@ class TenantUserAdminController extends Controller
         // Search filter
         if ($request->has('q') && $request->q) {
             $search = $request->q;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%");
             });
         }
 
@@ -74,7 +74,7 @@ class TenantUserAdminController extends Controller
             ->get();
 
         return response()->json([
-            'users' => $users->map(function($user) {
+            'users' => $users->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -88,7 +88,7 @@ class TenantUserAdminController extends Controller
                     'avatar' => $this->getAvatarInitials($user),
                 ];
             }),
-            'invitations' => $invitations->map(function($invitation) {
+            'invitations' => $invitations->map(function ($invitation) {
                 return [
                     'id' => $invitation->id,
                     'first_name' => $invitation->first_name,
@@ -122,13 +122,13 @@ class TenantUserAdminController extends Controller
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users')->where(function($query) use ($tenant) {
+                Rule::unique('users')->where(function ($query) use ($tenant) {
                     return $query->where('tenant_id', $tenant->id);
                 }),
             ],
             'role_name' => 'required|string|max:255',
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|in:' . implode(',', array_keys(config('tenant_permissions.permissions', []))),
+            'permissions.*' => 'string|in:'.implode(',', array_keys(config('tenant_permissions.permissions', []))),
         ]);
 
         // Check for existing invitation
@@ -197,7 +197,7 @@ class TenantUserAdminController extends Controller
                 'sometimes',
                 'email',
                 'max:255',
-                Rule::unique('users')->where(function($query) use ($tenant, $user) {
+                Rule::unique('users')->where(function ($query) use ($tenant, $user) {
                     return $query->where('tenant_id', $tenant->id)->where('id', '!=', $user->id);
                 }),
             ],
@@ -322,16 +322,17 @@ class TenantUserAdminController extends Controller
     protected function getAvatarInitials(User $user): string
     {
         if ($user->first_name && $user->last_name) {
-            return strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
+            return strtoupper(substr($user->first_name, 0, 1).substr($user->last_name, 0, 1));
         }
         if ($user->name) {
             $parts = explode(' ', $user->name);
             if (count($parts) >= 2) {
-                return strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+                return strtoupper(substr($parts[0], 0, 1).substr($parts[1], 0, 1));
             }
+
             return strtoupper(substr($user->name, 0, 2));
         }
+
         return strtoupper(substr($user->email, 0, 2));
     }
 }
-

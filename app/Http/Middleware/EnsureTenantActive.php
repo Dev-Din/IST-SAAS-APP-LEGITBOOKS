@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Services\TenantContext;
 
 class EnsureTenantActive
 {
@@ -22,7 +22,7 @@ class EnsureTenantActive
     {
         $tenant = $this->tenantContext->getTenant();
 
-        if (!$tenant || !$tenant->isActive()) {
+        if (! $tenant || ! $tenant->isActive()) {
             abort(403, 'Tenant is not active');
         }
 

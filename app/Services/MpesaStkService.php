@@ -2,21 +2,28 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class MpesaStkService
 {
     protected ?string $baseUrl;
+
     protected ?string $authUrl;
+
     protected ?string $stkPushUrl;
+
     protected ?string $consumerKey;
+
     protected ?string $consumerSecret;
+
     protected ?string $passkey;
+
     protected ?string $shortcode;
+
     protected ?string $callbackUrl;
+
     protected ?string $transactionType;
 
     public function __construct()
@@ -37,10 +44,10 @@ class MpesaStkService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->consumerKey) 
-            && !empty($this->consumerSecret) 
-            && !empty($this->passkey) 
-            && !empty($this->shortcode);
+        return ! empty($this->consumerKey)
+            && ! empty($this->consumerSecret)
+            && ! empty($this->passkey)
+            && ! empty($this->shortcode);
     }
 
     /**
@@ -71,9 +78,10 @@ class MpesaStkService
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    
+
                     if (isset($data['access_token'])) {
                         Log::info('M-Pesa access token generated successfully');
+
                         return $data['access_token'];
                     }
                 }
@@ -99,7 +107,7 @@ class MpesaStkService
             }
         }
 
-        throw new \Exception('Failed to generate M-Pesa access token after ' . $retryAttempts . ' attempts');
+        throw new \Exception('Failed to generate M-Pesa access token after '.$retryAttempts.' attempts');
     }
 
     /**
@@ -108,7 +116,8 @@ class MpesaStkService
     protected function generatePassword(): string
     {
         $timestamp = $this->getTimestamp();
-        $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
+        $password = base64_encode($this->shortcode.$this->passkey.$timestamp);
+
         return $password;
     }
 
@@ -125,7 +134,7 @@ class MpesaStkService
      */
     public function initiateSTKPush(array $data): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'M-Pesa is not configured. Please set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, and MPESA_SHORTCODE in your .env file.',
@@ -153,8 +162,8 @@ class MpesaStkService
             'PartyB' => $this->shortcode,
             'PhoneNumber' => $phoneNumber,
             'CallBackURL' => $this->callbackUrl,
-            'AccountReference' => $data['account_reference'] ?? 'INV-' . ($data['invoice_id'] ?? ''),
-            'TransactionDesc' => $data['transaction_desc'] ?? 'Payment for Invoice ' . ($data['invoice_id'] ?? ''),
+            'AccountReference' => $data['account_reference'] ?? 'INV-'.($data['invoice_id'] ?? ''),
+            'TransactionDesc' => $data['transaction_desc'] ?? 'Payment for Invoice '.($data['invoice_id'] ?? ''),
         ];
 
         // Log the amount difference in development
@@ -184,7 +193,7 @@ class MpesaStkService
             if (isset($responseData['errorCode']) || isset($responseData['errorMessage'])) {
                 $errorMessage = $responseData['errorMessage'] ?? 'M-Pesa API error';
                 $errorCode = $responseData['errorCode'] ?? 'UNKNOWN';
-                
+
                 Log::error('M-Pesa STK Push API error', [
                     'error_code' => $errorCode,
                     'error_message' => $errorMessage,
@@ -246,7 +255,7 @@ class MpesaStkService
 
             return [
                 'success' => false,
-                'error' => 'Unexpected response from M-Pesa API: ' . ($responseData['errorMessage'] ?? json_encode($responseData)),
+                'error' => 'Unexpected response from M-Pesa API: '.($responseData['errorMessage'] ?? json_encode($responseData)),
                 'response' => $responseData,
             ];
         } catch (\Exception $e) {
@@ -257,7 +266,7 @@ class MpesaStkService
 
             return [
                 'success' => false,
-                'error' => 'Failed to initiate STK Push: ' . $e->getMessage(),
+                'error' => 'Failed to initiate STK Push: '.$e->getMessage(),
             ];
         }
     }
@@ -272,12 +281,12 @@ class MpesaStkService
 
         // If starts with 0, replace with 254
         if (substr($phone, 0, 1) === '0') {
-            $phone = '254' . substr($phone, 1);
+            $phone = '254'.substr($phone, 1);
         }
 
         // If doesn't start with 254, add it
         if (substr($phone, 0, 3) !== '254') {
-            $phone = '254' . $phone;
+            $phone = '254'.$phone;
         }
 
         return $phone;
@@ -289,7 +298,7 @@ class MpesaStkService
      */
     public function querySTKPushStatus(string $checkoutRequestID): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'M-Pesa is not configured.',
@@ -300,7 +309,7 @@ class MpesaStkService
         $timestamp = $this->getTimestamp();
         $password = $this->generatePassword();
 
-        $queryUrl = $this->baseUrl . '/mpesa/stkpushquery/v1/query';
+        $queryUrl = $this->baseUrl.'/mpesa/stkpushquery/v1/query';
 
         $payload = [
             'BusinessShortCode' => $this->shortcode,
@@ -379,7 +388,7 @@ class MpesaStkService
 
             return [
                 'success' => false,
-                'error' => 'Failed to query STK Push status: ' . $e->getMessage(),
+                'error' => 'Failed to query STK Push status: '.$e->getMessage(),
             ];
         }
     }
@@ -389,12 +398,12 @@ class MpesaStkService
      */
     public function verifyCallbackIP(string $ip): bool
     {
-        if (!config('mpesa.validate_callback_ip', false)) {
+        if (! config('mpesa.validate_callback_ip', false)) {
             return true; // Skip validation in sandbox/development
         }
 
         $whitelist = config('mpesa.callback_ip_whitelist', []);
+
         return in_array($ip, $whitelist);
     }
 }
-

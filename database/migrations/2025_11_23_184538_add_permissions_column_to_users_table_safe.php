@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Add permissions column only if it doesn't exist
-            if (!Schema::hasColumn('users', 'permissions')) {
+            if (! Schema::hasColumn('users', 'permissions')) {
                 $table->json('permissions')->nullable()->after('role_name');
             }
         });

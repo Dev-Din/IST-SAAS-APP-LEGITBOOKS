@@ -22,7 +22,7 @@ class ContactModelTest extends TestCase
     public function test_contact_has_tenant_relationship(): void
     {
         $contact = $this->createTestContact();
-        
+
         $this->assertInstanceOf(Tenant::class, $contact->tenant);
         $this->assertEquals($this->tenant->id, $contact->tenant->id);
     }
@@ -36,7 +36,7 @@ class ContactModelTest extends TestCase
             'type' => 'customer',
             'tax_rate' => '16.00',
         ]);
-        
+
         $this->assertIsFloat($contact->tax_rate);
         $this->assertEquals(16.00, $contact->tax_rate);
     }
@@ -44,14 +44,14 @@ class ContactModelTest extends TestCase
     public function test_contact_can_be_customer_type(): void
     {
         $contact = $this->createTestContact(['type' => 'customer']);
-        
+
         $this->assertEquals('customer', $contact->type);
     }
 
     public function test_contact_can_be_supplier_type(): void
     {
         $contact = $this->createTestContact(['type' => 'supplier']);
-        
+
         $this->assertEquals('supplier', $contact->type);
     }
 

@@ -3,16 +3,20 @@
 namespace App\Services;
 
 use App\Models\Payment;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class MpesaReceiptValidationService
 {
     protected ?string $consumerKey;
+
     protected ?string $consumerSecret;
+
     protected ?string $baseUrl;
+
     protected ?string $shortcode;
+
     protected ?string $passkey;
 
     public function __construct()
@@ -29,10 +33,10 @@ class MpesaReceiptValidationService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->consumerKey) 
-            && !empty($this->consumerSecret) 
-            && !empty($this->shortcode) 
-            && !empty($this->passkey);
+        return ! empty($this->consumerKey)
+            && ! empty($this->consumerSecret)
+            && ! empty($this->shortcode)
+            && ! empty($this->passkey);
     }
 
     /**
@@ -40,22 +44,23 @@ class MpesaReceiptValidationService
      */
     public function getAccessToken(): ?string
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             Log::error('M-Pesa credentials not configured');
+
             return null;
         }
 
         // Check cache first
         $cacheKey = config('mpesa.token_cache_key', 'mpesa_access_token');
         $cachedToken = Cache::get($cacheKey);
-        
+
         if ($cachedToken) {
             return $cachedToken;
         }
 
         try {
-            $authUrl = $this->baseUrl . '/oauth/v1/generate?grant_type=client_credentials';
-            
+            $authUrl = $this->baseUrl.'/oauth/v1/generate?grant_type=client_credentials';
+
             $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
                 ->get($authUrl);
 
@@ -67,8 +72,9 @@ class MpesaReceiptValidationService
                     // Cache token for 55 minutes (tokens expire in 1 hour)
                     $ttl = config('mpesa.token_cache_ttl', 3300);
                     Cache::put($cacheKey, $accessToken, $ttl);
-                    
+
                     Log::info('M-Pesa access token obtained');
+
                     return $accessToken;
                 }
             }
@@ -88,29 +94,31 @@ class MpesaReceiptValidationService
 
     /**
      * Query transaction status using M-Pesa Receipt Number
-     * 
-     * @param string $receiptNumber M-Pesa receipt number (e.g., "TEST12345")
+     *
+     * @param  string  $receiptNumber  M-Pesa receipt number (e.g., "TEST12345")
      * @return array|null Transaction details or null if not found/invalid
      */
     public function queryTransactionStatus(string $receiptNumber): ?array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             Log::error('M-Pesa credentials not configured for transaction query');
+
             return null;
         }
 
         $accessToken = $this->getAccessToken();
-        if (!$accessToken) {
+        if (! $accessToken) {
             Log::error('Failed to get access token for transaction query');
+
             return null;
         }
 
         try {
-            $queryUrl = $this->baseUrl . '/mpesa/transactionstatus/v1/query';
-            
+            $queryUrl = $this->baseUrl.'/mpesa/transactionstatus/v1/query';
+
             // Generate password (Base64 encoded)
             $timestamp = date('YmdHis');
-            $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
+            $password = base64_encode($this->shortcode.$this->passkey.$timestamp);
 
             $payload = [
                 'Initiator' => $this->shortcode,
@@ -119,8 +127,8 @@ class MpesaReceiptValidationService
                 'TransactionID' => $receiptNumber,
                 'PartyA' => $this->shortcode,
                 'IdentifierType' => '4', // Organization
-                'ResultURL' => config('mpesa.callback_url', '') . '/transaction-status-result',
-                'QueueTimeOutURL' => config('mpesa.callback_url', '') . '/transaction-status-timeout',
+                'ResultURL' => config('mpesa.callback_url', '').'/transaction-status-result',
+                'QueueTimeOutURL' => config('mpesa.callback_url', '').'/transaction-status-timeout',
                 'Remarks' => 'Payment receipt validation',
                 'Occasion' => 'Receipt Validation',
             ];
@@ -133,7 +141,7 @@ class MpesaReceiptValidationService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 Log::info('M-Pesa transaction status query sent', [
                     'receipt' => $receiptNumber,
                     'response' => $data,
@@ -159,13 +167,13 @@ class MpesaReceiptValidationService
 
     /**
      * Validate payment receipt by querying M-Pesa API
-     * 
-     * @param Payment $payment Payment record to validate
+     *
+     * @param  Payment  $payment  Payment record to validate
      * @return array Validation result with status and details
      */
     public function validatePaymentReceipt(Payment $payment): array
     {
-        if (!$payment->mpesa_receipt) {
+        if (! $payment->mpesa_receipt) {
             return [
                 'valid' => false,
                 'error' => 'No M-Pesa receipt number found',
@@ -174,11 +182,11 @@ class MpesaReceiptValidationService
         }
 
         $receiptNumber = $payment->mpesa_receipt;
-        
+
         // Query transaction status
         $transactionData = $this->queryTransactionStatus($receiptNumber);
 
-        if (!$transactionData) {
+        if (! $transactionData) {
             return [
                 'valid' => false,
                 'error' => 'Failed to query transaction status from M-Pesa',
@@ -213,8 +221,8 @@ class MpesaReceiptValidationService
 
     /**
      * Fetch and validate payment by receipt number
-     * 
-     * @param string $receiptNumber M-Pesa receipt number
+     *
+     * @param  string  $receiptNumber  M-Pesa receipt number
      * @return array|null Payment details or null if not found
      */
     public function fetchPaymentByReceipt(string $receiptNumber): ?array
@@ -224,7 +232,7 @@ class MpesaReceiptValidationService
 
         if ($payment) {
             $validation = $this->validatePaymentReceipt($payment);
-            
+
             return [
                 'payment' => $payment,
                 'validation' => $validation,
@@ -249,8 +257,8 @@ class MpesaReceiptValidationService
 
     /**
      * Validate all pending payments for a tenant
-     * 
-     * @param int $tenantId Tenant ID
+     *
+     * @param  int  $tenantId  Tenant ID
      * @return array Validation results
      */
     public function validatePendingPayments(int $tenantId): array
@@ -284,14 +292,13 @@ class MpesaReceiptValidationService
         // In production, this should be encrypted using the M-Pesa public key
         // For sandbox, you might be able to use a simpler approach
         // This is a placeholder - implement proper encryption for production
-        
+
         if (config('app.env') === 'production') {
             // TODO: Implement proper security credential encryption
             Log::warning('Security credential encryption not implemented for production');
         }
 
         // For sandbox, you might not need this or it might be different
-        return base64_encode($this->shortcode . $this->passkey);
+        return base64_encode($this->shortcode.$this->passkey);
     }
 }
-

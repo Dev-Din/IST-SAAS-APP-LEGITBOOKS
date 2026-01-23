@@ -16,9 +16,9 @@ return new class extends Migration
             if (Schema::hasColumn('payment_allocations', 'invoice_id')) {
                 $table->foreignId('invoice_id')->nullable()->change();
             }
-            
+
             // Add bill_id column
-            if (!Schema::hasColumn('payment_allocations', 'bill_id')) {
+            if (! Schema::hasColumn('payment_allocations', 'bill_id')) {
                 $table->foreignId('bill_id')->nullable()->after('invoice_id')->constrained('bills')->onDelete('cascade');
             }
         });
@@ -34,7 +34,7 @@ return new class extends Migration
                 $table->dropForeign(['bill_id']);
                 $table->dropColumn('bill_id');
             }
-            
+
             // Revert invoice_id to not nullable if needed
             // Note: This might fail if there are null values, so we'll leave it nullable
         });

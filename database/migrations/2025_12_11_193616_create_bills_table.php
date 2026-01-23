@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('total', 15, 2)->default(0);
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             // Unique constraint: bill_number per tenant
             $table->unique(['tenant_id', 'bill_number']);
         });

@@ -59,10 +59,9 @@ class PaymentHelper
 
         return [
             'success' => true,
-            'transaction_id' => 'DEMO-' . strtoupper($gateway) . '-' . time(),
+            'transaction_id' => 'DEMO-'.strtoupper($gateway).'-'.time(),
             'message' => 'Demo payment processed successfully',
             'is_demo' => true,
         ];
     }
 }
-

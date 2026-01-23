@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Models\ChartOfAccount;
 use App\Models\Invoice;
-use App\Models\InvoiceCounter;
 use App\Models\InvoiceLineItem;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
@@ -19,19 +18,21 @@ class InvoicePostingServiceTest extends TestCase
     use RefreshDatabase;
 
     protected InvoicePostingService $service;
+
     protected Tenant $tenant;
+
     protected TenantContext $tenantContext;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->tenant = $this->createTestTenant();
         $this->tenantContext = app(TenantContext::class);
         $this->tenantContext->setTenant($this->tenant);
-        
+
         $this->service = new InvoicePostingService($this->tenantContext);
-        
+
         // Create required chart of accounts
         $this->createRequiredAccounts();
     }
@@ -39,9 +40,9 @@ class InvoicePostingServiceTest extends TestCase
     public function test_post_invoice_creates_journal_entry(): void
     {
         $invoice = $this->createTestInvoice();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $this->assertInstanceOf(JournalEntry::class, $journalEntry);
         $this->assertTrue($journalEntry->is_posted);
         $this->assertEquals(Invoice::class, $journalEntry->reference_type);
@@ -51,9 +52,9 @@ class InvoicePostingServiceTest extends TestCase
     public function test_post_invoice_creates_balanced_journal_entry(): void
     {
         $invoice = $this->createTestInvoice();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $this->assertTrue($journalEntry->isBalanced());
         $this->assertEquals($journalEntry->total_debits, $journalEntry->total_credits);
     }
@@ -62,14 +63,14 @@ class InvoicePostingServiceTest extends TestCase
     {
         $invoice = $this->createTestInvoice();
         $arAccount = ChartOfAccount::where('code', '1200')->first();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $arLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $arAccount->id)
             ->where('type', 'debit')
             ->first();
-        
+
         $this->assertNotNull($arLine);
         $this->assertEquals($invoice->total, $arLine->amount);
     }
@@ -78,14 +79,14 @@ class InvoicePostingServiceTest extends TestCase
     {
         $invoice = $this->createTestInvoice();
         $salesAccount = ChartOfAccount::where('code', '4100')->first();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $revenueLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $salesAccount->id)
             ->where('type', 'credit')
             ->first();
-        
+
         $this->assertNotNull($revenueLine);
         // Should credit the subtotal (without tax)
         $this->assertEquals($invoice->subtotal, $revenueLine->amount);
@@ -95,14 +96,14 @@ class InvoicePostingServiceTest extends TestCase
     {
         $invoice = $this->createTestInvoice(['tax_amount' => 160.00]);
         $taxAccount = ChartOfAccount::where('code', '2200')->first();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $taxLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $taxAccount->id)
             ->where('type', 'credit')
             ->first();
-        
+
         $this->assertNotNull($taxLine);
         $this->assertEquals(160.00, $taxLine->amount);
     }
@@ -111,10 +112,10 @@ class InvoicePostingServiceTest extends TestCase
     {
         ChartOfAccount::where('code', '1200')->delete();
         $invoice = $this->createTestInvoice();
-        
+
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Accounts Receivable account not found');
-        
+
         $this->service->postInvoice($invoice);
     }
 
@@ -128,17 +129,17 @@ class InvoicePostingServiceTest extends TestCase
             'category' => 'revenue',
             'is_active' => true,
         ]);
-        
+
         $invoice = $this->createTestInvoice();
         $invoice->lineItems()->update(['sales_account_id' => $customSalesAccount->id]);
         $invoice->refresh();
-        
+
         $journalEntry = $this->service->postInvoice($invoice);
-        
+
         $customLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $customSalesAccount->id)
             ->first();
-        
+
         $this->assertNotNull($customLine);
     }
 

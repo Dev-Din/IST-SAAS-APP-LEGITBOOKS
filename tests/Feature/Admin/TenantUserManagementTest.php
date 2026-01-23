@@ -2,20 +2,21 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
 use App\Models\Admin;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Mail;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class TenantUserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Admin $admin;
+
     protected Tenant $tenant;
 
     protected function setUp(): void
@@ -142,4 +143,3 @@ class TenantUserManagementTest extends TestCase
             ->assertJson(['error' => 'Cannot delete tenant owner.']);
     }
 }
-

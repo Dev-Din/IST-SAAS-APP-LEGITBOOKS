@@ -6,7 +6,6 @@ use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class TenantBackup extends Command
 {
@@ -19,15 +18,16 @@ class TenantBackup extends Command
         $tenantHash = $this->argument('tenant_hash');
         $tenant = Tenant::where('tenant_hash', $tenantHash)->first();
 
-        if (!$tenant) {
+        if (! $tenant) {
             $this->error("Tenant not found with hash: {$tenantHash}");
+
             return Command::FAILURE;
         }
 
         $backupDir = storage_path("backups/{$tenantHash}");
         File::ensureDirectoryExists($backupDir);
 
-        $filename = "backup_" . date('Y-m-d_His') . ".sql";
+        $filename = 'backup_'.date('Y-m-d_His').'.sql';
         $filepath = "{$backupDir}/{$filename}";
 
         $tables = [
@@ -38,7 +38,7 @@ class TenantBackup extends Command
         ];
 
         $sql = "-- Tenant Backup: {$tenant->name}\n";
-        $sql .= "-- Date: " . date('Y-m-d H:i:s') . "\n\n";
+        $sql .= '-- Date: '.date('Y-m-d H:i:s')."\n\n";
 
         foreach ($tables as $table) {
             $records = DB::table($table)
@@ -53,7 +53,7 @@ class TenantBackup extends Command
             foreach ($records as $record) {
                 $columns = implode(', ', array_keys((array) $record));
                 $values = implode(', ', array_map(function ($value) {
-                    return is_null($value) ? 'NULL' : "'" . addslashes($value) . "'";
+                    return is_null($value) ? 'NULL' : "'".addslashes($value)."'";
                 }, array_values((array) $record)));
 
                 $sql .= "INSERT INTO {$table} ({$columns}) VALUES ({$values});\n";
@@ -64,7 +64,7 @@ class TenantBackup extends Command
         File::put($filepath, $sql);
 
         $this->info("Backup created: {$filepath}");
-        $this->info("Size: " . number_format(File::size($filepath) / 1024, 2) . " KB");
+        $this->info('Size: '.number_format(File::size($filepath) / 1024, 2).' KB');
 
         return Command::SUCCESS;
     }

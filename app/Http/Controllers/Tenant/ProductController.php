@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\ChartOfAccount;
+use App\Models\Product;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 
@@ -44,7 +44,7 @@ class ProductController extends Controller
     public function store(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:255',
@@ -75,7 +75,7 @@ class ProductController extends Controller
     {
         $tenant = $tenantContext->getTenant();
         $product->load('salesAccount', 'invoiceLineItems.invoice');
-        
+
         return view('tenant.products.show', compact('product', 'tenant'));
     }
 
@@ -125,7 +125,7 @@ class ProductController extends Controller
         }
 
         $product->delete();
-        
+
         return redirect()->route('tenant.products.index')
             ->with('success', 'Product deleted successfully.');
     }

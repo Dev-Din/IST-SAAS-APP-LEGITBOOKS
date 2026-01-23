@@ -21,8 +21,9 @@ class MpesaSimulate extends Command
 
         $tenant = Tenant::where('tenant_hash', $tenantHash)->first();
 
-        if (!$tenant) {
+        if (! $tenant) {
             $this->error("Tenant not found with hash: {$tenantHash}");
+
             return Command::FAILURE;
         }
 
@@ -31,11 +32,12 @@ class MpesaSimulate extends Command
         $result = $mpesaService->simulatePayment($phone, $amount);
 
         if ($result['success']) {
-            $this->info("M-Pesa payment simulated successfully!");
+            $this->info('M-Pesa payment simulated successfully!');
             $this->info("Payment Number: {$result['payment']->payment_number}");
             $this->info("Amount: {$amount}");
         } else {
-            $this->error("Failed to simulate payment");
+            $this->error('Failed to simulate payment');
+
             return Command::FAILURE;
         }
 

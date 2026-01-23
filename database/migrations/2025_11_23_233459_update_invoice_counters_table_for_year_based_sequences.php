@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('invoice_counters')) {
+        if (! Schema::hasTable('invoice_counters')) {
             // Create table if it doesn't exist
             Schema::create('invoice_counters', function (Blueprint $table) {
                 $table->id();
@@ -20,7 +20,7 @@ return new class extends Migration
                 $table->smallInteger('year');
                 $table->unsignedInteger('sequence')->default(0);
                 $table->timestamps();
-                
+
                 // Unique constraint: one counter per tenant per year
                 $table->unique(['tenant_id', 'year']);
             });
@@ -34,7 +34,7 @@ return new class extends Migration
                 try {
                     if (DB::getDriverName() === 'mysql') {
                         $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_unique'");
-                        $indexExists = !empty($indexes);
+                        $indexExists = ! empty($indexes);
                     } else {
                         // For SQLite and other databases, try to drop and catch exception
                         $indexExists = true; // Assume exists, will catch if not
@@ -42,7 +42,7 @@ return new class extends Migration
                 } catch (\Exception $e) {
                     $indexExists = false;
                 }
-                
+
                 if ($indexExists) {
                     // Check if it's used by a foreign key
                     $foreignKeys = DB::select("
@@ -62,14 +62,14 @@ return new class extends Migration
                         }
                     }
                 }
-                
+
                 // Add year column if it doesn't exist
-                if (!Schema::hasColumn('invoice_counters', 'year')) {
+                if (! Schema::hasColumn('invoice_counters', 'year')) {
                     $table->smallInteger('year')->default(now()->year)->after('tenant_id');
                 }
-                
+
                 // Add sequence column if it doesn't exist (or migrate from last_number)
-                if (!Schema::hasColumn('invoice_counters', 'sequence')) {
+                if (! Schema::hasColumn('invoice_counters', 'sequence')) {
                     if (Schema::hasColumn('invoice_counters', 'last_number')) {
                         // Add sequence column and copy data
                         $table->unsignedInteger('sequence')->default(0)->after('year');
@@ -94,14 +94,14 @@ return new class extends Migration
                 if (Schema::hasColumn('invoice_counters', 'last_number') && Schema::hasColumn('invoice_counters', 'sequence')) {
                     $table->dropColumn('last_number');
                 }
-                
+
                 // Add unique constraint on tenant_id + year if it doesn't exist
                 // Use database-agnostic method
                 $uniqueExists = false;
                 try {
                     if (DB::getDriverName() === 'mysql') {
                         $indexes = DB::select("SHOW INDEX FROM invoice_counters WHERE Key_name = 'invoice_counters_tenant_id_year_unique'");
-                        $uniqueExists = !empty($indexes);
+                        $uniqueExists = ! empty($indexes);
                     } else {
                         // For SQLite, check via schema
                         $uniqueExists = Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_year_unique');
@@ -109,8 +109,8 @@ return new class extends Migration
                 } catch (\Exception $e) {
                     $uniqueExists = false;
                 }
-                
-                if (!$uniqueExists) {
+
+                if (! $uniqueExists) {
                     try {
                         $table->unique(['tenant_id', 'year'], 'invoice_counters_tenant_id_year_unique');
                     } catch (\Exception $e) {
@@ -131,12 +131,12 @@ return new class extends Migration
             if (Schema::hasIndex('invoice_counters', 'invoice_counters_tenant_id_year_unique')) {
                 $table->dropUnique('invoice_counters_tenant_id_year_unique');
             }
-            
+
             if (Schema::hasColumn('invoice_counters', 'year')) {
                 $table->dropColumn('year');
             }
-            
-            if (!Schema::hasColumn('invoice_counters', 'last_number') && Schema::hasColumn('invoice_counters', 'sequence')) {
+
+            if (! Schema::hasColumn('invoice_counters', 'last_number') && Schema::hasColumn('invoice_counters', 'sequence')) {
                 $table->unsignedInteger('last_number')->default(0)->after('tenant_id');
                 DB::statement('UPDATE invoice_counters SET last_number = sequence');
                 $table->dropColumn('sequence');

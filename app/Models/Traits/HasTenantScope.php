@@ -2,8 +2,8 @@
 
 namespace App\Models\Traits;
 
-use Illuminate\Database\Eloquent\Builder;
 use App\Services\TenantContext;
+use Illuminate\Database\Eloquent\Builder;
 
 trait HasTenantScope
 {
@@ -21,10 +21,9 @@ trait HasTenantScope
 
         static::creating(function ($model) {
             $tenant = app(TenantContext::class)->getTenant();
-            if ($tenant && !$model->tenant_id) {
+            if ($tenant && ! $model->tenant_id) {
                 $model->tenant_id = $tenant->id;
             }
         });
     }
 }
-

@@ -17,7 +17,7 @@ class UpdateAdminUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:admins,email,' . $adminId],
+            'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$adminId],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', 'in:owner,subadmin'],
             'is_active' => ['nullable', 'boolean'],

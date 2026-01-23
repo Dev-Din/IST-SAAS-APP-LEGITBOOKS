@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,21 +27,23 @@ class TenantAuthController extends Controller
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $user = Auth::user();
-            
+
             // Double-check that user is still active after authentication
-            if (!$user->is_active) {
+            if (! $user->is_active) {
                 Auth::logout();
+
                 return back()->withErrors([
                     'email' => 'Your account has been deactivated. Please contact your account owner or administrator.',
                 ])->onlyInput('email');
             }
-            
+
             // Get tenant from user and store in session
             if ($user->tenant_id) {
                 $request->session()->put('tenant_id', $user->tenant_id);
             }
-            
+
             $request->session()->regenerate();
+
             return redirect()->intended(route('tenant.dashboard'));
         }
 
@@ -57,6 +58,7 @@ class TenantAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->forget('tenant_id');
         $request->session()->regenerateToken();
+
         return redirect()->route('tenant.auth.login');
     }
 }

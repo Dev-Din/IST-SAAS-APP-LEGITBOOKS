@@ -6,7 +6,6 @@ use App\Models\Account;
 use App\Models\ChartOfAccount;
 use App\Models\Contact;
 use App\Models\Invoice;
-use App\Models\InvoiceCounter;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Payment;
@@ -22,19 +21,21 @@ class PaymentServiceTest extends TestCase
     use RefreshDatabase;
 
     protected PaymentService $service;
+
     protected Tenant $tenant;
+
     protected TenantContext $tenantContext;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->tenant = $this->createTestTenant();
         $this->tenantContext = app(TenantContext::class);
         $this->tenantContext->setTenant($this->tenant);
-        
+
         $this->service = new PaymentService($this->tenantContext);
-        
+
         $this->createRequiredAccounts();
     }
 
@@ -42,9 +43,9 @@ class PaymentServiceTest extends TestCase
     {
         $payment = $this->createTestPayment();
         $allocations = [];
-        
+
         $journalEntry = $this->service->processPayment($payment, $allocations);
-        
+
         $this->assertInstanceOf(JournalEntry::class, $journalEntry);
         $this->assertTrue($journalEntry->is_posted);
         $this->assertEquals(Payment::class, $journalEntry->reference_type);
@@ -55,9 +56,9 @@ class PaymentServiceTest extends TestCase
     {
         $payment = $this->createTestPayment();
         $allocations = [];
-        
+
         $journalEntry = $this->service->processPayment($payment, $allocations);
-        
+
         $this->assertTrue($journalEntry->isBalanced());
         $this->assertEquals($journalEntry->total_debits, $journalEntry->total_credits);
     }
@@ -67,14 +68,14 @@ class PaymentServiceTest extends TestCase
         $payment = $this->createTestPayment();
         $bankAccount = Account::where('name', 'Test Bank')->first();
         $coa = $bankAccount->chartOfAccount;
-        
+
         $journalEntry = $this->service->processPayment($payment, []);
-        
+
         $debitLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $coa->id)
             ->where('type', 'debit')
             ->first();
-        
+
         $this->assertNotNull($debitLine);
         $this->assertEquals($payment->amount, $debitLine->amount);
     }
@@ -83,13 +84,13 @@ class PaymentServiceTest extends TestCase
     {
         $invoice = $this->createTestInvoice();
         $payment = $this->createTestPayment();
-        
+
         $allocations = [
             ['invoice_id' => $invoice->id, 'amount' => 500.00],
         ];
-        
+
         $journalEntry = $this->service->processPayment($payment, $allocations);
-        
+
         $allocation = PaymentAllocation::where('payment_id', $payment->id)->first();
         $this->assertNotNull($allocation);
         $this->assertEquals($invoice->id, $allocation->invoice_id);
@@ -101,18 +102,18 @@ class PaymentServiceTest extends TestCase
         $invoice = $this->createTestInvoice();
         $payment = $this->createTestPayment();
         $arAccount = ChartOfAccount::where('code', '1200')->first();
-        
+
         $allocations = [
             ['invoice_id' => $invoice->id, 'amount' => 500.00],
         ];
-        
+
         $journalEntry = $this->service->processPayment($payment, $allocations);
-        
+
         $creditLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('chart_of_account_id', $arAccount->id)
             ->where('type', 'credit')
             ->first();
-        
+
         $this->assertNotNull($creditLine);
         $this->assertEquals(500.00, $creditLine->amount);
     }
@@ -121,19 +122,19 @@ class PaymentServiceTest extends TestCase
     {
         $invoice = $this->createTestInvoice();
         $payment = $this->createTestPayment(['amount' => 1500.00]);
-        
+
         $allocations = [
             ['invoice_id' => $invoice->id, 'amount' => 1000.00],
         ];
-        
+
         $journalEntry = $this->service->processPayment($payment, $allocations);
-        
+
         // Should credit unapplied amount to liability account
         $unappliedLine = JournalLine::where('journal_entry_id', $journalEntry->id)
             ->where('type', 'credit')
             ->where('amount', 500.00)
             ->first();
-        
+
         $this->assertNotNull($unappliedLine);
         $this->assertTrue($journalEntry->isBalanced());
     }
@@ -142,10 +143,10 @@ class PaymentServiceTest extends TestCase
     {
         ChartOfAccount::where('code', '1200')->delete();
         $payment = $this->createTestPayment();
-        
+
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Accounts Receivable account not found');
-        
+
         $this->service->processPayment($payment, []);
     }
 
@@ -213,7 +214,7 @@ class PaymentServiceTest extends TestCase
 
         return Payment::create(array_merge([
             'tenant_id' => $this->tenant->id,
-            'payment_number' => 'PAY-' . uniqid(),
+            'payment_number' => 'PAY-'.uniqid(),
             'payment_date' => now(),
             'account_id' => $account->id,
             'contact_id' => $contact->id,

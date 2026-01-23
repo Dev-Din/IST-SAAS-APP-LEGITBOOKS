@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Payments;
 
 use App\Http\Controllers\Controller;
-use App\Models\Payment;
 use App\Models\AuditLog;
-use App\Models\Subscription;
 use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Subscription;
 use App\Services\MpesaService;
 use App\Services\PaymentService;
 use App\Services\TenantContext;
@@ -30,11 +30,11 @@ class MpesaController extends Controller
     {
         // Log Cloudflare headers for debugging
         $cfHeaders = $this->mpesaService->logCloudflareHeaders($request);
-        
+
         // Get raw callback body
         $rawBody = $request->getContent();
         $rawCallback = $request->all();
-        
+
         // Log raw callback
         Log::info('M-Pesa callback received', [
             'ip' => $request->ip(),
@@ -45,8 +45,8 @@ class MpesaController extends Controller
 
         // Detect Cloudflare HTML challenge
         if (is_string($rawBody) && (
-            strpos($rawBody, '<!DOCTYPE') !== false || 
-            strpos($rawBody, 'cf-challenge') !== false || 
+            strpos($rawBody, '<!DOCTYPE') !== false ||
+            strpos($rawBody, 'cf-challenge') !== false ||
             strpos($rawBody, 'cloudflare') !== false ||
             strpos($rawBody, '<html') !== false
         )) {
@@ -55,6 +55,7 @@ class MpesaController extends Controller
                 'cf_headers' => $cfHeaders,
                 'body_preview' => substr($rawBody, 0, 1000),
             ]);
+
             // Return 200 quickly to avoid retries
             return response()->json(['error' => 'Cloudflare challenge detected'], 200);
         }
@@ -62,7 +63,7 @@ class MpesaController extends Controller
         try {
             // Verify callback IP (production only)
             $clientIP = $request->ip();
-            if (!$this->mpesaService->verifyCallbackIP($clientIP)) {
+            if (! $this->mpesaService->verifyCallbackIP($clientIP)) {
                 if (config('app.env') !== 'production') {
                     Log::info('M-Pesa callback from tunnel IP (development mode)', [
                         'ip' => $clientIP,
@@ -73,19 +74,21 @@ class MpesaController extends Controller
                         'ip' => $clientIP,
                         'cf_headers' => $cfHeaders,
                     ]);
+
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
 
             // Parse callback
             $parsed = $this->mpesaService->parseCallback($rawCallback);
-            
-            if (!$parsed['valid']) {
+
+            if (! $parsed['valid']) {
                 Log::error('Invalid M-Pesa callback structure', [
                     'error' => $parsed['error'] ?? 'Unknown error',
                     'payload' => $rawCallback,
                     'cf_headers' => $cfHeaders,
                 ]);
+
                 return response()->json(['error' => $parsed['error'] ?? 'Invalid callback'], 400);
             }
 
@@ -100,17 +103,17 @@ class MpesaController extends Controller
                 ->first();
 
             // Fallback 1: Try merchant_request_id
-            if (!$payment && $merchantRequestID) {
+            if (! $payment && $merchantRequestID) {
                 $payment = Payment::with(['tenant', 'subscription', 'user'])
                     ->where('merchant_request_id', $merchantRequestID)
                     ->first();
             }
 
             // Fallback 2: Try phone + amount match (for robustness)
-            if (!$payment && isset($parsed['phone']) && isset($parsed['amount'])) {
+            if (! $payment && isset($parsed['phone']) && isset($parsed['amount'])) {
                 $phone = $this->normalizePhone($parsed['phone']);
                 $amount = (float) $parsed['amount'];
-                
+
                 // Find pending payment with matching phone and amount (within 5 minutes)
                 $payment = Payment::with(['tenant', 'subscription', 'user'])
                     ->where('phone', $phone)
@@ -119,7 +122,7 @@ class MpesaController extends Controller
                     ->where('created_at', '>=', now()->subMinutes(5))
                     ->orderBy('created_at', 'desc')
                     ->first();
-                
+
                 if ($payment) {
                     Log::info('M-Pesa callback matched by phone+amount fallback', [
                         'payment_id' => $payment->id,
@@ -131,7 +134,7 @@ class MpesaController extends Controller
                 }
             }
 
-            if (!$payment) {
+            if (! $payment) {
                 Log::warning('M-Pesa callback for unknown payment', [
                     'checkout_request_id' => $checkoutRequestID,
                     'merchant_request_id' => $merchantRequestID,
@@ -139,6 +142,7 @@ class MpesaController extends Controller
                     'amount' => $parsed['amount'] ?? null,
                     'cf_headers' => $cfHeaders,
                 ]);
+
                 // Return 200 to avoid retries for unknown payments
                 return response()->json(['error' => 'Payment not found'], 200);
             }
@@ -155,6 +159,7 @@ class MpesaController extends Controller
                     'status' => $payment->transaction_status,
                     'cf_headers' => $cfHeaders,
                 ]);
+
                 return response()->json(['message' => 'Callback already processed'], 200);
             }
 
@@ -173,19 +178,19 @@ class MpesaController extends Controller
 
                 // In development, use the actual amount from payment record (not the 1.00 from callback)
                 // In production, use the callback amount
-                $actualAmount = config('app.env') === 'production' 
-                    ? ($callbackAmount ?? $payment->amount) 
+                $actualAmount = config('app.env') === 'production'
+                    ? ($callbackAmount ?? $payment->amount)
                     : $payment->amount; // Keep the original amount in dev
 
                 DB::transaction(function () use ($payment, $mpesaReceipt, $actualAmount, $phoneNumber, $transactionDate, $cfHeaders) {
                     // Ensure payment has account_id (M-Pesa account)
-                    if (!$payment->account_id) {
+                    if (! $payment->account_id) {
                         $tenant = $payment->tenant;
                         $mpesaAccount = \App\Models\Account::where('tenant_id', $tenant->id)
                             ->where('type', 'mpesa')
                             ->first();
 
-                        if (!$mpesaAccount) {
+                        if (! $mpesaAccount) {
                             // Create M-Pesa account if it doesn't exist
                             $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                                 ->where('code', '1400')
@@ -225,11 +230,11 @@ class MpesaController extends Controller
                     // Handle subscription payment
                     if ($payment->subscription_id) {
                         $subscription = $payment->subscription;
-                        
+
                         if ($subscription) {
                             // Store before state for audit log
                             $subscriptionBefore = $subscription->getAttributes();
-                            
+
                             // Activate subscription immediately
                             $subscription->update([
                                 'status' => 'active',
@@ -260,9 +265,9 @@ class MpesaController extends Controller
 
                     // Allocate payment to invoice (only for invoice payments, not subscription payments)
                     $invoice = null;
-                    if ($payment->invoice_id && !$payment->subscription_id) {
+                    if ($payment->invoice_id && ! $payment->subscription_id) {
                         $invoice = $payment->invoice;
-                    } elseif (!$payment->subscription_id) {
+                    } elseif (! $payment->subscription_id) {
                         // Fallback: Try to find invoice by phone + amount + recent timestamp
                         // This handles cases where payment was created without invoice_id
                         $invoice = Invoice::where('tenant_id', $payment->tenant_id)
@@ -271,12 +276,12 @@ class MpesaController extends Controller
                             ->where('created_at', '>=', now()->subDays(7)) // Within last 7 days
                             ->orderBy('created_at', 'desc')
                             ->first();
-                        
+
                         if ($invoice) {
                             // Update payment with invoice_id for future reference
                             $payment->invoice_id = $invoice->id;
                             $payment->save();
-                            
+
                             Log::info('Payment linked to invoice via fallback', [
                                 'payment_id' => $payment->id,
                                 'invoice_id' => $invoice->id,
@@ -285,13 +290,13 @@ class MpesaController extends Controller
                         }
                     }
 
-                    if ($invoice && !$payment->subscription_id) {
+                    if ($invoice && ! $payment->subscription_id) {
                         // Check if allocation already exists (idempotency)
                         $existingAllocation = $invoice->paymentAllocations()
                             ->where('payment_id', $payment->id)
                             ->first();
-                        
-                        if (!$existingAllocation) {
+
+                        if (! $existingAllocation) {
                             $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
 
                             if ($allocatedAmount > 0) {
@@ -405,15 +410,14 @@ class MpesaController extends Controller
 
         // If starts with 0, replace with 254
         if (substr($phone, 0, 1) === '0') {
-            $phone = '254' . substr($phone, 1);
+            $phone = '254'.substr($phone, 1);
         }
 
         // If doesn't start with 254, add it
         if (substr($phone, 0, 3) !== '254') {
-            $phone = '254' . $phone;
+            $phone = '254'.$phone;
         }
 
         return $phone;
     }
 }
-

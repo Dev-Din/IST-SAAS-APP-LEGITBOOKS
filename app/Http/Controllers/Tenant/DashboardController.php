@@ -11,7 +11,7 @@ class DashboardController extends Controller
     public function index(TenantContext $tenantContext, Request $request)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $stats = [
             'total_invoices' => \App\Models\Invoice::count(),
             'total_payments' => \App\Models\Payment::count(),

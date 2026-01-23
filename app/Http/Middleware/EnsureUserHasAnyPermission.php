@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasAnyPermission
 {
@@ -19,13 +19,14 @@ class EnsureUserHasAnyPermission
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('tenant.auth.login');
         }
 
         // Check if user is active
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             Auth::logout();
+
             return redirect()->route('tenant.auth.login')
                 ->with('error', 'Your account has been deactivated.');
         }
@@ -34,7 +35,7 @@ class EnsureUserHasAnyPermission
         $permissionList = array_map('trim', explode(',', $permissions));
 
         // Check if user has any of the required permissions
-        if (!$user->hasAnyPermission($permissionList)) {
+        if (! $user->hasAnyPermission($permissionList)) {
             abort(403, 'You do not have permission to access this resource.');
         }
 

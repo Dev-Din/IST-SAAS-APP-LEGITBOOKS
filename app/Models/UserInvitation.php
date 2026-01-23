@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class UserInvitation extends Model
 {
@@ -58,7 +57,7 @@ class UserInvitation extends Model
      */
     public function isValid(): bool
     {
-        return $this->status === 'pending' && !$this->isExpired();
+        return $this->status === 'pending' && ! $this->isExpired();
     }
 
     /**
@@ -95,7 +94,7 @@ class UserInvitation extends Model
      */
     public function getFullNameAttribute(): string
     {
-        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+        return trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
     }
 
     /**
@@ -114,7 +113,7 @@ class UserInvitation extends Model
         return $query->where('status', 'expired')
             ->orWhere(function ($q) {
                 $q->where('status', 'pending')
-                  ->where('expires_at', '<', now());
+                    ->where('expires_at', '<', now());
             });
     }
 }

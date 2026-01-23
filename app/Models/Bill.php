@@ -65,7 +65,7 @@ class Bill extends BaseTenantModel
     public function getOutstandingAmount(): float
     {
         $allocated = $this->paymentAllocations()->sum('amount');
+
         return max(0, $this->total - $allocated);
     }
 }
-

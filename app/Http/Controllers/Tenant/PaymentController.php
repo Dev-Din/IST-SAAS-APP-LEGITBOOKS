@@ -15,7 +15,7 @@ class PaymentController extends Controller
     public function index(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $payments = Payment::where('tenant_id', $tenant->id)
             ->with(['invoice', 'subscription', 'account', 'contact'])
             ->orderBy('created_at', 'desc')
@@ -49,7 +49,7 @@ class PaymentController extends Controller
     public function show($id, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $payment = Payment::where('id', $id)
             ->where('tenant_id', $tenant->id)
             ->with(['invoice', 'subscription', 'account', 'contact', 'allocations'])

@@ -10,12 +10,12 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * @method static \Database\Factories\AdminFactory factory($count = null, $state = [])
  */
-
 class Admin extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $guard = 'admin';
+
     protected $guard_name = 'admin';
 
     protected $fillable = [
@@ -78,7 +78,7 @@ class Admin extends Authenticatable
     public function assignPermissions(array $permissions): void
     {
         foreach ($permissions as $permission) {
-            if (!$this->hasPermissionTo($permission, 'admin')) {
+            if (! $this->hasPermissionTo($permission, 'admin')) {
                 $this->givePermissionTo($permission, 'admin');
             }
         }

@@ -11,4 +11,3 @@ class AboutController extends Controller
         return view('marketing.about');
     }
 }
-

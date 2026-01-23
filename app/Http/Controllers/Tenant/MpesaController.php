@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\Mail\PHPMailerService;
 use App\Services\MpesaService;
 use App\Services\PaymentService;
 use App\Services\TenantContext;
-use App\Services\Mail\PHPMailerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +28,7 @@ class MpesaController extends Controller
     public function callback(Request $request)
     {
         $payload = $request->all();
-        
+
         Log::info('M-Pesa webhook received', ['payload' => $payload]);
 
         // Verify webhook signature (in production, add proper verification)
@@ -41,8 +41,9 @@ class MpesaController extends Controller
             $amount = $payload['TransAmount'] ?? null;
             $phone = $payload['PhoneNumber'] ?? null;
 
-            if (!$transactionId || !$amount) {
+            if (! $transactionId || ! $amount) {
                 Log::error('M-Pesa webhook: Missing required fields', $payload);
+
                 return response()->json(['ResultCode' => 1, 'ResultDesc' => 'Missing required fields'], 400);
             }
 
@@ -50,6 +51,7 @@ class MpesaController extends Controller
             $existingPayment = Payment::where('reference', $transactionId)->first();
             if ($existingPayment) {
                 Log::info('M-Pesa webhook: Payment already processed', ['payment_id' => $existingPayment->id]);
+
                 return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Payment already processed']);
             }
 
@@ -65,18 +67,19 @@ class MpesaController extends Controller
             // Process payment via MpesaService
             $payment = $this->mpesaService->processCallback($payload);
 
-            if (!$payment) {
+            if (! $payment) {
                 Log::error('M-Pesa webhook: Failed to process payment', $payload);
+
                 return response()->json(['ResultCode' => 1, 'ResultDesc' => 'Payment processing failed'], 500);
             }
 
             // Allocate payment to invoice if found
             if ($invoice) {
                 $this->tenantContext->setTenant($invoice->tenant);
-                
-                DB::transaction(function () use ($payment, $invoice, $amount) {
+
+                DB::transaction(function () use ($payment, $invoice) {
                     $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
-                    
+
                     if ($allocatedAmount > 0) {
                         // Create allocation
                         $invoice->paymentAllocations()->create([
@@ -129,7 +132,7 @@ class MpesaController extends Controller
 
             return response()->json([
                 'ResultCode' => 1,
-                'ResultDesc' => 'Internal error: ' . $e->getMessage(),
+                'ResultDesc' => 'Internal error: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -142,7 +145,7 @@ class MpesaController extends Controller
         $tenant = $invoice->tenant;
         $contact = $invoice->contact;
 
-        if (!$contact->email) {
+        if (! $contact->email) {
             return;
         }
 

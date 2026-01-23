@@ -2,13 +2,12 @@
 
 namespace Tests\Feature\Tenant;
 
-use App\Models\Tenant;
-use App\Models\User;
-use App\Models\Subscription;
-use App\Models\Payment;
 use App\Models\Account;
 use App\Models\ChartOfAccount;
-use App\Services\MpesaStkService;
+use App\Models\Payment;
+use App\Models\Subscription;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -18,7 +17,9 @@ class MpesaBillingWorkflowTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected User $user;
+
     protected Subscription $subscription;
 
     protected function setUp(): void
@@ -123,7 +124,7 @@ class MpesaBillingWorkflowTest extends TestCase
     public function polling_endpoint_returns_payment_status()
     {
         $account = Account::where('tenant_id', $this->tenant->id)->where('type', 'mpesa')->first();
-        
+
         $payment = Payment::create([
             'tenant_id' => $this->tenant->id,
             'subscription_id' => $this->subscription->id,
@@ -154,7 +155,7 @@ class MpesaBillingWorkflowTest extends TestCase
     public function callback_activates_subscription_on_successful_payment()
     {
         $account = Account::where('tenant_id', $this->tenant->id)->where('type', 'mpesa')->first();
-        
+
         $payment = Payment::create([
             'tenant_id' => $this->tenant->id,
             'subscription_id' => $this->subscription->id,
@@ -208,7 +209,7 @@ class MpesaBillingWorkflowTest extends TestCase
     public function callback_marks_payment_as_failed_on_failure()
     {
         $account = Account::where('tenant_id', $this->tenant->id)->where('type', 'mpesa')->first();
-        
+
         $payment = Payment::create([
             'tenant_id' => $this->tenant->id,
             'subscription_id' => $this->subscription->id,
@@ -253,4 +254,3 @@ class MpesaBillingWorkflowTest extends TestCase
             ->assertJsonValidationErrors(['phone']);
     }
 }
-

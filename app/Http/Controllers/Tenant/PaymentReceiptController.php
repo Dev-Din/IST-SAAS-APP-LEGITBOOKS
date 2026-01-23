@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
-use App\Services\TenantContext;
 use App\Services\MpesaReceiptValidationService;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PaymentReceiptController extends Controller
 {
@@ -22,7 +21,7 @@ class PaymentReceiptController extends Controller
     public function index(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         // Show all M-Pesa payments (with or without receipts)
         $payments = Payment::where('tenant_id', $tenant->id)
             ->where('payment_method', 'mpesa')
@@ -39,12 +38,12 @@ class PaymentReceiptController extends Controller
     public function validate(Request $request, $paymentId, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $payment = Payment::where('id', $paymentId)
             ->where('tenant_id', $tenant->id)
             ->firstOrFail();
 
-        if (!$payment->mpesa_receipt) {
+        if (! $payment->mpesa_receipt) {
             return response()->json([
                 'success' => false,
                 'error' => 'No M-Pesa receipt number found for this payment',
@@ -68,7 +67,7 @@ class PaymentReceiptController extends Controller
         $receiptNumber = $request->input('receipt_number');
         $result = $this->receiptService->fetchPaymentByReceipt($receiptNumber);
 
-        if (!$result) {
+        if (! $result) {
             return response()->json([
                 'success' => false,
                 'error' => 'Payment not found in database or M-Pesa system',
@@ -87,7 +86,7 @@ class PaymentReceiptController extends Controller
     public function validatePending(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $results = $this->receiptService->validatePendingPayments($tenant->id);
 
         return response()->json([
@@ -103,7 +102,7 @@ class PaymentReceiptController extends Controller
     public function show($paymentId, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $payment = Payment::where('id', $paymentId)
             ->where('tenant_id', $tenant->id)
             ->with(['invoice', 'subscription', 'account'])
@@ -118,4 +117,3 @@ class PaymentReceiptController extends Controller
         return view('tenant.payments.receipt', compact('payment', 'validation'));
     }
 }
-

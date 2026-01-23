@@ -2,14 +2,13 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Subscription;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 class SubscriptionFlowTest extends TestCase
 {

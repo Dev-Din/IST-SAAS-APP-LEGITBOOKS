@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Payment;
 use App\Models\Account;
-use App\Services\TenantContext;
-use Illuminate\Support\Facades\Http;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 
 class MpesaService
@@ -17,9 +15,10 @@ class MpesaService
     public function processCallback(array $payload): ?Payment
     {
         $tenant = $this->tenantContext->getTenant();
-        
-        if (!$tenant) {
+
+        if (! $tenant) {
             Log::error('M-Pesa callback: Tenant context not set');
+
             return null;
         }
 
@@ -30,8 +29,9 @@ class MpesaService
         $transactionId = $payload['TransID'] ?? null;
         $reference = $payload['BillRefNumber'] ?? null;
 
-        if (!$phone || !$amount || !$transactionId) {
+        if (! $phone || ! $amount || ! $transactionId) {
             Log::error('M-Pesa callback: Missing required fields', $payload);
+
             return null;
         }
 
@@ -40,7 +40,7 @@ class MpesaService
             ->where('type', 'mpesa')
             ->first();
 
-        if (!$mpesaAccount) {
+        if (! $mpesaAccount) {
             // Create M-Pesa account if it doesn't exist
             $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                 ->where('code', '1400')
@@ -58,7 +58,7 @@ class MpesaService
         }
 
         // Create payment
-        $paymentNumber = 'PAY-' . date('Ymd') . '-' . str_pad(Payment::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
+        $paymentNumber = 'PAY-'.date('Ymd').'-'.str_pad(Payment::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
 
         $payment = Payment::create([
             'tenant_id' => $tenant->id,
@@ -81,7 +81,7 @@ class MpesaService
         $payload = [
             'PhoneNumber' => $phone,
             'TransAmount' => $amount,
-            'TransID' => 'SIM-' . uniqid(),
+            'TransID' => 'SIM-'.uniqid(),
             'BillRefNumber' => 'TEST',
             'TransTime' => now()->format('YmdHis'),
         ];
@@ -97,15 +97,15 @@ class MpesaService
 
     /**
      * Parse M-Pesa STK callback payload
-     * 
-     * @param array $body Raw callback body
+     *
+     * @param  array  $body  Raw callback body
      * @return array Parsed callback data
      */
     public function parseCallback(array $body): array
     {
         $stkCallback = $body['Body']['stkCallback'] ?? null;
-        
-        if (!$stkCallback) {
+
+        if (! $stkCallback) {
             return [
                 'valid' => false,
                 'error' => 'Missing stkCallback in payload',
@@ -146,8 +146,8 @@ class MpesaService
 
     /**
      * Log Cloudflare headers for debugging
-     * 
-     * @param \Illuminate\Http\Request $request
+     *
+     * @param  \Illuminate\Http\Request  $request
      * @return array Cloudflare headers
      */
     public function logCloudflareHeaders($request): array
@@ -170,18 +170,15 @@ class MpesaService
 
     /**
      * Verify callback IP address (production only)
-     * 
-     * @param string $ip
-     * @return bool
      */
     public function verifyCallbackIP(string $ip): bool
     {
-        if (!config('mpesa.validate_callback_ip', false)) {
+        if (! config('mpesa.validate_callback_ip', false)) {
             return true; // Skip validation in sandbox/development
         }
 
         $whitelist = config('mpesa.callback_ip_whitelist', []);
+
         return in_array($ip, $whitelist);
     }
 }
-

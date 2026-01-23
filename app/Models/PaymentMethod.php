@@ -40,9 +40,10 @@ class PaymentMethod extends Model
         if ($this->type === 'debit_card' || $this->type === 'credit_card') {
             $cardNumber = $this->details['card_number'] ?? '';
             if (strlen($cardNumber) >= 4) {
-                return '**** **** **** ' . substr($cardNumber, -4);
+                return '**** **** **** '.substr($cardNumber, -4);
             }
         }
+
         return null;
     }
 
@@ -57,12 +58,12 @@ class PaymentMethod extends Model
 
         switch ($this->type) {
             case 'mpesa':
-                return 'M-Pesa (' . ($this->details['phone_number'] ?? 'N/A') . ')';
+                return 'M-Pesa ('.($this->details['phone_number'] ?? 'N/A').')';
             case 'debit_card':
             case 'credit_card':
-                return ucfirst(str_replace('_', ' ', $this->type)) . ' (' . $this->getMaskedCardNumber() . ')';
+                return ucfirst(str_replace('_', ' ', $this->type)).' ('.$this->getMaskedCardNumber().')';
             case 'paypal':
-                return 'PayPal (' . ($this->details['email'] ?? 'N/A') . ')';
+                return 'PayPal ('.($this->details['email'] ?? 'N/A').')';
             default:
                 return ucfirst(str_replace('_', ' ', $this->type));
         }

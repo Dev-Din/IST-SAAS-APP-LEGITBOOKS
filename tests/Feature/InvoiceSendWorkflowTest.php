@@ -2,12 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
 use App\Models\Contact;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\JournalEntry;
-use App\Models\Payment;
 use App\Services\InvoiceSendService;
 use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,4 +162,3 @@ class InvoiceSendWorkflowTest extends TestCase
         $this->assertEquals('paid', $invoice->fresh()->status);
     }
 }
-

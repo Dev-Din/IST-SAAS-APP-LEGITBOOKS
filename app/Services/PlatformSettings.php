@@ -10,7 +10,7 @@ class PlatformSettings
 
     public function get(string $key, $default = null)
     {
-        if (!array_key_exists($key, $this->cache)) {
+        if (! array_key_exists($key, $this->cache)) {
             $this->cache[$key] = PlatformSetting::getValue($key, $default);
         }
 

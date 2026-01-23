@@ -2,14 +2,14 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * Changes the payments.account_id foreign key constraint from 'restrict' to 'set null'
      * This allows accounts to be deleted while preserving payment history.
      */
@@ -28,9 +28,9 @@ return new class extends Migration
         // Re-add the foreign key with 'set null' on delete
         Schema::table('payments', function (Blueprint $table) {
             $table->foreign('account_id')
-                  ->references('id')
-                  ->on('accounts')
-                  ->onDelete('set null');
+                ->references('id')
+                ->on('accounts')
+                ->onDelete('set null');
         });
     }
 
@@ -48,16 +48,16 @@ return new class extends Migration
         Schema::table('payments', function (Blueprint $table) {
             // First, ensure no null values exist
             DB::statement('UPDATE payments SET account_id = (SELECT id FROM accounts LIMIT 1) WHERE account_id IS NULL');
-            
+
             $table->unsignedBigInteger('account_id')->nullable(false)->change();
         });
 
         // Re-add the foreign key with 'restrict' on delete
         Schema::table('payments', function (Blueprint $table) {
             $table->foreign('account_id')
-                  ->references('id')
-                  ->on('accounts')
-                  ->onDelete('restrict');
+                ->references('id')
+                ->on('accounts')
+                ->onDelete('restrict');
         });
     }
 };

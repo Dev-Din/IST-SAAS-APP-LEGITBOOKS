@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bill;
+use App\Models\ChartOfAccount;
 use App\Models\Contact;
 use App\Models\Product;
-use App\Models\ChartOfAccount;
-use App\Services\TenantContext;
 use App\Services\BillNumberService;
+use App\Services\TenantContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
 use RuntimeException;
 
 class BillController extends Controller
@@ -52,7 +52,7 @@ class BillController extends Controller
     public function store(Request $request, TenantContext $tenantContext, BillNumberService $billNumberService)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
             'contact_id' => 'required|exists:contacts,id',
             'bill_date' => 'required|date',
@@ -77,7 +77,7 @@ class BillController extends Controller
                     try {
                         $billNumber = $billNumberService->generate($tenant->id);
                     } catch (RuntimeException $e) {
-                        throw new \Exception('Unable to generate bill number: ' . $e->getMessage());
+                        throw new \Exception('Unable to generate bill number: '.$e->getMessage());
                     }
 
                     // Check if bill number already exists (race condition check)
@@ -102,7 +102,7 @@ class BillController extends Controller
                     foreach ($validated['line_items'] as $item) {
                         $lineTotal = $item['quantity'] * $item['unit_price'];
                         $lineTax = $lineTotal * ($item['tax_rate'] ?? 0) / 100;
-                        
+
                         $bill->lineItems()->create([
                             'product_id' => $item['product_id'] ?? null,
                             'description' => $item['description'],
@@ -129,7 +129,7 @@ class BillController extends Controller
                 // If we get here, the transaction succeeded
                 return redirect()->route('tenant.bills.show', $result)
                     ->with('success', 'Bill created successfully.');
-                    
+
             } catch (QueryException $e) {
                 // Check if it's a duplicate key error for bill_number
                 if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'bill_number')) {
@@ -139,6 +139,7 @@ class BillController extends Controller
                             ->withErrors(['bill' => 'Unable to create bill due to a duplicate bill number. Please try again.'])
                             ->withInput();
                     }
+
                     // Retry with a new number
                     continue;
                 }
@@ -146,7 +147,7 @@ class BillController extends Controller
                 throw $e;
             } catch (\Exception $e) {
                 return back()
-                    ->withErrors(['bill' => 'An error occurred: ' . $e->getMessage()])
+                    ->withErrors(['bill' => 'An error occurred: '.$e->getMessage()])
                     ->withInput();
             }
         }
@@ -163,7 +164,7 @@ class BillController extends Controller
     {
         $tenant = $tenantContext->getTenant();
         $bill->load('lineItems', 'contact', 'paymentAllocations.payment', 'tenant');
-        
+
         return view('tenant.bills.show', compact('bill', 'tenant'));
     }
 
@@ -225,7 +226,7 @@ class BillController extends Controller
             foreach ($validated['line_items'] as $item) {
                 $lineTotal = $item['quantity'] * $item['unit_price'];
                 $lineTax = $lineTotal * ($item['tax_rate'] ?? 0) / 100;
-                
+
                 $bill->lineItems()->create([
                     'product_id' => $item['product_id'] ?? null,
                     'description' => $item['description'],
@@ -263,7 +264,7 @@ class BillController extends Controller
         }
 
         $bill->delete();
-        
+
         return redirect()->route('tenant.bills.index')
             ->with('success', 'Bill deleted successfully.');
     }
@@ -275,6 +276,7 @@ class BillController extends Controller
     {
         if ($bill->status === 'draft') {
             $bill->update(['status' => 'received']);
+
             return redirect()->route('tenant.bills.show', $bill)
                 ->with('success', 'Bill marked as received.');
         }
@@ -283,4 +285,3 @@ class BillController extends Controller
             ->with('error', 'Only draft bills can be marked as received.');
     }
 }
-

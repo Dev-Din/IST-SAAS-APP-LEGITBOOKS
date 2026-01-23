@@ -23,7 +23,7 @@ class UserModelTest extends TestCase
     public function test_user_has_tenant_relationship(): void
     {
         $user = $this->createTestUser();
-        
+
         $this->assertInstanceOf(Tenant::class, $user->tenant);
         $this->assertEquals($this->tenant->id, $user->tenant->id);
     }
@@ -31,7 +31,7 @@ class UserModelTest extends TestCase
     public function test_has_permission_returns_true_for_owner(): void
     {
         $user = $this->createTestUser(['is_owner' => true, 'permissions' => []]);
-        
+
         $this->assertTrue($user->hasPermission('manage_invoices'));
         $this->assertTrue($user->hasPermission('any_permission'));
     }
@@ -42,7 +42,7 @@ class UserModelTest extends TestCase
             'is_owner' => false,
             'permissions' => ['manage_invoices', 'view_invoices'],
         ]);
-        
+
         $this->assertTrue($user->hasPermission('manage_invoices'));
         $this->assertTrue($user->hasPermission('view_invoices'));
     }
@@ -53,14 +53,14 @@ class UserModelTest extends TestCase
             'is_owner' => false,
             'permissions' => ['view_invoices'],
         ]);
-        
+
         $this->assertFalse($user->hasPermission('manage_invoices'));
     }
 
     public function test_has_any_permission_returns_true_for_owner(): void
     {
         $user = $this->createTestUser(['is_owner' => true, 'permissions' => []]);
-        
+
         $this->assertTrue($user->hasAnyPermission(['manage_invoices', 'view_invoices']));
     }
 
@@ -70,7 +70,7 @@ class UserModelTest extends TestCase
             'is_owner' => false,
             'permissions' => ['view_invoices'],
         ]);
-        
+
         $this->assertTrue($user->hasAnyPermission(['manage_invoices', 'view_invoices']));
     }
 
@@ -80,7 +80,7 @@ class UserModelTest extends TestCase
             'is_owner' => false,
             'permissions' => ['other_permission'],
         ]);
-        
+
         $this->assertFalse($user->hasAnyPermission(['manage_invoices', 'view_invoices']));
     }
 
@@ -90,7 +90,7 @@ class UserModelTest extends TestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
         ]);
-        
+
         $this->assertEquals('John Doe', $user->full_name);
     }
 
@@ -101,7 +101,7 @@ class UserModelTest extends TestCase
             'first_name' => null,
             'last_name' => null,
         ]);
-        
+
         $this->assertEquals('John Doe', $user->full_name);
     }
 

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasTenantScope;
+use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseTenantModel extends Model
 {
@@ -17,4 +17,3 @@ abstract class BaseTenantModel extends Model
         return $this->belongsTo(Tenant::class);
     }
 }
-

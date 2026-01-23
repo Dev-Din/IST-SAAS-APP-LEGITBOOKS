@@ -16,6 +16,7 @@ class InvoicePdfService
         ];
 
         $pdf = Pdf::loadView('tenant.invoices.pdf', $data);
+
         return $pdf->output();
     }
 }

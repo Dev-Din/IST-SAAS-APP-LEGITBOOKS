@@ -40,7 +40,7 @@ class LegitBooksTenantCreate extends Command
             'seed_demo_data' => $seedDemo,
         ]);
 
-        $this->info("Tenant provisioned successfully!");
+        $this->info('Tenant provisioned successfully!');
         $this->info("Access URL: /app/{$tenant->tenant_hash}/dashboard");
 
         return Command::SUCCESS;

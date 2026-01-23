@@ -2,24 +2,25 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
 use App\Models\Admin;
-use App\Models\Tenant;
-use App\Models\Invoice;
 use App\Models\Contact;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Subscription;
+use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
-use Carbon\Carbon;
+use Tests\TestCase;
 
 class TenantInvoicesAdminTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Admin $admin;
+
     protected Tenant $tenant;
+
     protected Contact $contact;
 
     protected function setUp(): void
@@ -160,4 +161,3 @@ class TenantInvoicesAdminTest extends TestCase
         $this->assertEquals($invoice2->id, $data['invoices'][0]['id']);
     }
 }
-

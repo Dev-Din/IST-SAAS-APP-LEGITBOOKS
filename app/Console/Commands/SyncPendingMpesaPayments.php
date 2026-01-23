@@ -35,15 +35,16 @@ class SyncPendingMpesaPayments extends Command
         $this->newLine();
 
         $checkoutRequestId = $this->option('checkout-request-id');
-        
+
         if ($checkoutRequestId) {
             // Check specific payment
             $payment = Payment::where('checkout_request_id', $checkoutRequestId)
                 ->where('transaction_status', 'pending')
                 ->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 $this->error("Payment with checkout request ID '{$checkoutRequestId}' not found or already processed.");
+
                 return Command::FAILURE;
             }
 
@@ -59,6 +60,7 @@ class SyncPendingMpesaPayments extends Command
 
             if ($payments->isEmpty()) {
                 $this->info('No pending payments found.');
+
                 return Command::SUCCESS;
             }
 
@@ -89,13 +91,14 @@ class SyncPendingMpesaPayments extends Command
     protected function syncPayment(Payment $payment, MpesaStkService $mpesaService): bool
     {
         $checkoutRequestId = $payment->checkout_request_id;
-        
-        $this->line("Checking: {$checkoutRequestId} (Amount: " . number_format($payment->amount, 2) . " KES)");
+
+        $this->line("Checking: {$checkoutRequestId} (Amount: ".number_format($payment->amount, 2).' KES)');
 
         $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
 
-        if (!$queryResult['success']) {
-            $this->warn("  ❌ Query failed: " . ($queryResult['error'] ?? 'Unknown error'));
+        if (! $queryResult['success']) {
+            $this->warn('  ❌ Query failed: '.($queryResult['error'] ?? 'Unknown error'));
+
             return false;
         }
 
@@ -118,21 +121,23 @@ class SyncPendingMpesaPayments extends Command
                         'ends_at' => now()->addMonth(),
                         'next_billing_at' => now()->addMonth(),
                     ]);
-                    
+
                     $this->info("  ✅ Payment completed! Subscription activated: {$subscription->plan}");
                 } else {
-                    $this->info("  ✅ Payment completed!");
+                    $this->info('  ✅ Payment completed!');
                 }
 
                 DB::commit();
+
                 return true;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->error("  ❌ Failed to update payment: " . $e->getMessage());
+                $this->error('  ❌ Failed to update payment: '.$e->getMessage());
                 Log::error('Failed to sync payment from query', [
                     'payment_id' => $payment->id,
                     'error' => $e->getMessage(),
                 ]);
+
                 return false;
             }
         } elseif (isset($queryResult['result_code']) && $queryResult['result_code'] != '0') {
@@ -140,13 +145,14 @@ class SyncPendingMpesaPayments extends Command
             $payment->update([
                 'transaction_status' => 'failed',
             ]);
-            $this->warn("  ⚠️  Payment failed: " . ($queryResult['result_desc'] ?? 'Unknown reason'));
+            $this->warn('  ⚠️  Payment failed: '.($queryResult['result_desc'] ?? 'Unknown reason'));
+
             return false;
         } else {
             // Still pending
-            $this->line("  ⏳ Still pending...");
+            $this->line('  ⏳ Still pending...');
+
             return false;
         }
     }
 }
-

@@ -40,7 +40,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'phone_country_code' => 'nullable|string|max:5',
             'phone_number' => 'nullable|string|max:20',
         ]);
@@ -49,7 +49,7 @@ class ProfileController extends Controller
             $user->update([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
-                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'name' => $validated['first_name'].' '.$validated['last_name'],
                 'email' => $validated['email'],
                 'phone_country_code' => $validated['phone_country_code'],
                 'phone_number' => $validated['phone_number'],
@@ -57,7 +57,7 @@ class ProfileController extends Controller
 
             return back()->with('success', 'Profile updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Profile update failed: ' . $e->getMessage(), [
+            Log::error('Profile update failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => $user->id,
             ]);
@@ -79,7 +79,7 @@ class ProfileController extends Controller
         ]);
 
         // Verify current password
-        if (!Hash::check($validated['current_password'], $user->password)) {
+        if (! Hash::check($validated['current_password'], $user->password)) {
             return back()->withErrors(['current_password' => 'The current password is incorrect.']);
         }
 
@@ -90,7 +90,7 @@ class ProfileController extends Controller
 
             return back()->with('success', 'Password updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Password update failed: ' . $e->getMessage(), [
+            Log::error('Password update failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => $user->id,
             ]);
@@ -108,7 +108,7 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         // Only allow tenant owners to update tenant information
-        if (!$user->is_owner) {
+        if (! $user->is_owner) {
             return back()->withErrors(['error' => 'Only tenant owners can update tenant information.']);
         }
 
@@ -125,7 +125,7 @@ class ProfileController extends Controller
 
             return back()->with('success', 'Tenant information updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Tenant update failed: ' . $e->getMessage(), [
+            Log::error('Tenant update failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'tenant_id' => $tenant->id,
             ]);
@@ -134,4 +134,3 @@ class ProfileController extends Controller
         }
     }
 }
-

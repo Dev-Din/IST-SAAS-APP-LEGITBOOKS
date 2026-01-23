@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Helpers\PaymentHelper;
 use App\Http\Controllers\Controller;
-use App\Models\PaymentMethod;
-use App\Models\Subscription;
-use App\Models\Payment;
 use App\Models\Account;
 use App\Models\ChartOfAccount;
-use App\Services\TenantContext;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
+use App\Models\Subscription;
 use App\Services\MpesaStkService;
-use App\Helpers\PaymentHelper;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -54,7 +54,7 @@ class BillingController extends Controller
             'plan' => 'required|in:free,starter,business,enterprise',
         ]);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return back()->withErrors(['plan' => 'No active subscription found.']);
         }
 
@@ -70,7 +70,7 @@ class BillingController extends Controller
         if ($isUpgradeToPaid) {
             // Redirect to upgrade page which requires payment
             return redirect()->route('tenant.billing.page')
-                ->with('info', 'Please complete payment to upgrade to the ' . ucfirst($validated['plan']) . ' plan.');
+                ->with('info', 'Please complete payment to upgrade to the '.ucfirst($validated['plan']).' plan.');
         }
 
         // Allow downgrades or same plan changes without payment
@@ -88,7 +88,7 @@ class BillingController extends Controller
             return back()->with('success', 'Subscription plan updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Plan update failed: ' . $e->getMessage(), [
+            \Log::error('Plan update failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'tenant_id' => $tenant->id,
             ]);
@@ -164,6 +164,7 @@ class BillingController extends Controller
             return back()->with('success', 'Payment method added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => 'Failed to add payment method. Please try again.']);
         }
     }
@@ -179,7 +180,7 @@ class BillingController extends Controller
         DB::transaction(function () use ($tenant, $paymentMethod) {
             PaymentMethod::where('tenant_id', $tenant->id)
                 ->update(['is_default' => false]);
-            
+
             $paymentMethod->update(['is_default' => true]);
         });
 
@@ -290,9 +291,10 @@ class BillingController extends Controller
             DB::beginTransaction();
 
             $mpesaService = app(MpesaStkService::class);
-            
-            if (!$mpesaService->isConfigured()) {
+
+            if (! $mpesaService->isConfigured()) {
                 DB::rollBack();
+
                 return response()->json([
                     'ok' => false,
                     'error' => 'M-Pesa is not configured. Please contact support.',
@@ -304,7 +306,7 @@ class BillingController extends Controller
                 ->where('type', 'mpesa')
                 ->first();
 
-            if (!$mpesaAccount) {
+            if (! $mpesaAccount) {
                 $cashAccount = ChartOfAccount::where('tenant_id', $tenant->id)
                     ->where('code', '1400')
                     ->first();
@@ -321,7 +323,7 @@ class BillingController extends Controller
             }
 
             // Generate payment number
-            $paymentNumber = 'SUB-' . date('Ymd') . '-' . str_pad(
+            $paymentNumber = 'SUB-'.date('Ymd').'-'.str_pad(
                 Payment::where('tenant_id', $tenant->id)->count() + 1,
                 4,
                 '0',
@@ -345,12 +347,13 @@ class BillingController extends Controller
             $stkResult = $mpesaService->initiateSTKPush([
                 'phone_number' => $validated['phone'],
                 'amount' => $amount,
-                'account_reference' => 'SUB-' . $subscription->id,
-                'transaction_desc' => 'Subscription payment for ' . ucfirst($validated['plan']) . ' plan',
+                'account_reference' => 'SUB-'.$subscription->id,
+                'transaction_desc' => 'Subscription payment for '.ucfirst($validated['plan']).' plan',
             ]);
 
-            if (!$stkResult['success']) {
+            if (! $stkResult['success']) {
                 DB::rollBack();
+
                 return response()->json([
                     'ok' => false,
                     'error' => $stkResult['error'] ?? 'Failed to initiate M-Pesa payment. Please try again.',
@@ -390,6 +393,7 @@ class BillingController extends Controller
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
+
             return response()->json([
                 'ok' => false,
                 'error' => 'Validation failed',
@@ -417,13 +421,13 @@ class BillingController extends Controller
     public function checkMpesaStatus(string $checkoutRequestID, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $payment = Payment::where('checkout_request_id', $checkoutRequestID)
             ->where('tenant_id', $tenant->id)
             ->with('subscription')
             ->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json([
                 'status' => 'not_found',
                 'error' => 'Payment not found',
@@ -436,17 +440,17 @@ class BillingController extends Controller
         if ($payment->transaction_status === 'pending' && $secondsSinceCreated >= 15) {
             $mpesaService = app(MpesaStkService::class);
             $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestID);
-            
+
             if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
                 // Payment was successful - process it
                 try {
                     DB::beginTransaction();
-                    
+
                     $payment->update([
                         'transaction_status' => 'completed',
                         'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestID,
                     ]);
-                    
+
                     // Activate subscription
                     if ($payment->subscription_id) {
                         $subscription = $payment->subscription;
@@ -457,9 +461,9 @@ class BillingController extends Controller
                             'next_billing_at' => now()->addMonth(),
                         ]);
                     }
-                    
+
                     DB::commit();
-                    
+
                     Log::info('Payment status updated via polling query', [
                         'payment_id' => $payment->id,
                         'checkout_request_id' => $checkoutRequestID,
@@ -471,7 +475,7 @@ class BillingController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                 }
-                
+
                 $payment->refresh();
             } elseif ($queryResult['success'] && isset($queryResult['result_code'])) {
                 // Check if result_code indicates actual failure (not just pending)
@@ -479,21 +483,21 @@ class BillingController extends Controller
                 $failureCodes = ['1032', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009'];
                 $resultCode = (string) $queryResult['result_code'];
                 $resultDesc = strtolower($queryResult['result_desc'] ?? '');
-                
+
                 // Check if it's a known failure code OR if description indicates failure
-                $isFailure = in_array($resultCode, $failureCodes) || 
+                $isFailure = in_array($resultCode, $failureCodes) ||
                              str_contains($resultDesc, 'cancelled') ||
                              str_contains($resultDesc, 'insufficient') ||
                              str_contains($resultDesc, 'failed') ||
                              str_contains($resultDesc, 'declined');
-                
+
                 if ($isFailure) {
                     // Actual failure - mark as failed
                     $payment->update([
                         'transaction_status' => 'failed',
                     ]);
                     $payment->refresh();
-                    
+
                     Log::info('Payment marked as failed from Daraja query', [
                         'payment_id' => $payment->id,
                         'result_code' => $resultCode,
@@ -522,7 +526,7 @@ class BillingController extends Controller
         ], 200, [
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
-            'Expires' => '0'
+            'Expires' => '0',
         ]);
     }
 
@@ -533,8 +537,8 @@ class BillingController extends Controller
     public function checkPaymentStatus(Request $request, TenantContext $tenantContext)
     {
         $checkoutRequestId = $request->input('checkout_request_id');
-        
-        if (!$checkoutRequestId) {
+
+        if (! $checkoutRequestId) {
             return response()->json([
                 'success' => false,
                 'error' => 'Checkout request ID is required',
@@ -546,7 +550,7 @@ class BillingController extends Controller
             ->where('tenant_id', $tenant->id)
             ->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json([
                 'success' => false,
                 'error' => 'Payment not found',
@@ -557,19 +561,19 @@ class BillingController extends Controller
         if ($payment->transaction_status === 'pending') {
             $mpesaService = app(MpesaStkService::class);
             $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
-            
+
             if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
                 // Payment was successful - process it as if callback was received
                 // This simulates the callback processing
                 try {
                     DB::beginTransaction();
-                    
+
                     // Update payment status
                     $payment->update([
                         'transaction_status' => 'completed',
                         'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
                     ]);
-                    
+
                     // Activate subscription if this is a subscription payment
                     if ($payment->subscription_id) {
                         $subscription = $payment->subscription;
@@ -580,9 +584,9 @@ class BillingController extends Controller
                             'next_billing_at' => now()->addMonth(),
                         ]);
                     }
-                    
+
                     DB::commit();
-                    
+
                     Log::info('Payment status updated via Daraja query', [
                         'payment_id' => $payment->id,
                         'checkout_request_id' => $checkoutRequestId,
@@ -600,14 +604,14 @@ class BillingController extends Controller
                     'transaction_status' => 'failed',
                 ]);
             }
-            
+
             // Refresh payment to get latest status
             $payment->refresh();
         }
 
         $isCompleted = $payment->transaction_status === 'completed';
         $subscription = $payment->subscription;
-        
+
         // Refresh subscription to get latest status
         if ($subscription) {
             $subscription->refresh();
@@ -622,7 +626,7 @@ class BillingController extends Controller
         ], 200, [
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
-            'Expires' => '0'
+            'Expires' => '0',
         ]);
     }
 
@@ -664,7 +668,7 @@ class BillingController extends Controller
 
         $validated = $request->validate($rules, $messages);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return back()->withErrors(['plan' => 'No active subscription found.']);
         }
 
@@ -713,8 +717,8 @@ class BillingController extends Controller
             if ($validated['payment_gateway'] === 'mpesa') {
                 // Initiate M-Pesa STK Push
                 $mpesaService = app(MpesaStkService::class);
-                
-                if (!$mpesaService->isConfigured()) {
+
+                if (! $mpesaService->isConfigured()) {
                     DB::rollBack();
                     if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
                         return response()->json([
@@ -722,6 +726,7 @@ class BillingController extends Controller
                             'error' => 'M-Pesa is not configured. Please contact support.',
                         ], 400);
                     }
+
                     return back()->withErrors(['payment_gateway' => 'M-Pesa is not configured. Please contact support.'])->withInput();
                 }
 
@@ -730,7 +735,7 @@ class BillingController extends Controller
                     ->where('type', 'mpesa')
                     ->first();
 
-                if (!$mpesaAccount) {
+                if (! $mpesaAccount) {
                     $cashAccount = ChartOfAccount::where('tenant_id', $tenant->id)
                         ->where('code', '1400')
                         ->first();
@@ -747,7 +752,7 @@ class BillingController extends Controller
                 }
 
                 // Generate payment number
-                $paymentNumber = 'SUB-' . date('Ymd') . '-' . str_pad(
+                $paymentNumber = 'SUB-'.date('Ymd').'-'.str_pad(
                     Payment::where('tenant_id', $tenant->id)->count() + 1,
                     4,
                     '0',
@@ -771,11 +776,11 @@ class BillingController extends Controller
                 $stkResult = $mpesaService->initiateSTKPush([
                     'phone_number' => $validated['mpesa_phone'],
                     'amount' => $amount,
-                    'account_reference' => 'SUB-' . $subscription->id,
-                    'transaction_desc' => 'Subscription payment for ' . ucfirst($validated['plan']) . ' plan',
+                    'account_reference' => 'SUB-'.$subscription->id,
+                    'transaction_desc' => 'Subscription payment for '.ucfirst($validated['plan']).' plan',
                 ]);
 
-                if (!$stkResult['success']) {
+                if (! $stkResult['success']) {
                     DB::rollBack();
                     if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
                         return response()->json([
@@ -783,6 +788,7 @@ class BillingController extends Controller
                             'error' => $stkResult['error'] ?? 'Failed to initiate M-Pesa payment. Please try again.',
                         ], 400);
                     }
+
                     return back()->withErrors(['payment_gateway' => $stkResult['error'] ?? 'Failed to initiate M-Pesa payment. Please try again.'])->withInput();
                 }
 
@@ -806,14 +812,14 @@ class BillingController extends Controller
                 if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
                     return response()->json([
                         'success' => true,
-                        'message' => 'M-Pesa STK push initiated. Please check your phone (' . $validated['mpesa_phone'] . ') to complete the payment. Your subscription will be activated once payment is confirmed.',
+                        'message' => 'M-Pesa STK push initiated. Please check your phone ('.$validated['mpesa_phone'].') to complete the payment. Your subscription will be activated once payment is confirmed.',
                         'checkout_request_id' => $stkResult['checkoutRequestID'],
                         'customer_message' => $stkResult['customerMessage'],
                     ], 200);
                 }
 
                 return redirect()->route('tenant.billing.page')
-                    ->with('info', 'M-Pesa STK push sent to ' . $validated['mpesa_phone'] . '. Please complete the payment on your phone. Your subscription will be activated once payment is confirmed.');
+                    ->with('info', 'M-Pesa STK push sent to '.$validated['mpesa_phone'].'. Please complete the payment on your phone. Your subscription will be activated once payment is confirmed.');
 
             } else {
                 // Placeholder payment processing for card/PayPal (not yet implemented)
@@ -854,10 +860,11 @@ class BillingController extends Controller
                     'errors' => $e->errors(),
                 ], 422);
             }
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Upgrade failed: ' . $e->getMessage(), [
+            \Log::error('Upgrade failed: '.$e->getMessage(), [
                 'exception' => $e,
                 'tenant_id' => $tenant->id,
                 'request_data' => $request->except(['_token']),
@@ -870,6 +877,7 @@ class BillingController extends Controller
                     'error' => $errorMessage,
                 ], 500);
             }
+
             return back()->withErrors(['payment_gateway' => $errorMessage])->withInput();
         }
     }

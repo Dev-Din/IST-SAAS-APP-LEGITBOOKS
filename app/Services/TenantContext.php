@@ -23,4 +23,3 @@ class TenantContext
         $this->tenant = null;
     }
 }
-

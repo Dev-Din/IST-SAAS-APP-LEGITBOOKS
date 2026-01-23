@@ -2,11 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Admin;
 use App\Services\Mail\PHPMailerService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class GenerateScheduledReports extends Command
 {
@@ -45,7 +43,7 @@ class GenerateScheduledReports extends Command
         $dateFrom = $dateRange['from'];
         $dateTo = $dateRange['to'];
 
-        $reports = $reportType === 'all' 
+        $reports = $reportType === 'all'
             ? ['tenant_overview', 'revenue', 'subscription', 'payment']
             : [$reportType];
 
@@ -53,26 +51,27 @@ class GenerateScheduledReports extends Command
 
         foreach ($reports as $report) {
             $this->info("Generating {$report} report...");
-            
+
             // Get report data using reflection to call protected methods
-            $controller = new \App\Http\Controllers\Admin\ReportsController();
+            $controller = new \App\Http\Controllers\Admin\ReportsController;
             $reflection = new \ReflectionClass($controller);
-            
+
             $methodMap = [
                 'tenant_overview' => 'getTenantOverview',
                 'revenue' => 'getRevenueSummary',
                 'subscription' => 'getSubscriptionMetrics',
                 'payment' => 'getPaymentCollection',
             ];
-            
-            if (!isset($methodMap[$report])) {
+
+            if (! isset($methodMap[$report])) {
                 $this->error("Unknown report type: {$report}");
+
                 continue;
             }
-            
+
             $method = $reflection->getMethod($methodMap[$report]);
             $method->setAccessible(true);
-            
+
             if ($report === 'revenue' || $report === 'payment') {
                 $data = $method->invoke($controller, $dateFrom, $dateTo);
             } else {
@@ -81,7 +80,7 @@ class GenerateScheduledReports extends Command
 
             // Generate file based on format
             $filename = $this->generateReportFile($report, $data, $format, $dateFrom, $dateTo);
-            
+
             if ($filename) {
                 $generatedFiles[] = [
                     'report' => $report,
@@ -93,13 +92,13 @@ class GenerateScheduledReports extends Command
         }
 
         // Send email if provided
-        if ($email && !empty($generatedFiles)) {
+        if ($email && ! empty($generatedFiles)) {
             $this->info("Sending reports to {$email}...");
             $this->sendReportEmail($mailer, $email, $generatedFiles, $frequency, $dateFrom, $dateTo);
-            $this->info("✓ Reports sent successfully");
+            $this->info('✓ Reports sent successfully');
         }
 
-        $this->info("Report generation completed!");
+        $this->info('Report generation completed!');
 
         return Command::SUCCESS;
     }
@@ -138,7 +137,7 @@ class GenerateScheduledReports extends Command
      */
     protected function generateReportFile(string $report, array $data, string $format, string $dateFrom, string $dateTo): ?string
     {
-        $filename = "reports/{$report}_{$dateFrom}_{$dateTo}_" . now()->format('Y-m-d_His') . ".{$format}";
+        $filename = "reports/{$report}_{$dateFrom}_{$dateTo}_".now()->format('Y-m-d_His').".{$format}";
 
         try {
             switch ($format) {
@@ -154,7 +153,7 @@ class GenerateScheduledReports extends Command
                             'local'
                         );
                     } else {
-                        $this->warn("Excel export not available, falling back to CSV");
+                        $this->warn('Excel export not available, falling back to CSV');
                         $content = $this->generateCsvContent($data, $report);
                         Storage::disk('local')->put(str_replace('.xlsx', '.csv', $filename), $content);
                         $filename = str_replace('.xlsx', '.csv', $filename);
@@ -167,12 +166,14 @@ class GenerateScheduledReports extends Command
                     break;
                 default:
                     $this->error("Unsupported format: {$format}");
+
                     return null;
             }
 
             return $filename;
         } catch (\Exception $e) {
-            $this->error("Failed to generate {$report} report: " . $e->getMessage());
+            $this->error("Failed to generate {$report} report: ".$e->getMessage());
+
             return null;
         }
     }
@@ -240,7 +241,7 @@ class GenerateScheduledReports extends Command
 
         $mailer->send([
             'to' => $email,
-            'subject' => "LegitBooks {$frequency} Reports - " . now()->format('M d, Y'),
+            'subject' => "LegitBooks {$frequency} Reports - ".now()->format('M d, Y'),
             'html' => $html,
             'text' => $text,
             'attachments' => $attachments,
@@ -248,4 +249,3 @@ class GenerateScheduledReports extends Command
         ]);
     }
 }
-

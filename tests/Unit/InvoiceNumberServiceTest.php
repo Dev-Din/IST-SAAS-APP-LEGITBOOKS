@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\InvoiceCounter;
 use App\Models\Tenant;
 use App\Services\InvoiceNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,44 +16,41 @@ class InvoiceNumberServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new InvoiceNumberService();
+        $this->service = new InvoiceNumberService;
     }
 
     /**
-     * Test that generate() returns expected format INV-{YEAR}-{SEQUENCE}
+     * Test that generate() returns expected format INV-{SEQUENCE}
      */
     public function test_generate_returns_expected_format(): void
     {
         $tenant = $this->createTestTenant();
-        $year = now()->year;
 
         $invoiceNumber = $this->service->generate($tenant->id);
 
         $this->assertStringStartsWith('INV-', $invoiceNumber);
-        $this->assertStringContainsString((string)$year, $invoiceNumber);
-        $this->assertMatchesRegularExpression('/^INV-\d{4}-\d{4}$/', $invoiceNumber);
+        $this->assertMatchesRegularExpression('/^INV-\d{3}$/', $invoiceNumber);
     }
 
     /**
-     * Test that sequence increments across multiple generate calls for same tenant-year
+     * Test that sequence increments across multiple generate calls for same tenant
      */
-    public function test_sequence_increments_for_same_tenant_year(): void
+    public function test_sequence_increments_for_same_tenant(): void
     {
         $tenant = $this->createTestTenant();
-        $year = now()->year;
 
         $first = $this->service->generate($tenant->id);
         $second = $this->service->generate($tenant->id);
         $third = $this->service->generate($tenant->id);
 
         // Extract sequence numbers
-        preg_match('/INV-\d{4}-(\d{4})$/', $first, $matches1);
-        preg_match('/INV-\d{4}-(\d{4})$/', $second, $matches2);
-        preg_match('/INV-\d{4}-(\d{4})$/', $third, $matches3);
+        preg_match('/INV-(\d{3})$/', $first, $matches1);
+        preg_match('/INV-(\d{3})$/', $second, $matches2);
+        preg_match('/INV-(\d{3})$/', $third, $matches3);
 
-        $seq1 = (int)$matches1[1];
-        $seq2 = (int)$matches2[1];
-        $seq3 = (int)$matches3[1];
+        $seq1 = (int) $matches1[1];
+        $seq2 = (int) $matches2[1];
+        $seq3 = (int) $matches3[1];
 
         $this->assertEquals(1, $seq1);
         $this->assertEquals(2, $seq2);
@@ -72,44 +68,12 @@ class InvoiceNumberServiceTest extends TestCase
         $number1 = $this->service->generate($tenant1->id);
         $number2 = $this->service->generate($tenant2->id);
 
-        // Both should start at 0001
-        preg_match('/INV-\d{4}-(\d{4})$/', $number1, $matches1);
-        preg_match('/INV-\d{4}-(\d{4})$/', $number2, $matches2);
+        // Both should start at 001
+        preg_match('/INV-(\d{3})$/', $number1, $matches1);
+        preg_match('/INV-(\d{3})$/', $number2, $matches2);
 
-        $this->assertEquals('0001', $matches1[1]);
-        $this->assertEquals('0001', $matches2[1]);
-    }
-
-    /**
-     * Test that sequence resets for new year
-     */
-    public function test_sequence_resets_for_new_year(): void
-    {
-        $tenant = $this->createTestTenant();
-        $currentYear = now()->year;
-
-        // Create counter for current year with sequence 5
-        InvoiceCounter::create([
-            'tenant_id' => $tenant->id,
-            'year' => $currentYear,
-            'sequence' => 5,
-        ]);
-
-        // Generate should increment to 6
-        $number = $this->service->generate($tenant->id);
-        preg_match('/INV-\d{4}-(\d{4})$/', $number, $matches);
-        $this->assertEquals('0006', $matches[1]);
-
-        // Create counter for next year
-        InvoiceCounter::create([
-            'tenant_id' => $tenant->id,
-            'year' => $currentYear + 1,
-            'sequence' => 0,
-        ]);
-
-        // Mock the year to test next year behavior
-        // In real scenario, this would happen naturally when year changes
-        $this->assertTrue(true); // Placeholder - year change testing would require date mocking
+        $this->assertEquals('001', $matches1[1]);
+        $this->assertEquals('001', $matches2[1]);
     }
 
     /**
@@ -121,14 +85,12 @@ class InvoiceNumberServiceTest extends TestCase
 
         $this->assertDatabaseMissing('invoice_counters', [
             'tenant_id' => $tenant->id,
-            'year' => now()->year,
         ]);
 
         $this->service->generate($tenant->id);
 
         $this->assertDatabaseHas('invoice_counters', [
             'tenant_id' => $tenant->id,
-            'year' => now()->year,
             'sequence' => 1,
         ]);
     }
@@ -139,8 +101,8 @@ class InvoiceNumberServiceTest extends TestCase
     protected function createTestTenant(): Tenant
     {
         return Tenant::create([
-            'name' => 'Test Tenant ' . uniqid(),
-            'email' => 'test' . uniqid() . '@example.com',
+            'name' => 'Test Tenant '.uniqid(),
+            'email' => 'test'.uniqid().'@example.com',
             'tenant_hash' => Tenant::generateTenantHash(),
             'status' => 'active',
             'settings' => [],

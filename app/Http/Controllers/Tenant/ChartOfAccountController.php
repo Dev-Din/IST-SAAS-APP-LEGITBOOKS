@@ -15,44 +15,44 @@ class ChartOfAccountController extends Controller
     public function index(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         // Get query parameters
         $search = $request->get('search', '');
         $sortBy = $request->get('sort_by', 'code');
         $sortOrder = $request->get('sort_order', 'asc');
-        
+
         // Build query
         $query = ChartOfAccount::where('tenant_id', $tenant->id);
-        
+
         // Apply search filter
         if ($search) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
+                    ->orWhere('name', 'like', "%{$search}%");
             });
         }
-        
+
         // Apply sorting
         $validSortColumns = ['code', 'name', 'type'];
         $sortBy = in_array($sortBy, $validSortColumns) ? $sortBy : 'code';
         $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'asc';
-        
+
         $chartOfAccounts = $query->orderBy($sortBy, $sortOrder)->get();
-        
+
         // Calculate YTD for each account using efficient query (only if accounts exist)
         if ($chartOfAccounts->isNotEmpty()) {
             $accountIds = $chartOfAccounts->pluck('id');
             $ytdBalances = \App\Models\JournalLine::whereIn('chart_of_account_id', $accountIds)
-                ->whereHas('journalEntry', function($q) {
+                ->whereHas('journalEntry', function ($q) {
                     $q->where('is_posted', true)
-                      ->whereYear('entry_date', now()->year);
+                        ->whereYear('entry_date', now()->year);
                 })
                 ->selectRaw('chart_of_account_id, SUM(CASE WHEN type = "debit" THEN amount ELSE -amount END) as balance')
                 ->groupBy('chart_of_account_id')
                 ->pluck('balance', 'chart_of_account_id');
-            
+
             // Attach YTD balances to accounts
-            $chartOfAccounts->each(function($account) use ($ytdBalances) {
+            $chartOfAccounts->each(function ($account) use ($ytdBalances) {
                 $account->ytd_balance = $ytdBalances[$account->id] ?? 0;
             });
         } else {
@@ -83,9 +83,9 @@ class ChartOfAccountController extends Controller
     public function store(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
-            'code' => ['required', 'string', 'max:255', 'unique:chart_of_accounts,code,NULL,id,tenant_id,' . $tenant->id],
+            'code' => ['required', 'string', 'max:255', 'unique:chart_of_accounts,code,NULL,id,tenant_id,'.$tenant->id],
             'name' => 'required|string|max:255',
             'type' => 'required|in:asset,liability,equity,revenue,expense',
             'category' => 'nullable|in:current_asset,fixed_asset,current_liability,long_term_liability,equity,revenue,expense,cost_of_sales',
@@ -114,7 +114,7 @@ class ChartOfAccountController extends Controller
     {
         $tenant = $tenantContext->getTenant();
         $chartOfAccount->load('parent', 'children', 'accounts', 'journalLines.journalEntry');
-        
+
         return view('tenant.chart-of-accounts.show', compact('chartOfAccount', 'tenant'));
     }
 
@@ -139,9 +139,9 @@ class ChartOfAccountController extends Controller
     public function update(Request $request, ChartOfAccount $chartOfAccount, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
-            'code' => ['required', 'string', 'max:255', 'unique:chart_of_accounts,code,' . $chartOfAccount->id . ',id,tenant_id,' . $tenant->id],
+            'code' => ['required', 'string', 'max:255', 'unique:chart_of_accounts,code,'.$chartOfAccount->id.',id,tenant_id,'.$tenant->id],
             'name' => 'required|string|max:255',
             'type' => 'required|in:asset,liability,equity,revenue,expense',
             'category' => 'nullable|in:current_asset,fixed_asset,current_liability,long_term_liability,equity,revenue,expense,cost_of_sales',
@@ -173,7 +173,7 @@ class ChartOfAccountController extends Controller
         }
 
         $chartOfAccount->delete();
-        
+
         return redirect()->route('tenant.chart-of-accounts.index')
             ->with('success', 'Chart of account deleted successfully.');
     }

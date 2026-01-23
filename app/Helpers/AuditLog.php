@@ -10,11 +10,10 @@ class AuditLog
     /**
      * Record an audit log entry
      *
-     * @param Model|string $actor The admin/user who performed the action
-     * @param string $action The action performed (e.g., 'admin.invite.created', 'admin.invite.accepted')
-     * @param Model|string|null $target The target of the action (e.g., AdminInvitation, Admin)
-     * @param array $meta Additional metadata
-     * @return PlatformAuditLog
+     * @param  Model|string  $actor  The admin/user who performed the action
+     * @param  string  $action  The action performed (e.g., 'admin.invite.created', 'admin.invite.accepted')
+     * @param  Model|string|null  $target  The target of the action (e.g., AdminInvitation, Admin)
+     * @param  array  $meta  Additional metadata
      */
     public static function record($actor, string $action, $target = null, array $meta = []): PlatformAuditLog
     {
@@ -56,4 +55,3 @@ class AuditLog
         ]);
     }
 }
-

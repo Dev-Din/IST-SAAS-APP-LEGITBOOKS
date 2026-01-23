@@ -23,7 +23,7 @@ class ProductModelTest extends TestCase
     public function test_product_has_tenant_relationship(): void
     {
         $product = $this->createTestProduct();
-        
+
         $this->assertInstanceOf(Tenant::class, $product->tenant);
         $this->assertEquals($this->tenant->id, $product->tenant->id);
     }
@@ -32,7 +32,7 @@ class ProductModelTest extends TestCase
     {
         $coa = $this->createTestCOA();
         $product = $this->createTestProduct(['sales_account_id' => $coa->id]);
-        
+
         $this->assertInstanceOf(ChartOfAccount::class, $product->salesAccount);
         $this->assertEquals($coa->id, $product->salesAccount->id);
     }
@@ -45,7 +45,7 @@ class ProductModelTest extends TestCase
             'price' => '1000.50',
             'is_active' => true,
         ]);
-        
+
         $this->assertIsFloat($product->price);
         $this->assertEquals(1000.50, $product->price);
     }

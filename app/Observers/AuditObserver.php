@@ -10,7 +10,7 @@ class AuditObserver
 {
     protected function log(Model $model, string $action, ?array $before = null, ?array $after = null): void
     {
-        if (!property_exists($model, 'tenant_id') && !$model->getAttribute('tenant_id')) {
+        if (! property_exists($model, 'tenant_id') && ! $model->getAttribute('tenant_id')) {
             return;
         }
 

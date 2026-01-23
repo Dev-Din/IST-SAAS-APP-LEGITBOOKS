@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,28 +14,28 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Add new columns only if they don't exist
-            if (!Schema::hasColumn('users', 'first_name')) {
+            if (! Schema::hasColumn('users', 'first_name')) {
                 $table->string('first_name')->nullable()->after('name');
             }
-            
-            if (!Schema::hasColumn('users', 'last_name')) {
+
+            if (! Schema::hasColumn('users', 'last_name')) {
                 $table->string('last_name')->nullable()->after('first_name');
             }
-            
-            if (!Schema::hasColumn('users', 'role_name')) {
+
+            if (! Schema::hasColumn('users', 'role_name')) {
                 $table->string('role_name')->nullable()->after('last_name');
             }
-            
-            if (!Schema::hasColumn('users', 'permissions')) {
+
+            if (! Schema::hasColumn('users', 'permissions')) {
                 $table->json('permissions')->nullable()->after('role_name');
             }
         });
-        
+
         // Handle unique constraint on email - drop if exists, then add composite
         try {
             // Try to drop unique on email if it exists
             $indexes = DB::select("SHOW INDEX FROM users WHERE Column_name = 'email' AND Non_unique = 0");
-            if (!empty($indexes)) {
+            if (! empty($indexes)) {
                 Schema::table('users', function (Blueprint $table) {
                     $table->dropUnique(['email']);
                 });
@@ -43,7 +43,7 @@ return new class extends Migration
         } catch (\Exception $e) {
             // Index might not exist or already dropped, continue
         }
-        
+
         // Add composite unique index on tenant_id + email if it doesn't exist
         try {
             $compositeIndexExists = DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_tenant_email_unique'");
@@ -66,13 +66,13 @@ return new class extends Migration
             // Drop composite unique index if it exists
             try {
                 $compositeIndexExists = DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_tenant_email_unique'");
-                if (!empty($compositeIndexExists)) {
+                if (! empty($compositeIndexExists)) {
                     $table->dropUnique('users_tenant_email_unique');
                 }
             } catch (\Exception $e) {
                 // Continue
             }
-            
+
             // Remove new columns if they exist
             $columnsToDrop = [];
             if (Schema::hasColumn('users', 'permissions')) {
@@ -87,12 +87,12 @@ return new class extends Migration
             if (Schema::hasColumn('users', 'first_name')) {
                 $columnsToDrop[] = 'first_name';
             }
-            
-            if (!empty($columnsToDrop)) {
+
+            if (! empty($columnsToDrop)) {
                 $table->dropColumn($columnsToDrop);
             }
         });
-        
+
         // Restore unique constraint on email
         try {
             Schema::table('users', function (Blueprint $table) {

@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Tenant;
 use App\Models\Subscription;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tenant;
+use Illuminate\Database\Seeder;
 
 class BackfillDefaultSubscriptionsSeeder extends Seeder
 {
@@ -20,7 +19,7 @@ class BackfillDefaultSubscriptionsSeeder extends Seeder
             // Check if subscription already exists (idempotent)
             $existingSubscription = Subscription::where('tenant_id', $tenant->id)->first();
 
-            if (!$existingSubscription) {
+            if (! $existingSubscription) {
                 Subscription::create([
                     'tenant_id' => $tenant->id,
                     'plan' => 'plan_free',

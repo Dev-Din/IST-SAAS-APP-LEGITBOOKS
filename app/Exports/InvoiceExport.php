@@ -2,17 +2,16 @@
 
 namespace App\Exports;
 
-use App\Models\Invoice;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class InvoiceExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
 {
@@ -40,7 +39,7 @@ class InvoiceExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'Tax (KES)',
             'Total (KES)',
             'Outstanding (KES)',
-            'Payment Status'
+            'Payment Status',
         ];
     }
 
@@ -59,7 +58,7 @@ class InvoiceExport implements FromCollection, WithHeadings, WithMapping, WithSt
             number_format($invoice->tax_amount, 2),
             number_format($invoice->total, 2),
             number_format($outstanding, 2),
-            $paymentStatus
+            $paymentStatus,
         ];
     }
 
@@ -70,7 +69,7 @@ class InvoiceExport implements FromCollection, WithHeadings, WithMapping, WithSt
                 'font' => ['bold' => true, 'size' => 12],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'E5E7EB']
+                    'startColor' => ['rgb' => 'E5E7EB'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,

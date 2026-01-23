@@ -13,14 +13,12 @@ class InvoiceCounter extends Model
 
     protected $fillable = [
         'tenant_id',
-        'year',
         'sequence',
     ];
 
     protected function casts(): array
     {
         return [
-            'year' => 'integer',
             'sequence' => 'integer',
         ];
     }

@@ -19,9 +19,9 @@ class MailService
     {
         $inviter = $invitation->inviter;
         $tenantName = 'LegitBooks'; // Default, can be enhanced to get from tenant
-        
+
         $acceptUrl = route('admin.invite.accept', $invitation->token);
-        
+
         // Render HTML email
         $html = View::make('emails.admin.invite', [
             'invitation' => $invitation,
@@ -49,4 +49,3 @@ class MailService
         ]);
     }
 }
-

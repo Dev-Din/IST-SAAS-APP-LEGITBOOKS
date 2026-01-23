@@ -11,4 +11,3 @@ class FaqController extends Controller
         return view('marketing.faq');
     }
 }
-

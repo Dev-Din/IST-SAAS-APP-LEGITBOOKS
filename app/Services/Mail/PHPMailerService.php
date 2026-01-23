@@ -2,17 +2,16 @@
 
 namespace App\Services\Mail;
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 use Illuminate\Support\Facades\Log;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class PHPMailerService
 {
     /**
      * Send email using PHPMailer with Gmail SMTP
      *
-     * @param array $data Required keys: 'to', 'subject', 'html'. Optional: 'text', 'reply_to', 'from_name', 'attachments'
-     * @return bool
+     * @param  array  $data  Required keys: 'to', 'subject', 'html'. Optional: 'text', 'reply_to', 'from_name', 'attachments'
      */
     public function send(array $data): bool
     {
@@ -21,6 +20,7 @@ class PHPMailerService
             Log::error('PHPMailer: Missing required fields', [
                 'provided_keys' => array_keys($data),
             ]);
+
             return false;
         }
 
@@ -30,27 +30,28 @@ class PHPMailerService
         if (empty($smtpConfig['username']) || empty($smtpConfig['password'])) {
             Log::error('PHPMailer: SMTP credentials not configured', [
                 'host' => $smtpConfig['host'] ?? 'not set',
-                'username_set' => !empty($smtpConfig['username']),
-                'password_set' => !empty($smtpConfig['password']),
+                'username_set' => ! empty($smtpConfig['username']),
+                'password_set' => ! empty($smtpConfig['password']),
             ]);
+
             return false;
         }
 
         $mail = new PHPMailer(true);
 
         // Set UTF-8 encoding for proper character handling
-        $mail->CharSet = "UTF-8";
-        $mail->Encoding = "base64";
+        $mail->CharSet = 'UTF-8';
+        $mail->Encoding = 'base64';
 
         try {
             // Server settings
             $mail->isSMTP();
-            $mail->Host       = $smtpConfig['host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $smtpConfig['username'];
-            $mail->Password   = $smtpConfig['password'];
+            $mail->Host = $smtpConfig['host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $smtpConfig['username'];
+            $mail->Password = $smtpConfig['password'];
             $mail->SMTPSecure = $smtpConfig['encryption'];
-            $mail->Port       = $smtpConfig['port'];
+            $mail->Port = $smtpConfig['port'];
 
             // Enable verbose debug output (only in debug mode)
             if (config('app.debug')) {
@@ -68,12 +69,12 @@ class PHPMailerService
             $mail->addAddress($data['to']);
 
             // Reply-To (optional)
-            if (!empty($data['reply_to'])) {
+            if (! empty($data['reply_to'])) {
                 $mail->addReplyTo($data['reply_to']);
             }
 
             // Attachments (optional)
-            if (!empty($data['attachments']) && is_array($data['attachments'])) {
+            if (! empty($data['attachments']) && is_array($data['attachments'])) {
                 foreach ($data['attachments'] as $attachment) {
                     if (file_exists($attachment)) {
                         $mail->addAttachment($attachment);
@@ -88,7 +89,7 @@ class PHPMailerService
             // Content
             $mail->isHTML(true);
             $mail->Subject = $data['subject'];
-            $mail->Body    = $data['html'];
+            $mail->Body = $data['html'];
             $mail->AltBody = $data['text'] ?? strip_tags($data['html']);
 
             // Send email
@@ -112,4 +113,3 @@ class PHPMailerService
         }
     }
 }
-

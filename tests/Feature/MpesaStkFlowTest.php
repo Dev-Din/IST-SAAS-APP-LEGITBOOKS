@@ -2,21 +2,22 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\Tenant;
-use App\Models\User;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
 class MpesaStkFlowTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected User $user;
+
     protected TenantContext $tenantContext;
 
     protected function setUp(): void
@@ -298,4 +299,3 @@ class MpesaStkFlowTest extends TestCase
         $this->assertEquals('completed', $payment->transaction_status);
     }
 }
-

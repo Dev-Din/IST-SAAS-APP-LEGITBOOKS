@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\AdminInvitation;
-use App\Models\Admin;
 use App\Helpers\AuditLog;
+use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\AdminInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +20,7 @@ class AdminInvitationController extends Controller
     {
         $invitation = AdminInvitation::where('token', $token)->firstOrFail();
 
-        if (!$invitation->isValid()) {
+        if (! $invitation->isValid()) {
             return view('admin.invitations.expired', compact('invitation'));
         }
 
@@ -34,7 +34,7 @@ class AdminInvitationController extends Controller
     {
         $invitation = AdminInvitation::where('token', $token)->firstOrFail();
 
-        if (!$invitation->isValid()) {
+        if (! $invitation->isValid()) {
             return redirect()->route('admin.invite.accept', $token)
                 ->withErrors(['token' => 'This invitation has expired or is no longer valid.']);
         }
@@ -58,7 +58,7 @@ class AdminInvitationController extends Controller
 
         // Create admin account
         $admin = Admin::create([
-            'name' => trim($invitation->first_name . ' ' . $invitation->last_name),
+            'name' => trim($invitation->first_name.' '.$invitation->last_name),
             'email' => $invitation->email,
             'password' => Hash::make($request->password),
             'is_active' => true,
@@ -66,7 +66,7 @@ class AdminInvitationController extends Controller
         ]);
 
         // Assign permissions
-        if (!empty($invitation->permissions)) {
+        if (! empty($invitation->permissions)) {
             $admin->assignPermissions($invitation->permissions);
         }
 
@@ -98,4 +98,3 @@ class AdminInvitationController extends Controller
             ->with('success', 'Your account has been created successfully. Please sign in with your new password.');
     }
 }
-

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class AdminInvitation extends Model
 {
@@ -71,7 +70,7 @@ class AdminInvitation extends Model
      */
     public function isValid(): bool
     {
-        return $this->status === 'pending' && !$this->isExpired();
+        return $this->status === 'pending' && ! $this->isExpired();
     }
 
     /**
@@ -90,4 +89,3 @@ class AdminInvitation extends Model
         return $this->belongsTo(Tenant::class);
     }
 }
-

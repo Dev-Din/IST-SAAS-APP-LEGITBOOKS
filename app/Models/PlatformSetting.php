@@ -17,7 +17,7 @@ class PlatformSetting extends Model
         return optional(static::where('key', $key)->first())->value ?? $default;
     }
 
-    public static function setValue(string $key, $value, array $meta = null): void
+    public static function setValue(string $key, $value, ?array $meta = null): void
     {
         static::updateOrCreate(['key' => $key], [
             'value' => $value,

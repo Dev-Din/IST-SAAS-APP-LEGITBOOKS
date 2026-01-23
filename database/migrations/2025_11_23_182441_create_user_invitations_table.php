@@ -26,10 +26,10 @@ return new class extends Migration
             $table->timestamp('accepted_at')->nullable();
             $table->enum('status', ['pending', 'accepted', 'expired', 'cancelled'])->default('pending');
             $table->timestamps();
-            
+
             // Composite unique index on tenant_id + email
             $table->unique(['tenant_id', 'email'], 'user_invitations_tenant_email_unique');
-            
+
             // Index on token for fast lookups
             $table->index('token');
             $table->index('status');

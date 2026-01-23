@@ -23,7 +23,7 @@ class MpesaStkController extends Controller
 
     /**
      * Initiate STK Push payment
-     * 
+     *
      * POST /api/payments/mpesa/stk-push
      */
     public function initiateSTKPush(Request $request)
@@ -44,10 +44,10 @@ class MpesaStkController extends Controller
 
         try {
             $invoice = Invoice::findOrFail($request->invoice_id);
-            
+
             // Set tenant context
             $this->tenantContext->setTenant($invoice->tenant);
-            
+
             // Load invoice relationships
             $invoice->load('tenant', 'contact');
 
@@ -81,10 +81,10 @@ class MpesaStkController extends Controller
                 'phone_number' => $request->phone_number,
                 'amount' => $amount,
                 'account_reference' => $invoice->invoice_number,
-                'transaction_desc' => 'Payment for Invoice ' . $invoice->invoice_number,
+                'transaction_desc' => 'Payment for Invoice '.$invoice->invoice_number,
             ]);
 
-            if (!$stkResult['success']) {
+            if (! $stkResult['success']) {
                 return response()->json($stkResult, 400);
             }
 
@@ -93,7 +93,7 @@ class MpesaStkController extends Controller
                 ->where('type', 'mpesa')
                 ->first();
 
-            if (!$mpesaAccount) {
+            if (! $mpesaAccount) {
                 // Create M-Pesa account if it doesn't exist
                 $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $invoice->tenant_id)
                     ->where('code', '1400')
@@ -111,7 +111,7 @@ class MpesaStkController extends Controller
             }
 
             // Generate payment number
-            $paymentNumber = 'PAY-' . date('Ymd') . '-' . str_pad(
+            $paymentNumber = 'PAY-'.date('Ymd').'-'.str_pad(
                 Payment::where('tenant_id', $invoice->tenant_id)->count() + 1,
                 4,
                 '0',
@@ -164,21 +164,21 @@ class MpesaStkController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to initiate payment: ' . $e->getMessage(),
+                'error' => 'Failed to initiate payment: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Handle M-Pesa callback
-     * 
+     *
      * POST /api/payments/mpesa/callback
      */
     public function callback(Request $request)
     {
         // Verify callback IP (production only)
         $clientIP = $request->ip();
-        if (!$this->mpesaService->verifyCallbackIP($clientIP)) {
+        if (! $this->mpesaService->verifyCallbackIP($clientIP)) {
             // In development, log but don't block (tunnel IPs are dynamic)
             if (config('app.env') !== 'production') {
                 Log::info('M-Pesa callback from tunnel IP (development mode)', [
@@ -189,6 +189,7 @@ class MpesaStkController extends Controller
                 Log::warning('M-Pesa callback from unauthorized IP', [
                     'ip' => $clientIP,
                 ]);
+
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
         }
@@ -199,7 +200,7 @@ class MpesaStkController extends Controller
             'cf-mitigated' => $request->header('cf-mitigated'),
             'cf-connecting-ip' => $request->header('CF-Connecting-IP'),
         ];
-        
+
         // Log raw callback
         $rawCallback = $request->all();
         Log::info('M-Pesa callback received', [
@@ -217,25 +218,28 @@ class MpesaStkController extends Controller
                     'cf_headers' => $cfHeaders,
                     'body_preview' => substr($rawBody, 0, 500),
                 ]);
+
                 // Return 200 quickly to avoid retries
                 return response()->json(['error' => 'Cloudflare challenge detected'], 200);
             }
 
             // Validate callback structure
             $body = $request->json()->all();
-            
-            if (!isset($body['Body'])) {
+
+            if (! isset($body['Body'])) {
                 Log::error('Invalid M-Pesa callback structure', [
                     'payload' => $rawCallback,
                     'cf_headers' => $cfHeaders,
                 ]);
+
                 return response()->json(['error' => 'Invalid callback structure'], 400);
             }
 
             $stkCallback = $body['Body']['stkCallback'] ?? null;
-            
-            if (!$stkCallback) {
+
+            if (! $stkCallback) {
                 Log::error('Missing stkCallback in M-Pesa callback', ['payload' => $rawCallback]);
+
                 return response()->json(['error' => 'Missing stkCallback'], 400);
             }
 
@@ -247,18 +251,19 @@ class MpesaStkController extends Controller
             $payment = Payment::with('tenant', 'invoice', 'subscription')->where('checkout_request_id', $checkoutRequestID)->first();
 
             // If not found by checkout_request_id, try merchant_request_id
-            if (!$payment && isset($stkCallback['MerchantRequestID'])) {
+            if (! $payment && isset($stkCallback['MerchantRequestID'])) {
                 $payment = Payment::with('tenant', 'invoice', 'subscription')
                     ->where('merchant_request_id', $stkCallback['MerchantRequestID'])
                     ->first();
             }
 
-            if (!$payment) {
+            if (! $payment) {
                 Log::warning('M-Pesa callback for unknown payment', [
                     'checkout_request_id' => $checkoutRequestID,
                     'merchant_request_id' => $stkCallback['MerchantRequestID'] ?? null,
                     'cf_headers' => $cfHeaders,
                 ]);
+
                 // Return 200 to avoid retries for unknown payments
                 return response()->json(['error' => 'Payment not found'], 200);
             }
@@ -274,6 +279,7 @@ class MpesaStkController extends Controller
                     'payment_id' => $payment->id,
                     'status' => $payment->transaction_status,
                 ]);
+
                 return response()->json(['message' => 'Callback already processed'], 200);
             }
 
@@ -286,7 +292,7 @@ class MpesaStkController extends Controller
             if ($resultCode == 0) {
                 // Success - extract payment details
                 $callbackMetadata = $stkCallback['CallbackMetadata']['Item'] ?? [];
-                
+
                 $mpesaReceipt = null;
                 $callbackAmount = null; // Amount from M-Pesa callback (will be 1.00 in dev)
                 $phoneNumber = null;
@@ -311,19 +317,19 @@ class MpesaStkController extends Controller
 
                 // In development, use the actual amount from payment record (not the 1.00 from callback)
                 // In production, use the callback amount
-                $actualAmount = config('app.env') === 'production' 
-                    ? ($callbackAmount ?? $payment->amount) 
+                $actualAmount = config('app.env') === 'production'
+                    ? ($callbackAmount ?? $payment->amount)
                     : $payment->amount; // Keep the original amount in dev
 
                 DB::transaction(function () use ($payment, $mpesaReceipt, $actualAmount, $phoneNumber, $transactionDate) {
                     // Ensure payment has account_id (M-Pesa account)
-                    if (!$payment->account_id) {
+                    if (! $payment->account_id) {
                         $tenant = $payment->tenant;
                         $mpesaAccount = \App\Models\Account::where('tenant_id', $tenant->id)
                             ->where('type', 'mpesa')
                             ->first();
 
-                        if (!$mpesaAccount) {
+                        if (! $mpesaAccount) {
                             // Create M-Pesa account if it doesn't exist
                             $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                                 ->where('code', '1400')
@@ -361,10 +367,10 @@ class MpesaStkController extends Controller
                     // Handle subscription payment
                     if ($payment->subscription_id) {
                         $subscription = $payment->subscription;
-                        
+
                         // Store before state for audit log
                         $subscriptionBefore = $subscription->getAttributes();
-                        
+
                         // Activate subscription immediately
                         $subscription->update([
                             'status' => 'active',
@@ -390,7 +396,7 @@ class MpesaStkController extends Controller
                             'plan' => $subscription->plan,
                             'cf_headers' => $cfHeaders,
                         ]);
-                        
+
                         // Refresh subscription to ensure latest status
                         $subscription->refresh();
 
@@ -423,7 +429,7 @@ class MpesaStkController extends Controller
                     ]);
 
                     // Allocate payment to invoice (only for invoice payments, not subscription payments)
-                    if ($payment->invoice_id && !$payment->subscription_id) {
+                    if ($payment->invoice_id && ! $payment->subscription_id) {
                         $invoice = $payment->invoice;
                         $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
 
@@ -453,7 +459,7 @@ class MpesaStkController extends Controller
                             ]);
                         }
                     }
-                    
+
                     // Subscription payments journal entries are created above in the subscription block
                 });
 
@@ -504,10 +510,10 @@ class MpesaStkController extends Controller
     protected function createSubscriptionJournalEntry(Payment $payment, $subscription): void
     {
         $tenant = $payment->tenant;
-        
+
         // Get M-Pesa account (bank/cash)
         $mpesaAccount = $payment->account;
-        if (!$mpesaAccount) {
+        if (! $mpesaAccount) {
             throw new \Exception('M-Pesa account not found for payment');
         }
         $mpesaCoa = $mpesaAccount->chartOfAccount;
@@ -517,7 +523,7 @@ class MpesaStkController extends Controller
             ->where('code', '4100')
             ->first();
 
-        if (!$revenueAccount) {
+        if (! $revenueAccount) {
             // Try alternative revenue codes
             $revenueAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
                 ->whereIn('code', ['4000', '4100', '4200'])
@@ -525,13 +531,13 @@ class MpesaStkController extends Controller
                 ->first();
         }
 
-        if (!$revenueAccount) {
+        if (! $revenueAccount) {
             throw new \Exception('Revenue account not found for subscription payment');
         }
 
         // Create journal entry
-        $entryNumber = 'JE-' . date('Ymd') . '-' . str_pad(\App\Models\JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
-        
+        $entryNumber = 'JE-'.date('Ymd').'-'.str_pad(\App\Models\JournalEntry::where('tenant_id', $tenant->id)->count() + 1, 4, '0', STR_PAD_LEFT);
+
         $journalEntry = \App\Models\JournalEntry::create([
             'tenant_id' => $tenant->id,
             'entry_number' => $entryNumber,
@@ -548,7 +554,7 @@ class MpesaStkController extends Controller
             'chart_of_account_id' => $mpesaCoa->id,
             'type' => 'debit',
             'amount' => $payment->amount,
-            'description' => "Subscription payment received",
+            'description' => 'Subscription payment received',
         ]);
 
         // Credit Revenue
@@ -564,7 +570,7 @@ class MpesaStkController extends Controller
         $journalEntry->calculateTotals();
         $journalEntry->save();
 
-        if (!$journalEntry->isBalanced()) {
+        if (! $journalEntry->isBalanced()) {
             throw new \Exception('Subscription journal entry is not balanced');
         }
 
@@ -581,16 +587,15 @@ class MpesaStkController extends Controller
     protected function formatPhoneNumber(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
-        
+
         if (substr($phone, 0, 1) === '0') {
-            $phone = '254' . substr($phone, 1);
+            $phone = '254'.substr($phone, 1);
         }
-        
+
         if (substr($phone, 0, 3) !== '254') {
-            $phone = '254' . $phone;
+            $phone = '254'.$phone;
         }
-        
+
         return $phone;
     }
 }
-

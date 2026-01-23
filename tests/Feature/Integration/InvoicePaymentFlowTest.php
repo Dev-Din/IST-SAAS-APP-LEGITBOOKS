@@ -8,7 +8,6 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceCounter;
 use App\Models\InvoiceLineItem;
-use App\Models\JournalEntry;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Tenant;
@@ -25,15 +24,19 @@ class InvoicePaymentFlowTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected User $user;
+
     protected ChartOfAccount $arAccount;
+
     protected ChartOfAccount $salesAccount;
+
     protected Account $bankAccount;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->tenant = Tenant::create([
             'name' => 'Test Tenant',
             'email' => 'test@example.com',

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Mail\PHPMailerService;
-use Illuminate\Support\Facades\Log;
 
 class EmailService
 {

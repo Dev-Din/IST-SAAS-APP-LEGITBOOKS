@@ -38,7 +38,7 @@ class InvoicePaymentController extends Controller
             $invoice = Invoice::findOrFail($invoiceId);
 
             // If invoice has no payment token, it hasn't been sent yet
-            if (!$invoice->payment_token) {
+            if (! $invoice->payment_token) {
                 abort(404, 'This invoice has not been sent yet. Please contact the sender to send the invoice first.');
             }
 
@@ -50,17 +50,18 @@ class InvoicePaymentController extends Controller
             // Check if invoice is already paid
             if ($invoice->status === 'paid') {
                 $invoice->load('contact', 'lineItems', 'tenant');
+
                 return view('invoice.payment.paid', compact('invoice'));
             }
 
             // Load tenant relationship first
             $invoice->load('tenant');
-            
+
             // Set tenant context
-            if (!$invoice->tenant) {
+            if (! $invoice->tenant) {
                 abort(404, 'Invoice tenant not found.');
             }
-            
+
             $this->tenantContext->setTenant($invoice->tenant);
 
             $invoice->load('contact', 'lineItems');
@@ -77,7 +78,7 @@ class InvoicePaymentController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            abort(500, 'An error occurred while loading the payment page: ' . $e->getMessage());
+            abort(500, 'An error occurred while loading the payment page: '.$e->getMessage());
         }
     }
 
@@ -184,10 +185,10 @@ class InvoicePaymentController extends Controller
                 'phone_number' => $phone,
                 'amount' => $amount,
                 'account_reference' => $invoice->invoice_number,
-                'transaction_desc' => 'Payment for Invoice ' . $invoice->invoice_number,
+                'transaction_desc' => 'Payment for Invoice '.$invoice->invoice_number,
             ]);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'] ?? 'Failed to initiate STK push',
@@ -199,7 +200,7 @@ class InvoicePaymentController extends Controller
                 ->where('type', 'mpesa')
                 ->first();
 
-            if (!$mpesaAccount) {
+            if (! $mpesaAccount) {
                 // Create M-Pesa account if it doesn't exist
                 $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $invoice->tenant_id)
                     ->where('code', '1400')
@@ -217,7 +218,7 @@ class InvoicePaymentController extends Controller
             }
 
             // Generate payment number
-            $paymentNumber = 'PAY-' . date('Ymd') . '-' . str_pad(
+            $paymentNumber = 'PAY-'.date('Ymd').'-'.str_pad(
                 Payment::where('tenant_id', $invoice->tenant_id)->count() + 1,
                 4,
                 '0',
@@ -295,8 +296,8 @@ class InvoicePaymentController extends Controller
     public function checkPaymentStatus($invoiceId, string $token, Request $request)
     {
         $checkoutRequestId = $request->input('checkout_request_id');
-        
-        if (!$checkoutRequestId) {
+
+        if (! $checkoutRequestId) {
             return response()->json([
                 'status' => 'error',
                 'error' => 'Checkout request ID is required',
@@ -322,7 +323,7 @@ class InvoicePaymentController extends Controller
             ->where('invoice_id', $invoice->id)
             ->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json([
                 'status' => 'error',
                 'error' => 'Payment not found',
@@ -333,12 +334,12 @@ class InvoicePaymentController extends Controller
         if ($payment->transaction_status === 'pending' || $payment->transaction_status === 'failed') {
             $mpesaService = app(\App\Services\MpesaStkService::class);
             $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
-            
+
             if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
                 // Payment was successful - update payment status
                 try {
                     DB::beginTransaction();
-                    
+
                     $payment->update([
                         'transaction_status' => 'completed',
                         'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
@@ -349,8 +350,8 @@ class InvoicePaymentController extends Controller
                     $existingAllocation = $invoice->paymentAllocations()
                         ->where('payment_id', $payment->id)
                         ->first();
-                    
-                    if (!$existingAllocation && $payment->invoice_id) {
+
+                    if (! $existingAllocation && $payment->invoice_id) {
                         $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
                         if ($allocatedAmount > 0) {
                             $paymentService = app(\App\Services\PaymentService::class);
@@ -372,7 +373,7 @@ class InvoicePaymentController extends Controller
                             }
                         }
                     }
-                    
+
                     DB::commit();
                 } catch (\Exception $e) {
                     DB::rollBack();
@@ -390,7 +391,7 @@ class InvoicePaymentController extends Controller
                     ]);
                 }
             }
-            
+
             // Refresh payment to get latest status
             $payment->refresh();
         }
@@ -401,7 +402,7 @@ class InvoicePaymentController extends Controller
         $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
 
         // Return status similar to subscription payment check
-        $status = match($payment->transaction_status) {
+        $status = match ($payment->transaction_status) {
             'completed' => $isPaid ? 'success' : 'processing',
             'failed', 'cancelled' => 'failed',
             default => 'pending',
@@ -415,7 +416,7 @@ class InvoicePaymentController extends Controller
         ], 200, [
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
-            'Expires' => '0'
+            'Expires' => '0',
         ]);
     }
 
@@ -429,12 +430,12 @@ class InvoicePaymentController extends Controller
 
         // If starts with 0, replace with 254
         if (substr($phone, 0, 1) === '0') {
-            $phone = '254' . substr($phone, 1);
+            $phone = '254'.substr($phone, 1);
         }
 
         // If doesn't start with 254, add it
         if (substr($phone, 0, 3) !== '254') {
-            $phone = '254' . $phone;
+            $phone = '254'.$phone;
         }
 
         return $phone;
@@ -474,4 +475,3 @@ class InvoicePaymentController extends Controller
         });
     }
 }
-

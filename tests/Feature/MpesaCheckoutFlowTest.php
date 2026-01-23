@@ -6,9 +6,7 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class MpesaCheckoutFlowTest extends TestCase
@@ -28,7 +26,7 @@ class MpesaCheckoutFlowTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         $this->actingAs($user);
 
         $response = $this->post(route('tenant.checkout.pay-mpesa', ['plan' => 'starter']), [
@@ -55,7 +53,7 @@ class MpesaCheckoutFlowTest extends TestCase
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $subscription = Subscription::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         $payment = Payment::factory()->create([
             'tenant_id' => $tenant->id,
             'subscription_id' => $subscription->id,
@@ -84,7 +82,7 @@ class MpesaCheckoutFlowTest extends TestCase
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $subscription = Subscription::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         $payment = Payment::factory()->create([
             'tenant_id' => $tenant->id,
             'subscription_id' => $subscription->id,
@@ -203,4 +201,3 @@ class MpesaCheckoutFlowTest extends TestCase
         ]);
     }
 }
-

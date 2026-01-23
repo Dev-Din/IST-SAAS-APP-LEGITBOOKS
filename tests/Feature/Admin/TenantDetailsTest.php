@@ -2,15 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
 use App\Models\Admin;
+use App\Models\Invoice;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Subscription;
-use App\Models\Invoice;
-use App\Models\Contact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class TenantDetailsTest extends TestCase
 {
@@ -77,4 +76,3 @@ class TenantDetailsTest extends TestCase
         $response->assertStatus(403);
     }
 }
-

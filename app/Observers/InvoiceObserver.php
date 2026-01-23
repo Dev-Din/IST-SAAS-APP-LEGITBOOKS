@@ -10,7 +10,7 @@ class InvoiceObserver
 {
     public function creating(Invoice $invoice): void
     {
-        if (!$invoice->invoice_number && $invoice->tenant_id) {
+        if (! $invoice->invoice_number && $invoice->tenant_id) {
             $invoice->invoice_number = app(InvoiceNumberService::class)->generate($invoice->tenant_id);
         }
     }

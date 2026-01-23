@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Tenant;
-use App\Models\User;
-use App\Models\InvoiceCounter;
 use App\Models\ChartOfAccount;
 use App\Models\Contact;
+use App\Models\InvoiceCounter;
 use App\Models\Product;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,7 +19,6 @@ class TenantProvisioningService
             // Create invoice counter
             InvoiceCounter::create([
                 'tenant_id' => $tenant->id,
-                'year' => now()->year,
                 'sequence' => 0,
             ]);
 
@@ -57,7 +56,7 @@ class TenantProvisioningService
         ];
 
         $parentMap = [];
-        
+
         foreach ($accounts as $account) {
             $parentId = null;
             if (isset($account['parent_code'])) {
@@ -81,7 +80,7 @@ class TenantProvisioningService
     protected function createTenantAdmin(Tenant $tenant, string $email, ?string $password = null): void
     {
         $password = $password ?? \Illuminate\Support\Str::random(12);
-        
+
         User::create([
             'tenant_id' => $tenant->id,
             'name' => 'Admin',
@@ -121,4 +120,3 @@ class TenantProvisioningService
         }
     }
 }
-

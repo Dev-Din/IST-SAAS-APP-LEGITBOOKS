@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
-use App\Models\Subscription;
 use App\Models\Payment;
-use App\Models\Invoice;
+use App\Models\Subscription;
+use App\Models\Tenant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ReportsController extends Controller
 {
@@ -19,7 +18,7 @@ class ReportsController extends Controller
     protected function ensurePermission(): void
     {
         $admin = auth('admin')->user();
-        if (!$admin || (!$admin->hasRole('owner') && !$admin->hasPermission('reports.view'))) {
+        if (! $admin || (! $admin->hasRole('owner') && ! $admin->hasPermission('reports.view'))) {
             abort(403, 'You do not have permission to view reports.');
         }
     }
@@ -345,7 +344,7 @@ class ReportsController extends Controller
      */
     protected function exportCsv(array $data, string $report): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $filename = "{$report}_report_" . now()->format('Y-m-d_His') . '.csv';
+        $filename = "{$report}_report_".now()->format('Y-m-d_His').'.csv';
 
         return response()->streamDownload(function () use ($data, $report) {
             $file = fopen('php://output', 'w');
@@ -429,7 +428,7 @@ class ReportsController extends Controller
         if (class_exists(\Maatwebsite\Excel\Facades\Excel::class)) {
             return \Maatwebsite\Excel\Facades\Excel::download(
                 new \App\Exports\ReportExport($data, $report),
-                "{$report}_report_" . now()->format('Y-m-d_His') . '.xlsx'
+                "{$report}_report_".now()->format('Y-m-d_His').'.xlsx'
             );
         }
 
@@ -443,11 +442,10 @@ class ReportsController extends Controller
     protected function exportPdf(array $data, string $report, string $dateFrom, string $dateTo): \Illuminate\Http\Response
     {
         $html = view('admin.reports.pdf', compact('data', 'report', 'dateFrom', 'dateTo'))->render();
-        
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
-        $filename = "{$report}_report_" . now()->format('Y-m-d_His') . '.pdf';
+        $filename = "{$report}_report_".now()->format('Y-m-d_His').'.pdf';
 
         return $pdf->download($filename);
     }
 }
-

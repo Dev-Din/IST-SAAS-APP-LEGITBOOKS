@@ -2,23 +2,25 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
 use App\Models\Admin;
-use App\Models\Tenant;
-use App\Models\Invoice;
 use App\Models\Contact;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Subscription;
+use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class ExportInvoicesTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Admin $admin;
+
     protected Tenant $tenant;
+
     protected Contact $contact;
 
     protected function setUp(): void
@@ -121,7 +123,7 @@ class ExportInvoicesTest extends TestCase
 
         $content = $response->getContent();
         $lines = str_getcsv($content, "\n");
-        
+
         // Check headers
         $headers = str_getcsv($lines[0]);
         $this->assertContains('Payment Amount', $headers);
@@ -139,4 +141,3 @@ class ExportInvoicesTest extends TestCase
         }
     }
 }
-

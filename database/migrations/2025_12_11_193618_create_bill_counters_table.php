@@ -17,7 +17,7 @@ return new class extends Migration
             $table->smallInteger('year');
             $table->unsignedInteger('sequence')->default(0);
             $table->timestamps();
-            
+
             // Unique constraint: one counter per tenant per year
             $table->unique(['tenant_id', 'year']);
         });

@@ -91,6 +91,7 @@ class Tenant extends Model
         if ($override) {
             return $override;
         }
+
         return config('legitbooks.branding_mode', 'A');
     }
 

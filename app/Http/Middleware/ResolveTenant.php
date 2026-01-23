@@ -2,12 +2,12 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use App\Models\Tenant;
 use App\Services\TenantContext;
+use Closure;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class ResolveTenant
 {
@@ -31,7 +31,7 @@ class ResolveTenant
         }
 
         // If not in session, try to get from authenticated user
-        if (!$tenant && Auth::check()) {
+        if (! $tenant && Auth::check()) {
             $user = Auth::user();
             if ($user && $user->tenant_id) {
                 $tenant = Tenant::find($user->tenant_id);
@@ -43,7 +43,7 @@ class ResolveTenant
         }
 
         // If still no tenant, try to get from route parameter (for backward compatibility)
-        if (!$tenant) {
+        if (! $tenant) {
             $tenantHash = $request->route('tenant_hash');
             if ($tenantHash) {
                 $tenant = Tenant::where('tenant_hash', $tenantHash)->first();
@@ -53,9 +53,9 @@ class ResolveTenant
             }
         }
 
-        if (!$tenant) {
+        if (! $tenant) {
             // Redirect to login if not authenticated, or show error
-            if (!Auth::check()) {
+            if (! Auth::check()) {
                 return redirect()->route('tenant.auth.login');
             }
             abort(404, 'Tenant not found');

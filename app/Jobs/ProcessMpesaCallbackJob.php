@@ -19,7 +19,7 @@ class ProcessMpesaCallbackJob implements ShouldQueue
     public function handle(MpesaService $mpesaService, TenantContext $tenantContext): void
     {
         $tenant = \App\Models\Tenant::find($this->tenantId);
-        if (!$tenant) {
+        if (! $tenant) {
             return;
         }
 

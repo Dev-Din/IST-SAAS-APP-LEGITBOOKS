@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentJsonController extends Controller
 {
@@ -17,7 +17,7 @@ class PaymentJsonController extends Controller
     public function fetch(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $query = Payment::where('tenant_id', $tenant->id)
             ->where('payment_method', 'mpesa')
             ->with(['invoice', 'subscription', 'account']);
@@ -36,7 +36,7 @@ class PaymentJsonController extends Controller
         }
 
         if ($request->has('receipt')) {
-            $query->where('mpesa_receipt', 'like', '%' . $request->input('receipt') . '%');
+            $query->where('mpesa_receipt', 'like', '%'.$request->input('receipt').'%');
         }
 
         $payments = $query->orderBy('created_at', 'desc')->get();
@@ -83,7 +83,7 @@ class PaymentJsonController extends Controller
     public function store(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $query = Payment::where('tenant_id', $tenant->id)
             ->where('payment_method', 'mpesa')
             ->with(['invoice', 'subscription', 'account']);
@@ -144,8 +144,8 @@ class PaymentJsonController extends Controller
         ];
 
         // Generate filename
-        $filename = 'mpesa_payments_' . $tenant->id . '_' . date('Y-m-d_His') . '.json';
-        $filepath = 'payments/' . $filename;
+        $filename = 'mpesa_payments_'.$tenant->id.'_'.date('Y-m-d_His').'.json';
+        $filepath = 'payments/'.$filename;
 
         // Store JSON file
         Storage::put($filepath, json_encode($data, JSON_PRETTY_PRINT));
@@ -172,15 +172,15 @@ class PaymentJsonController extends Controller
     public function download($filename, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        $filepath = 'payments/' . $filename;
+        $filepath = 'payments/'.$filename;
 
         // Verify file exists and belongs to tenant
-        if (!Storage::exists($filepath)) {
+        if (! Storage::exists($filepath)) {
             abort(404, 'File not found');
         }
 
         // Basic security: check if filename contains tenant ID
-        if (!str_contains($filename, '_' . $tenant->id . '_')) {
+        if (! str_contains($filename, '_'.$tenant->id.'_')) {
             abort(403, 'Unauthorized access to file');
         }
 
@@ -195,13 +195,13 @@ class PaymentJsonController extends Controller
     public function listFiles(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $files = Storage::files('payments');
         $tenantFiles = [];
 
         foreach ($files as $file) {
             // Check if file belongs to this tenant
-            if (str_contains($file, '_' . $tenant->id . '_')) {
+            if (str_contains($file, '_'.$tenant->id.'_')) {
                 $filename = basename($file);
                 $tenantFiles[] = [
                     'filename' => $filename,
@@ -225,4 +225,3 @@ class PaymentJsonController extends Controller
         ]);
     }
 }
-

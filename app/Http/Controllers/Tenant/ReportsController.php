@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\TenantContext;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ReportsController extends Controller
 {
@@ -18,16 +18,16 @@ class ReportsController extends Controller
     public function index(Request $request, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
         // Revenue Summary
         $revenueSummary = $this->getRevenueSummary($tenant->id, $dateFrom, $dateTo);
-        
+
         // Payment Collection
         $paymentCollection = $this->getPaymentCollection($tenant->id, $dateFrom, $dateTo);
-        
+
         // Invoice Summary
         $invoiceSummary = $this->getInvoiceSummary($tenant->id, $dateFrom, $dateTo);
 
@@ -70,12 +70,12 @@ class ReportsController extends Controller
                 ->where('transaction_status', 'completed')
                 ->whereDate('payment_date', $currentDate->format('Y-m-d'))
                 ->sum('amount');
-            
+
             $revenueTrend[] = [
                 'date' => $currentDate->format('d/m/Y'),
                 'revenue' => $dailyRevenue ?? 0,
             ];
-            
+
             $currentDate->addDay();
         }
 
@@ -116,7 +116,7 @@ class ReportsController extends Controller
         $totalInvoiced = Invoice::where('tenant_id', $tenantId)
             ->whereBetween('invoice_date', [$dateFromCarbon, $dateToCarbon])
             ->sum('total');
-        
+
         $collectionRate = $totalInvoiced > 0 ? ($totalCollected / $totalInvoiced) * 100 : 0;
 
         // Payments by status

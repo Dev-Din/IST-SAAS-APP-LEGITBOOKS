@@ -4,7 +4,6 @@ namespace Tests\Feature\Tenant;
 
 use App\Models\Account;
 use App\Models\ChartOfAccount;
-use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\User;
@@ -17,12 +16,13 @@ class PaymentControllerTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->tenant = Tenant::create([
             'name' => 'Test Tenant',
             'email' => 'test@example.com',

@@ -86,4 +86,3 @@ class MarketingRoutesTest extends TestCase
         $response->assertViewIs('marketing.legal.privacy');
     }
 }
-

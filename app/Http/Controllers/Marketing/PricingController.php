@@ -11,4 +11,3 @@ class PricingController extends Controller
         return view('marketing.pricing');
     }
 }
-

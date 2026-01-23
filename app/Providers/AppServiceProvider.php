@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\App\Services\TenantContext::class);
-        $this->app->singleton(PlatformSettings::class, fn () => new PlatformSettings());
+        $this->app->singleton(PlatformSettings::class, fn () => new PlatformSettings);
     }
 
     /**
@@ -38,11 +38,13 @@ class AppServiceProvider extends ServiceProvider
         // Register Blade directives for permission checks
         Blade::if('perm', function (string $permission) {
             $user = auth()->user();
+
             return $user && $user->hasPermission($permission);
         });
 
         Blade::if('anyperm', function (array $permissions) {
             $user = auth()->user();
+
             return $user && $user->hasAnyPermission($permissions);
         });
 

@@ -13,15 +13,15 @@ class BillCounter extends Model
 
     protected $fillable = [
         'tenant_id',
-        'year',
-        'sequence',
+        'counter',
+        'prefix',
+        'format',
     ];
 
     protected function casts(): array
     {
         return [
-            'year' => 'integer',
-            'sequence' => 'integer',
+            'counter' => 'integer',
         ];
     }
 
@@ -30,4 +30,3 @@ class BillCounter extends Model
         return $this->belongsTo(Tenant::class);
     }
 }
-

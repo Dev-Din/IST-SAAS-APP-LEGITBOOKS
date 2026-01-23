@@ -50,4 +50,3 @@ class StoreAdminInvitationRequest extends FormRequest
         ];
     }
 }
-

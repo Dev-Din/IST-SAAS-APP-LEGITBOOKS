@@ -12,6 +12,7 @@ class TenantController extends Controller
     public function index()
     {
         $tenants = Tenant::latest()->paginate(15);
+
         return view('admin.tenants.index', compact('tenants'));
     }
 
@@ -56,6 +57,7 @@ class TenantController extends Controller
     public function suspend(Tenant $tenant)
     {
         $tenant->update(['status' => 'suspended']);
+
         return back()->with('success', 'Tenant suspended successfully');
     }
 
@@ -64,6 +66,7 @@ class TenantController extends Controller
         $settings = $tenant->settings ?? [];
         $settings['branding_override'] = $request->input('branding_override');
         $tenant->update(['settings' => $settings]);
+
         return back()->with('success', 'Branding updated successfully');
     }
 }

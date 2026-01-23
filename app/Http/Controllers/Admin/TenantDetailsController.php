@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TenantDetailsController extends Controller
@@ -15,7 +14,7 @@ class TenantDetailsController extends Controller
     protected function ensurePermission(): void
     {
         $admin = Auth::guard('admin')->user();
-        if (!$admin || (!$admin->hasRole('owner') && !$admin->hasPermission('tenants.view'))) {
+        if (! $admin || (! $admin->hasRole('owner') && ! $admin->hasPermission('tenants.view'))) {
             abort(403, 'You do not have permission to view tenant details.');
         }
     }
@@ -29,11 +28,11 @@ class TenantDetailsController extends Controller
 
         // Eager load relationships
         $tenant->load([
-            'users' => function($query) {
+            'users' => function ($query) {
                 $query->with('role')->orderBy('is_owner', 'desc')->orderBy('created_at', 'desc');
             },
             'subscription',
-            'invoices' => function($query) {
+            'invoices' => function ($query) {
                 $query->with('contact')->latest()->limit(5);
             },
         ]);
@@ -82,7 +81,7 @@ class TenantDetailsController extends Controller
      */
     protected function getPlanName(string $plan): string
     {
-        return match($plan) {
+        return match ($plan) {
             'plan_free' => 'Free',
             'plan_starter' => 'Starter',
             'plan_business' => 'Business',
@@ -91,4 +90,3 @@ class TenantDetailsController extends Controller
         };
     }
 }
-

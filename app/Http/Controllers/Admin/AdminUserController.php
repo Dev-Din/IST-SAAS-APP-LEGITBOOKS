@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\AuditLog;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\StoreAdminInvitationRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\Admin;
 use App\Models\AdminInvitation;
-use App\Helpers\AuditLog;
-use App\Services\MailService;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class AdminUserController extends Controller
@@ -51,7 +49,7 @@ class AdminUserController extends Controller
         $roles = Role::where('guard_name', 'admin')->pluck('name', 'name');
         $resources = $this->getSystemResources();
         $pendingInvitations = AdminInvitation::pending()->orderByDesc('created_at')->get();
-        
+
         return view('admin.admins.create', compact('roles', 'resources', 'pendingInvitations'));
     }
 
@@ -156,6 +154,7 @@ class AdminUserController extends Controller
                 'invitation_id' => $invitation->id,
                 'error' => $e->getMessage(),
             ]);
+
             return back()->withErrors(['email' => 'Failed to send email. Please try again.']);
         }
 
@@ -183,6 +182,7 @@ class AdminUserController extends Controller
     {
         $this->ensureOwner();
         $roles = Role::where('guard_name', 'admin')->pluck('name', 'name');
+
         return view('admin.admins.edit', compact('admin', 'roles'));
     }
 
@@ -198,7 +198,7 @@ class AdminUserController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $admin->update(['password' => Hash::make($data['password'])]);
         }
 

@@ -19,4 +19,3 @@ Route::prefix('payments/mpesa')->group(function () {
     // Primary callback endpoint (idempotent, Cloudflare-aware, fallback search)
     Route::post('/callback', [\App\Http\Controllers\Payments\MpesaController::class, 'callback'])->name('api.mpesa.callback');
 });
-

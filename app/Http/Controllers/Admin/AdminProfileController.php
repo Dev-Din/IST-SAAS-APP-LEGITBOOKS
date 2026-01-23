@@ -16,6 +16,7 @@ class AdminProfileController extends Controller
     public function index()
     {
         $admin = Auth::guard('admin')->user();
+
         return view('admin.profile.index', compact('admin'));
     }
 
@@ -28,7 +29,7 @@ class AdminProfileController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
+            'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
         ]);
 
         $admin->update([
@@ -53,7 +54,7 @@ class AdminProfileController extends Controller
         ]);
 
         // Verify current password
-        if (!Hash::check($validated['current_password'], $admin->password)) {
+        if (! Hash::check($validated['current_password'], $admin->password)) {
             return back()->withErrors(['current_password' => 'The current password is incorrect.']);
         }
 
@@ -65,4 +66,3 @@ class AdminProfileController extends Controller
             ->with('success', 'Password updated successfully.');
     }
 }
-
