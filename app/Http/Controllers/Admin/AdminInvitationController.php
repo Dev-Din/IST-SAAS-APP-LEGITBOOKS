@@ -70,9 +70,79 @@ class AdminInvitationController extends Controller
             $admin->assignPermissions($invitation->permissions);
         }
 
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'G',
+            'location' => 'app/Http/Controllers/Admin/AdminInvitationController.php:accept',
+            'message' => 'Before role assignment - checking role_name',
+            'data' => [
+                'invitation_role_name' => $invitation->role_name,
+                'has_role_name' => !empty($invitation->role_name)
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+
         // Assign role if specified
         if ($invitation->role_name) {
-            $admin->assignRole($invitation->role_name);
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'G',
+                'location' => 'app/Http/Controllers/Admin/AdminInvitationController.php:accept',
+                'message' => 'Checking if role exists before assignment',
+                'data' => [
+                    'role_name' => $invitation->role_name,
+                    'guard_name' => 'admin'
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+            
+            // Check if role exists, create if it doesn't
+            $role = \Spatie\Permission\Models\Role::firstOrCreate(
+                ['name' => $invitation->role_name, 'guard_name' => 'admin']
+            );
+            
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'G',
+                'location' => 'app/Http/Controllers/Admin/AdminInvitationController.php:accept',
+                'message' => 'Role found or created - assigning to admin',
+                'data' => [
+                    'role_id' => $role->id,
+                    'role_name' => $role->name,
+                    'was_created' => $role->wasRecentlyCreated
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+            
+            $admin->assignRole($role);
+            
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'G',
+                'location' => 'app/Http/Controllers/Admin/AdminInvitationController.php:accept',
+                'message' => 'Role assigned successfully',
+                'data' => [
+                    'admin_id' => $admin->id,
+                    'role_name' => $invitation->role_name
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
         }
 
         // Mark invitation as accepted

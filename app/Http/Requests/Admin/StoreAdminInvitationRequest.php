@@ -27,6 +27,7 @@ class StoreAdminInvitationRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
+                Rule::unique('admins', 'email'), // Check admins table
                 Rule::unique('admin_invitations')->where(function ($query) {
                     return $query->where('status', 'pending')
                         ->where('expires_at', '>', now());
@@ -44,7 +45,7 @@ class StoreAdminInvitationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.unique' => 'An active invitation already exists for this email address.',
+            'email.unique' => 'An admin account with this email already exists or an active invitation already exists for this email address.',
             'permissions.required' => 'At least one permission must be assigned.',
             'permissions.*.regex' => 'Permission format must be resource.action (e.g., tenants.view).',
         ];

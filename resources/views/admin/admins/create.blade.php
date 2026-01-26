@@ -37,12 +37,29 @@
                             {{ $invitation->expires_at->format('M d, Y') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <form method="POST" action="{{ route('admin.admins.resend-invite', $invitation->id) }}" class="inline">
-                                @csrf
-                                <button type="submit" class="text-indigo-600 hover:text-indigo-900 hover:underline">
-                                    Resend Invite
-                                </button>
-                            </form>
+                            <div class="flex items-center space-x-2">
+                                <form method="POST" action="{{ route('admin.admins.resend-invite', $invitation->id) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="text-indigo-600 hover:text-indigo-900 hover:underline">
+                                        Resend
+                                    </button>
+                                </form>
+                                <span class="text-gray-300">|</span>
+                                <form method="POST" action="{{ route('admin.admins.invitations.cancel', $invitation->id) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="text-orange-600 hover:text-orange-900 hover:underline" onclick="return confirm('Are you sure you want to cancel this invitation?');">
+                                        Cancel
+                                    </button>
+                                </form>
+                                <span class="text-gray-300">|</span>
+                                <form method="POST" action="{{ route('admin.admins.invitations.destroy', $invitation->id) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 hover:underline" onclick="return confirm('Are you sure you want to delete this invitation? This action cannot be undone.');">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

@@ -510,10 +510,20 @@ function loadUsers(tenantId, page = 1) {
                             <div class="text-xs text-gray-400 mt-1">Expires: ${invitation.expires_at}</div>
                         </div>
                     </div>
-                    <button type="button" class="resend-invite-btn px-3 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700" 
-                            data-invitation-id="${invitation.id}" data-tenant-id="${tenantId}">
-                        Resend
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" class="resend-invite-btn px-3 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700" 
+                                data-invitation-id="${invitation.id}" data-tenant-id="${tenantId}">
+                            Resend
+                        </button>
+                        <button type="button" class="cancel-invite-btn px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700" 
+                                data-invitation-id="${invitation.id}" data-tenant-id="${tenantId}">
+                            Cancel
+                        </button>
+                        <button type="button" class="delete-invite-btn px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700" 
+                                data-invitation-id="${invitation.id}" data-tenant-id="${tenantId}">
+                            Delete
+                        </button>
+                    </div>
                 </div>
             `;
         });
@@ -564,6 +574,22 @@ function attachUserActionListeners(tenantId) {
         btn.addEventListener('click', function() {
             const invitationId = this.dataset.invitationId;
             resendInvitation(tenantId, invitationId);
+        });
+    });
+
+    // Cancel invite
+    document.querySelectorAll(`[data-tenant-id="${tenantId}"] .cancel-invite-btn`).forEach(btn => {
+        btn.addEventListener('click', function() {
+            const invitationId = this.dataset.invitationId;
+            cancelInvitation(tenantId, invitationId);
+        });
+    });
+
+    // Delete invite
+    document.querySelectorAll(`[data-tenant-id="${tenantId}"] .delete-invite-btn`).forEach(btn => {
+        btn.addEventListener('click', function() {
+            const invitationId = this.dataset.invitationId;
+            deleteInvitation(tenantId, invitationId);
         });
     });
 }
@@ -625,10 +651,10 @@ function resendInvitation(tenantId, invitationId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Invitation resent successfully!');
             loadUsers(tenantId);
+            alert(data.message || 'Invitation resent successfully!');
         } else {
-            alert('Error: ' + (data.error || 'Failed to resend invitation'));
+            alert(data.error || 'Failed to resend invitation.');
         }
     })
     .catch(error => {
@@ -636,6 +662,65 @@ function resendInvitation(tenantId, invitationId) {
         alert('An error occurred. Please try again.');
     });
 }
+
+function cancelInvitation(tenantId, invitationId) {
+    if (!confirm('Are you sure you want to cancel this invitation?')) {
+        return;
+    }
+
+    fetch(`/admin/tenants/${tenantId}/users/invitations/${invitationId}/cancel`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadUsers(tenantId);
+            alert(data.message || 'Invitation cancelled successfully!');
+        } else {
+            alert(data.error || 'Failed to cancel invitation.');
+        }
+    })
+    .catch(error => {
+        console.error('Error cancelling invitation:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function deleteInvitation(tenantId, invitationId) {
+    if (!confirm('Are you sure you want to delete this invitation? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/admin/tenants/${tenantId}/users/invitations/${invitationId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadUsers(tenantId);
+            alert(data.message || 'Invitation deleted successfully!');
+        } else {
+            alert(data.error || 'Failed to delete invitation.');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting invitation:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
 
 function loadInvoices(tenantId, page = 1) {
     const status = document.querySelector(`[data-tenant-id="${tenantId}"] .invoice-filter-btn.active`)?.dataset.status || 'all';

@@ -288,4 +288,52 @@ class AdminInviteTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    /** @test */
+    public function test_login_updates_invitation_status_from_accepted_to_active()
+    {
+        // Create superadmin and invitation
+        $superadmin = Admin::factory()->create([
+            'role' => 'superadmin',
+            'is_active' => true,
+        ]);
+
+        $invitation = AdminInvitation::create([
+            'inviter_admin_id' => $superadmin->id,
+            'first_name' => 'Active',
+            'last_name' => 'User',
+            'email' => 'active.user@example.com',
+            'role_name' => 'Support Admin',
+            'permissions' => ['tenants.view'],
+            'token' => AdminInvitation::generateToken(),
+            'temp_password_hash' => Hash::make('temp-password-123'),
+            'expires_at' => now()->addDays(14),
+            'status' => 'pending',
+        ]);
+
+        // Accept invitation (status becomes 'accepted')
+        $this->post(route('admin.invite.accept', $invitation->token), [
+            'password' => 'secure-password-123',
+            'password_confirmation' => 'secure-password-123',
+        ]);
+
+        // Verify invitation is now 'accepted'
+        $invitation->refresh();
+        $this->assertEquals('accepted', $invitation->status);
+
+        // Now login with the admin account
+        $admin = Admin::where('email', 'active.user@example.com')->first();
+        $this->assertNotNull($admin);
+
+        $response = $this->post(route('admin.login.post'), [
+            'email' => 'active.user@example.com',
+            'password' => 'secure-password-123',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+
+        // Verify invitation status changed from 'accepted' to 'active'
+        $invitation->refresh();
+        $this->assertEquals('active', $invitation->status);
+    }
 }

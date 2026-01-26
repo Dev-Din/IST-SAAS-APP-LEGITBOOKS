@@ -37,6 +37,8 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::put('tenants/{tenant}/users/{user}', [TenantUserAdminController::class, 'update'])->name('tenants.users.update');
     Route::delete('tenants/{tenant}/users/{user}', [TenantUserAdminController::class, 'destroy'])->name('tenants.users.destroy');
     Route::post('tenants/{tenant}/users/invitations/{invitation}/resend', [TenantUserAdminController::class, 'resendInvite'])->name('tenants.users.resend-invite');
+    Route::post('tenants/{tenant}/users/invitations/{invitation}/cancel', [TenantUserAdminController::class, 'cancelInvitation'])->name('tenants.users.cancel-invite');
+    Route::delete('tenants/{tenant}/users/invitations/{invitation}', [TenantUserAdminController::class, 'destroyInvitation'])->name('tenants.users.destroy-invite');
 
     // Tenant Invoices Management
     Route::get('tenants/{tenant}/invoices', [TenantInvoiceAdminController::class, 'index'])->name('tenants.invoices.index');
@@ -47,6 +49,8 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::post('settings', [PlatformSettingsController::class, 'update'])->name('settings.update');
     Route::resource('admins', AdminUserController::class)->except(['show']);
     Route::post('admins/{invitation}/resend-invite', [AdminUserController::class, 'resendInvite'])->name('admins.resend-invite');
+    Route::post('admins/invitations/{invitation}/cancel', [AdminUserController::class, 'cancelInvitation'])->name('admins.invitations.cancel');
+    Route::delete('admins/invitations/{invitation}', [AdminUserController::class, 'destroyInvitation'])->name('admins.invitations.destroy');
 
     // Profile Management
     Route::get('profile', [AdminProfileController::class, 'index'])->name('profile.index');
@@ -55,5 +59,5 @@ Route::middleware(['auth:admin'])->group(function () {
 });
 
 // Public invite acceptance routes (no auth required)
-Route::get('/invite/accept/{token}', [AdminInvitationController::class, 'showAccept'])->name('admin.invite.accept');
+Route::get('/invite/accept/{token}', [AdminInvitationController::class, 'showAccept'])->name('invite.accept');
 Route::post('/invite/accept/{token}', [AdminInvitationController::class, 'accept']);

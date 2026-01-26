@@ -78,8 +78,15 @@ class Admin extends Authenticatable
     public function assignPermissions(array $permissions): void
     {
         foreach ($permissions as $permission) {
-            if (! $this->hasPermissionTo($permission, 'admin')) {
-                $this->givePermissionTo($permission, 'admin');
+            // Create permission if it doesn't exist
+            $permissionModel = \Spatie\Permission\Models\Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'admin']
+            );
+
+            // Assign permission if not already assigned
+            // Use the Permission model object to avoid guard issues
+            if (! $this->hasPermissionTo($permissionModel)) {
+                $this->givePermissionTo($permissionModel);
             }
         }
     }

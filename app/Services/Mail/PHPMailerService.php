@@ -15,8 +15,40 @@ class PHPMailerService
      */
     public function send(array $data): bool
     {
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'E',
+            'location' => 'app/Services/Mail/PHPMailerService.php:send',
+            'message' => 'PHPMailerService->send entry',
+            'data' => [
+                'has_to' => !empty($data['to']),
+                'has_subject' => !empty($data['subject']),
+                'has_html' => !empty($data['html']),
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+
         // Validate required fields
         if (empty($data['to']) || empty($data['subject']) || empty($data['html'])) {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'E',
+                'location' => 'app/Services/Mail/PHPMailerService.php:send',
+                'message' => 'Missing required fields, returning false',
+                'data' => [
+                    'provided_keys' => array_keys($data),
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             Log::error('PHPMailer: Missing required fields', [
                 'provided_keys' => array_keys($data),
             ]);
@@ -26,8 +58,44 @@ class PHPMailerService
 
         $smtpConfig = config('mailers.smtp');
 
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Services/Mail/PHPMailerService.php:send',
+            'message' => 'SMTP config loaded',
+            'data' => [
+                'host' => $smtpConfig['host'] ?? 'not set',
+                'port' => $smtpConfig['port'] ?? 'not set',
+                'has_username' => !empty($smtpConfig['username']),
+                'has_password' => !empty($smtpConfig['password']),
+                'encryption' => $smtpConfig['encryption'] ?? 'not set',
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+
         // Validate SMTP configuration
         if (empty($smtpConfig['username']) || empty($smtpConfig['password'])) {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A',
+                'location' => 'app/Services/Mail/PHPMailerService.php:send',
+                'message' => 'SMTP credentials missing, returning false',
+                'data' => [
+                    'host' => $smtpConfig['host'] ?? 'not set',
+                    'username_set' => ! empty($smtpConfig['username']),
+                    'password_set' => ! empty($smtpConfig['password']),
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             Log::error('PHPMailer: SMTP credentials not configured', [
                 'host' => $smtpConfig['host'] ?? 'not set',
                 'username_set' => ! empty($smtpConfig['username']),
@@ -92,8 +160,38 @@ class PHPMailerService
             $mail->Body = $data['html'];
             $mail->AltBody = $data['text'] ?? strip_tags($data['html']);
 
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'B',
+                'location' => 'app/Services/Mail/PHPMailerService.php:send',
+                'message' => 'Before calling PHPMailer->send()',
+                'data' => [
+                    'to' => $data['to'],
+                    'host' => $mail->Host,
+                    'port' => $mail->Port,
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             // Send email
             $mail->send();
+
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'B',
+                'location' => 'app/Services/Mail/PHPMailerService.php:send',
+                'message' => 'PHPMailer->send() completed successfully',
+                'data' => [],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
 
             Log::info('PHPMailer: Email sent successfully', [
                 'to' => $data['to'],
@@ -102,6 +200,23 @@ class PHPMailerService
 
             return true;
         } catch (Exception $e) {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'B',
+                'location' => 'app/Services/Mail/PHPMailerService.php:send',
+                'message' => 'PHPMailer Exception caught',
+                'data' => [
+                    'exception_class' => get_class($e),
+                    'exception_message' => $e->getMessage(),
+                    'phpmailer_error_info' => $mail->ErrorInfo ?? 'not available',
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             Log::error('PHPMailer: Failed to send email', [
                 'to' => $data['to'],
                 'subject' => $data['subject'],

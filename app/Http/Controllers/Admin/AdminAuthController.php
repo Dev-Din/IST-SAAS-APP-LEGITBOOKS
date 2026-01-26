@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,6 +25,18 @@ class AdminAuthController extends Controller
 
         if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
+
+            // Update invitation status from 'accepted' to 'active' on first login
+            $admin = Auth::guard('admin')->user();
+            $invitation = AdminInvitation::where('email', $admin->email)
+                ->where('status', 'accepted')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($invitation) {
+                $invitation->status = 'active';
+                $invitation->save();
+            }
 
             return redirect()->intended(route('admin.dashboard'));
         }

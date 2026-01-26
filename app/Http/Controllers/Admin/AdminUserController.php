@@ -48,7 +48,61 @@ class AdminUserController extends Controller
         $this->ensureOwner();
         $roles = Role::where('guard_name', 'admin')->pluck('name', 'name');
         $resources = $this->getSystemResources();
-        $pendingInvitations = AdminInvitation::pending()->orderByDesc('created_at')->get();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'B',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:create',
+            'message' => 'Starting create method - fetching pending invitations',
+            'data' => [],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        // Get pending invitations that don't have an existing admin account
+        $allPendingCount = AdminInvitation::pending()->count();
+        $adminEmails = Admin::select('email')->pluck('email')->toArray();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'B',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:create',
+            'message' => 'Before filtering - pending count and admin emails',
+            'data' => [
+                'all_pending_count' => $allPendingCount,
+                'admin_emails_count' => count($adminEmails),
+                'admin_emails_sample' => array_slice($adminEmails, 0, 5)
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        $pendingInvitations = AdminInvitation::pending()
+            ->whereNotIn('email', Admin::select('email'))
+            ->orderByDesc('created_at')
+            ->get();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'B',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:create',
+            'message' => 'After filtering - filtered invitations count',
+            'data' => [
+                'filtered_count' => $pendingInvitations->count(),
+                'filtered_emails' => $pendingInvitations->pluck('email')->toArray()
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
 
         return view('admin.admins.create', compact('roles', 'resources', 'pendingInvitations'));
     }
@@ -59,11 +113,69 @@ class AdminUserController extends Controller
         $inviter = Auth::guard('admin')->user();
         $data = $request->validated();
 
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'C',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:store',
+            'message' => 'Starting store method - checking for existing admin',
+            'data' => [
+                'email' => $data['email'],
+                'inviter_id' => $inviter->id
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+
+        // Check if admin already exists with this email
+        $existingAdmin = Admin::where('email', $data['email'])->first();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'C',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:store',
+            'message' => 'Admin existence check result',
+            'data' => [
+                'email' => $data['email'],
+                'admin_exists' => $existingAdmin !== null,
+                'admin_id' => $existingAdmin ? $existingAdmin->id : null
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        if ($existingAdmin) {
+            return back()->withErrors(['email' => 'An admin account with this email already exists.'])->withInput();
+        }
+
         // Check for duplicate pending invitation
         $existing = AdminInvitation::where('email', $data['email'])
             ->where('status', 'pending')
             ->where('expires_at', '>', now())
             ->first();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'C',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:store',
+            'message' => 'Pending invitation check result',
+            'data' => [
+                'email' => $data['email'],
+                'invitation_exists' => $existing !== null,
+                'invitation_id' => $existing ? $existing->id : null,
+                'invitation_status' => $existing ? $existing->status : null
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
 
         if ($existing) {
             return back()->withErrors(['email' => 'An active invitation already exists for this email address.'])->withInput();
@@ -147,9 +259,90 @@ class AdminUserController extends Controller
 
         // Resend email
         try {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:resendInvite',
+                'message' => 'Starting email resend',
+                'data' => [
+                    'invitation_id' => $invitation->id,
+                    'email' => $invitation->email,
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             $mailService = app(\App\Services\MailService::class);
-            $mailService->sendAdminInvite($invitation, $tempPassword);
+            
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:resendInvite',
+                'message' => 'MailService instance created, calling sendAdminInvite',
+                'data' => [],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
+            $result = $mailService->sendAdminInvite($invitation, $tempPassword);
+            
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:resendInvite',
+                'message' => 'sendAdminInvite returned',
+                'data' => [
+                    'result' => $result,
+                    'result_type' => gettype($result),
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
+            if (!$result) {
+                // #region agent log
+                $logEntry = [
+                    'sessionId' => 'debug-session',
+                    'runId' => 'run1',
+                    'hypothesisId' => 'A',
+                    'location' => 'app/Http/Controllers/Admin/AdminUserController.php:resendInvite',
+                    'message' => 'sendAdminInvite returned false',
+                    'data' => [],
+                    'timestamp' => round(microtime(true) * 1000)
+                ];
+                file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+                // #endregion
+
+                return back()->withErrors(['email' => 'Failed to send email. Please try again.']);
+            }
         } catch (\Exception $e) {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'A',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:resendInvite',
+                'message' => 'Exception caught in resendInvite',
+                'data' => [
+                    'exception_class' => get_class($e),
+                    'exception_message' => $e->getMessage(),
+                    'exception_file' => $e->getFile(),
+                    'exception_line' => $e->getLine(),
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+
             \Illuminate\Support\Facades\Log::error('Failed to resend admin invite email', [
                 'invitation_id' => $invitation->id,
                 'error' => $e->getMessage(),
@@ -159,6 +352,184 @@ class AdminUserController extends Controller
         }
 
         return back()->with('success', 'Invitation resent successfully.');
+    }
+
+    /**
+     * Cancel an admin invitation
+     */
+    public function cancelInvitation(AdminInvitation $invitation)
+    {
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:cancelInvitation',
+            'message' => 'Cancel invitation method entry',
+            'data' => [
+                'invitation_id' => $invitation->id,
+                'invitation_email' => $invitation->email,
+                'invitation_status' => $invitation->status
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        $this->ensureOwner();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'E',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:cancelInvitation',
+            'message' => 'After permission check - validating status',
+            'data' => [
+                'invitation_status' => $invitation->status,
+                'is_pending' => $invitation->status === 'pending'
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        if ($invitation->status !== 'pending') {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'E',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:cancelInvitation',
+                'message' => 'Validation failed - not pending',
+                'data' => [
+                    'invitation_status' => $invitation->status
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+            return back()->withErrors(['invitation' => 'Only pending invitations can be cancelled.']);
+        }
+        
+        $invitation->status = 'cancelled';
+        $saveResult = $invitation->save();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:cancelInvitation',
+            'message' => 'Invitation cancelled',
+            'data' => [
+                'invitation_id' => $invitation->id,
+                'new_status' => $invitation->status,
+                'save_result' => $saveResult
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        // Log audit
+        AuditLog::record(
+            Auth::guard('admin')->user(),
+            'admin.invite.cancelled',
+            $invitation,
+            ['email' => $invitation->email]
+        );
+        
+        return back()->with('success', 'Invitation cancelled successfully.');
+    }
+
+    /**
+     * Delete an admin invitation
+     */
+    public function destroyInvitation(AdminInvitation $invitation)
+    {
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'B',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroyInvitation',
+            'message' => 'Delete invitation method entry',
+            'data' => [
+                'invitation_id' => $invitation->id,
+                'invitation_email' => $invitation->email,
+                'invitation_status' => $invitation->status
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        $this->ensureOwner();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'F',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroyInvitation',
+            'message' => 'After permission check - validating status',
+            'data' => [
+                'invitation_status' => $invitation->status,
+                'is_deletable' => !in_array($invitation->status, ['accepted', 'active'])
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        if (in_array($invitation->status, ['accepted', 'active'])) {
+            // #region agent log
+            $logEntry = [
+                'sessionId' => 'debug-session',
+                'runId' => 'run1',
+                'hypothesisId' => 'F',
+                'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroyInvitation',
+                'message' => 'Validation failed - cannot delete accepted/active',
+                'data' => [
+                    'invitation_status' => $invitation->status
+                ],
+                'timestamp' => round(microtime(true) * 1000)
+            ];
+            file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+            // #endregion
+            return back()->withErrors(['invitation' => 'Cannot delete accepted or active invitations.']);
+        }
+        
+        $email = $invitation->email;
+        $deleteResult = $invitation->delete();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'B',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroyInvitation',
+            'message' => 'Invitation deleted',
+            'data' => [
+                'invitation_id' => $invitation->id,
+                'invitation_email' => $email,
+                'delete_result' => $deleteResult
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        // Log audit
+        AuditLog::record(
+            Auth::guard('admin')->user(),
+            'admin.invite.deleted',
+            null,
+            ['email' => $email]
+        );
+        
+        return back()->with('success', 'Invitation deleted successfully.');
     }
 
     /**
@@ -211,7 +582,113 @@ class AdminUserController extends Controller
     {
         $this->ensureOwner();
         abort_if(Auth::guard('admin')->id() === $admin->id, 403, 'You cannot delete yourself.');
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroy',
+            'message' => 'Starting destroy method - finding associated invitations',
+            'data' => [
+                'admin_id' => $admin->id,
+                'admin_email' => $admin->email
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        // Cancel all associated invitations
+        $invitations = AdminInvitation::where('email', $admin->email)->get();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroy',
+            'message' => 'Found associated invitations',
+            'data' => [
+                'admin_email' => $admin->email,
+                'invitations_count' => $invitations->count(),
+                'invitations' => $invitations->map(function($inv) {
+                    return [
+                        'id' => $inv->id,
+                        'status' => $inv->status,
+                        'email' => $inv->email
+                    ];
+                })->toArray()
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
+        $cancelledCount = 0;
+        foreach ($invitations as $invitation) {
+            if (in_array($invitation->status, ['pending', 'accepted', 'active'])) {
+                $oldStatus = $invitation->status;
+                $invitation->status = 'cancelled';
+                $saveResult = $invitation->save();
+                
+                // #region agent log
+                $logEntry = [
+                    'sessionId' => 'debug-session',
+                    'runId' => 'run1',
+                    'hypothesisId' => 'A',
+                    'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroy',
+                    'message' => 'Cancelled invitation',
+                    'data' => [
+                        'invitation_id' => $invitation->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => $invitation->status,
+                        'save_result' => $saveResult
+                    ],
+                    'timestamp' => round(microtime(true) * 1000)
+                ];
+                file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+                // #endregion
+                
+                if ($saveResult) {
+                    $cancelledCount++;
+                }
+            }
+        }
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroy',
+            'message' => 'Before deleting admin',
+            'data' => [
+                'admin_id' => $admin->id,
+                'cancelled_invitations_count' => $cancelledCount
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
+        
         $admin->delete();
+        
+        // #region agent log
+        $logEntry = [
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => 'A',
+            'location' => 'app/Http/Controllers/Admin/AdminUserController.php:destroy',
+            'message' => 'Admin deleted successfully',
+            'data' => [
+                'admin_id' => $admin->id,
+                'cancelled_invitations_count' => $cancelledCount
+            ],
+            'timestamp' => round(microtime(true) * 1000)
+        ];
+        file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+        // #endregion
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin user deleted successfully.');
     }
