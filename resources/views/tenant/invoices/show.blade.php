@@ -6,12 +6,34 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="py-6">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Invoice {{ $invoice->invoice_number }}</h1>
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-gray-900">Invoice {{ $invoice->invoice_number }}</h1>
+                @php
+                    $outstanding = $invoice->getOutstandingAmount();
+                    $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+                @endphp
+                <span class="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium
+                    @if($isPaid)
+                    bg-green-100 text-green-800
+                    @else
+                    bg-yellow-100 text-yellow-800
+                    @endif">
+                    @if($isPaid) Paid @else Pending payment @endif
+                </span>
+            </div>
             <div class="flex space-x-3">
                 @anyperm(['manage_invoices', 'view_invoices'])
                 <a href="{{ route('tenant.invoices.pdf', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Download PDF
                 </a>
+                @if($isPaid && $invoice->contact->email)
+                <form method="POST" action="{{ route('tenant.invoices.send-receipt', $invoice) }}" class="inline" onsubmit="return confirm('Send receipt to the end client\u2019s email?');">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Send Receipt
+                    </button>
+                </form>
+                @endif
                 @endanyperm
                 @perm('manage_invoices')
                 @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')

@@ -16,13 +16,12 @@
                 <div id="payment-dialog" class="px-6 py-12 text-center">
                     <div id="payment-loading" class="flex flex-col items-center justify-center">
                         <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                        <p class="text-gray-700 font-medium">Processing payment…</p>
-                        <p class="text-sm text-gray-600 mt-1">Please check your phone and enter PIN. You will be redirected to the <strong>Payment Successful</strong> page when payment is confirmed.</p>
+                        <p class="text-gray-700 font-medium">Confirming your payment…</p>
+                        <p class="text-sm text-gray-600 mt-1">Please complete the payment on your phone. This page will reload automatically until your payment is confirmed.</p>
                         @if($outstanding > 0)
                         <p class="text-sm text-gray-500 mt-2">Amount: KES {{ number_format($outstanding, 2) }}</p>
                         @endif
-                        <p id="payment-ref" class="text-xs text-gray-400 mt-2 font-mono"></p>
-                        <p id="poll-status" class="text-xs text-gray-400 mt-1">Checking payment status…</p>
+                        <p id="reload-countdown" class="text-xs text-gray-400 mt-3">Checking again in <span id="countdown-sec">3</span> seconds…</p>
                     </div>
                     <div id="payment-result" class="hidden">
                         <p id="payment-result-message" class="text-gray-700 mb-6"></p>
@@ -32,103 +31,51 @@
                         </div>
                     </div>
                 </div>
-                {{-- Payment status polling: GET /pay/{id}/{token}/status every 2s so status loads as soon as payment is received. Max 90 attempts (~3 min). --}}
+                {{-- Full page reload every 3s so server runs sync and redirects to receipt when payment is received. --}}
                 <script>
                     (function() {
                         const urlParams = new URLSearchParams(window.location.search);
                         const checkoutRequestId = urlParams.get('checkout_request_id');
-                        const pollIntervalMs = 2000;  // 2 seconds so Payment Successful page loads as soon as payment is received
-                        const maxPolls = 90;          // ~3 minutes total
-                        let pollCount = 0;
-                        let pollTimer = null;
-                        let paymentConfirmed = false;
+                        const reloadDelayMs = 3000;
+                        const maxReloads = 40;
+                        const storageKey = 'pay_reload_count_{{ $invoice->id }}_{{ $invoice->payment_token }}';
 
                         const loadingEl = document.getElementById('payment-loading');
                         const resultEl = document.getElementById('payment-result');
                         const resultMessageEl = document.getElementById('payment-result-message');
                         const refreshBtn = document.getElementById('payment-refresh-btn');
-                        const paymentRefEl = document.getElementById('payment-ref');
-                        const pollStatusEl = document.getElementById('poll-status');
+                        const countdownEl = document.getElementById('countdown-sec');
 
-                        if (paymentRefEl && checkoutRequestId) {
-                            paymentRefEl.textContent = 'Request ID: ' + checkoutRequestId.substring(0, 16) + (checkoutRequestId.length > 16 ? '…' : '');
-                        }
-
-                        /** Stop polling, show final message. State: pending -> success|failed|timeout. */
                         function showResult(message, showRefresh) {
-                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-                            paymentConfirmed = true;
-                            loadingEl.classList.add('hidden');
-                            resultEl.classList.remove('hidden');
-                            resultMessageEl.textContent = message;
-                            refreshBtn.classList.toggle('hidden', !showRefresh);
+                            if (loadingEl) loadingEl.classList.add('hidden');
+                            if (resultEl) resultEl.classList.remove('hidden');
+                            if (resultMessageEl) resultMessageEl.textContent = message;
+                            if (refreshBtn) refreshBtn.classList.toggle('hidden', !showRefresh);
                         }
 
-                        /** Clear polling interval to prevent memory leaks on unmount or navigation. */
-                        function clearPolling() {
-                            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-                        }
-
-                        /** Poll backend for payment status. Backend may query Daraja if still pending. On success redirect to receipt; on failed redirect to failed page; on timeout show message. */
-                        function checkPaymentStatus() {
-                            if (paymentConfirmed || !checkoutRequestId) return;
-                            pollCount++;
-                            if (pollStatusEl) pollStatusEl.textContent = 'Checking payment status… (attempt ' + pollCount + '/' + maxPolls + ')';
-                            if (pollCount > maxPolls) {
-                                clearPolling();
-                                showResult('Payment is taking longer than expected. You can refresh to check again or return to the payment page.', true);
-                                return;
-                            }
-                            const statusUrl = '{{ route('invoice.pay.status', [$invoice->id, $invoice->payment_token]) }}?checkout_request_id=' + encodeURIComponent(checkoutRequestId) + '&_=' + Date.now();
-                            fetch(statusUrl, {
-                                method: 'GET',
-                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                                credentials: 'same-origin',
-                                cache: 'no-cache'
-                            })
-                            .then(function(r) {
-                                if (r.ok) return r.json();
-                                if (r.status === 404) {
-                                    clearPolling();
-                                    showResult('Payment session not found. If you have already paid, click Refresh to check.', true);
-                                    return Promise.reject(new Error('Payment not found'));
-                                }
-                                return Promise.reject(new Error('Network error'));
-                            })
-                            .then(function(data) {
-                                if (!data) return;
-                                if (data.invoice_paid === true || data.status === 'success' || (data.status === 'processing' && data.invoice_paid === true)) {
-                                    clearPolling();
-                                    paymentConfirmed = true;
-                                    window.location.href = '{{ route('invoice.pay.receipt', [$invoice->id, $invoice->payment_token]) }}';
-                                } else if (data.status === 'failed') {
-                                    clearPolling();
-                                    paymentConfirmed = true;
-                                    window.location.href = '{{ route('invoice.pay.failed', [$invoice->id, $invoice->payment_token]) }}';
-                                } else if (pollCount >= maxPolls) {
-                                    clearPolling();
-                                    showResult('Payment is taking longer than expected. You can refresh to check again or return to the payment page.', true);
-                                }
-                            })
-                            .catch(function(err) {
-                                if (err && err.message !== 'Payment not found') {
-                                    console.error('Payment status check error:', err);
-                                }
-                            });
-                        }
-
-                        if (refreshBtn) {
-                            refreshBtn.addEventListener('click', function() { window.location.reload(); });
-                        }
-
-                        window.addEventListener('beforeunload', clearPolling);
-                        window.addEventListener('pagehide', clearPolling);
-
-                        if (checkoutRequestId) {
-                            checkPaymentStatus();
-                            pollTimer = setInterval(checkPaymentStatus, pollIntervalMs);
-                        } else {
+                        if (!checkoutRequestId) {
                             showResult('Return to the payment page to try again.', false);
+                        } else {
+                            let count = parseInt(sessionStorage.getItem(storageKey) || '0', 10);
+                            if (count >= maxReloads) {
+                                sessionStorage.removeItem(storageKey);
+                                showResult('Payment is taking longer than expected. Click Refresh to check again or return to the payment page.', true);
+                                if (refreshBtn) refreshBtn.addEventListener('click', function() { sessionStorage.setItem(storageKey, '0'); window.location.reload(); });
+                            } else {
+                                sessionStorage.setItem(storageKey, String(count + 1));
+                                var sec = Math.ceil(reloadDelayMs / 1000);
+                                if (countdownEl) {
+                                    var t = setInterval(function() {
+                                        sec--;
+                                        if (countdownEl) countdownEl.textContent = sec > 0 ? sec : 0;
+                                        if (sec <= 0) clearInterval(t);
+                                    }, 1000);
+                                }
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, reloadDelayMs);
+                                if (refreshBtn) refreshBtn.addEventListener('click', function() { window.location.reload(); });
+                            }
                         }
                     })();
                 </script>

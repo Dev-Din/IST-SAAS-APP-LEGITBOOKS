@@ -88,11 +88,11 @@
                                     $outstanding = $invoice->getOutstandingAmount();
                                     $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
                                 @endphp
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                <span class="px-2.5 py-0.5 inline-flex text-xs font-medium rounded-md
                                     @if($isPaid) bg-green-100 text-green-800
                                     @else bg-yellow-100 text-yellow-800
                                     @endif">
-                                    @if($isPaid) Paid @else Pending @endif
+                                    @if($isPaid) Paid @else Pending payment @endif
                                 </span>
                             </div>
                             <div class="flex items-center space-x-4">

@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Payment;
 use App\Services\MpesaStkService;
+use App\Services\PaymentService;
+use App\Services\TenantContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +31,7 @@ class SyncPendingMpesaPayments extends Command
     /**
      * Execute the console command.
      */
-    public function handle(MpesaStkService $mpesaService): int
+    public function handle(MpesaStkService $mpesaService, PaymentService $paymentService, TenantContext $tenantContext): int
     {
         $this->info('Syncing pending M-Pesa payments from Daraja API...');
         $this->newLine();
@@ -48,7 +50,7 @@ class SyncPendingMpesaPayments extends Command
                 return Command::FAILURE;
             }
 
-            $this->syncPayment($payment, $mpesaService);
+            $this->syncPayment($payment, $mpesaService, $paymentService, $tenantContext);
         } else {
             // Check all pending payments
             $limit = (int) $this->option('limit');
@@ -71,7 +73,7 @@ class SyncPendingMpesaPayments extends Command
             $failed = 0;
 
             foreach ($payments as $payment) {
-                if ($this->syncPayment($payment, $mpesaService)) {
+                if ($this->syncPayment($payment, $mpesaService, $paymentService, $tenantContext)) {
                     $synced++;
                 } else {
                     $failed++;
@@ -88,7 +90,7 @@ class SyncPendingMpesaPayments extends Command
     /**
      * Sync a single payment with Daraja API
      */
-    protected function syncPayment(Payment $payment, MpesaStkService $mpesaService): bool
+    protected function syncPayment(Payment $payment, MpesaStkService $mpesaService, PaymentService $paymentService, TenantContext $tenantContext): bool
     {
         $checkoutRequestId = $payment->checkout_request_id;
 
@@ -110,6 +112,7 @@ class SyncPendingMpesaPayments extends Command
                 $payment->update([
                     'transaction_status' => 'completed',
                     'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
+                    'mpesa_receipt' => $payment->mpesa_receipt ?? $queryResult['mpesa_receipt'] ?? null,
                 ]);
 
                 // Activate subscription if this is a subscription payment
@@ -124,7 +127,85 @@ class SyncPendingMpesaPayments extends Command
 
                     $this->info("  ✅ Payment completed! Subscription activated: {$subscription->plan}");
                 } else {
-                    $this->info('  ✅ Payment completed!');
+                    // Invoice payment: allocate to invoice and update invoice status (same as callback)
+                    if ($payment->invoice_id) {
+                        // Ensure payment has account_id (M-Pesa account) for journal entries
+                        if (! $payment->account_id) {
+                            $tenant = $payment->tenant;
+                            $mpesaAccount = \App\Models\Account::where('tenant_id', $tenant->id)
+                                ->where('type', 'mpesa')
+                                ->first();
+
+                            if (! $mpesaAccount) {
+                                $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
+                                    ->where('code', '1400')
+                                    ->first();
+
+                                if ($cashAccount) {
+                                    $mpesaAccount = \App\Models\Account::create([
+                                        'tenant_id' => $tenant->id,
+                                        'name' => 'M-Pesa',
+                                        'type' => 'mpesa',
+                                        'chart_of_account_id' => $cashAccount->id,
+                                        'is_active' => true,
+                                    ]);
+                                }
+                            }
+
+                            if ($mpesaAccount) {
+                                $payment->account_id = $mpesaAccount->id;
+                                $payment->save();
+                            }
+                        }
+
+                        $invoice = $payment->invoice;
+                        $invoice->load('paymentAllocations');
+                        $existingAllocation = $invoice->paymentAllocations()
+                            ->where('payment_id', $payment->id)
+                            ->first();
+
+                        if (! $existingAllocation) {
+                            $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
+                            if ($allocatedAmount > 0) {
+                                $tenantContext->setTenant($payment->tenant);
+                                $canJournal = $payment->account_id && $payment->account && $payment->account->chartOfAccount;
+                                if ($canJournal) {
+                                    try {
+                                        $paymentService->processPayment($payment, [
+                                            ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
+                                        ]);
+                                    } catch (\Throwable $e) {
+                                        $canJournal = false;
+                                        Log::warning('Sync: processPayment failed, allocating without journal', [
+                                            'payment_id' => $payment->id,
+                                            'error' => $e->getMessage(),
+                                        ]);
+                                    }
+                                }
+                                if (! $canJournal) {
+                                    \App\Models\PaymentAllocation::create([
+                                        'payment_id' => $payment->id,
+                                        'invoice_id' => $invoice->id,
+                                        'amount' => $allocatedAmount,
+                                    ]);
+                                    $this->warn('  ⚠️  Invoice updated; journal skipped (no M-Pesa/Cash account). Add Chart of Account 1400 for full books.');
+                                }
+                                $outstanding = $invoice->fresh()->getOutstandingAmount();
+                                if ($outstanding <= 0) {
+                                    $invoice->update(['status' => 'paid', 'payment_status' => 'paid']);
+                                } elseif ($outstanding < $invoice->total) {
+                                    $invoice->update(['payment_status' => 'partial']);
+                                }
+                                $this->info("  ✅ Payment completed! Invoice {$invoice->invoice_number} marked paid.");
+                            } else {
+                                $this->info('  ✅ Payment completed!');
+                            }
+                        } else {
+                            $this->info('  ✅ Payment completed! (already allocated)');
+                        }
+                    } else {
+                        $this->info('  ✅ Payment completed!');
+                    }
                 }
 
                 DB::commit();

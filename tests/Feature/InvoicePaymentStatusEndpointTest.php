@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\ChartOfAccount;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Tenant;
+use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -167,5 +170,77 @@ class InvoicePaymentStatusEndpointTest extends TestCase
                 'invoice_paid' => false,
                 'outstanding' => 1000.0,
             ]);
+    }
+
+    /**
+     * When Daraja returns is_paid and payment has no account_id, ensurePaymentHasMpesaAccount runs
+     * and processPayment succeeds; invoice is marked paid and response returns success.
+     */
+    public function test_status_endpoint_captures_payment_when_daraja_returns_paid_and_payment_has_no_account(): void
+    {
+        $checkoutRequestId = 'ws_CO_' . uniqid();
+
+        $cashCoa = ChartOfAccount::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1400',
+            'name' => 'Cash',
+            'type' => 'asset',
+            'category' => 'current_asset',
+            'is_active' => true,
+        ]);
+
+        ChartOfAccount::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1200',
+            'name' => 'Accounts Receivable',
+            'type' => 'asset',
+            'category' => 'current_asset',
+            'is_active' => true,
+        ]);
+
+        $payment = Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'invoice_id' => $this->invoice->id,
+            'payment_number' => 'PAY-' . date('Ymd') . '-' . $this->tenant->id . '-0003',
+            'payment_date' => now(),
+            'amount' => 1000.00,
+            'payment_method' => 'mpesa',
+            'transaction_status' => 'pending',
+            'checkout_request_id' => $checkoutRequestId,
+            'account_id' => null,
+        ]);
+
+        $this->mock(\App\Services\MpesaStkService::class, function ($mock) use ($checkoutRequestId) {
+            $mock->shouldReceive('querySTKPushStatus')
+                ->with($checkoutRequestId)
+                ->andReturn([
+                    'success' => true,
+                    'is_paid' => true,
+                    'result_code' => '0',
+                    'checkout_request_id' => $checkoutRequestId,
+                ]);
+        });
+
+        app(TenantContext::class)->setTenant($this->tenant);
+
+        $url = "/pay/{$this->invoice->id}/{$this->invoice->payment_token}/status?checkout_request_id="
+            . urlencode($checkoutRequestId);
+
+        $response = $this->getJson($url);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'invoice_paid' => true,
+                'outstanding' => 0.0,
+            ]);
+
+        $payment->refresh();
+        $this->assertNotNull($payment->account_id);
+        $this->assertEquals('completed', $payment->transaction_status);
+
+        $this->invoice->refresh();
+        $this->assertEquals('paid', $this->invoice->status);
+        $this->assertEquals(1, $this->invoice->paymentAllocations()->count());
     }
 }

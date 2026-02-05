@@ -49,14 +49,26 @@
         <div class="bg-white shadow overflow-hidden sm:rounded-md">
             <ul class="divide-y divide-gray-200">
                 @forelse($invoices as $invoice)
+                @php
+                    $outstanding = $invoice->getOutstandingAmount();
+                    $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+                @endphp
                 <li>
                     <a href="{{ route('tenant.invoices.show', $invoice) }}" class="block hover:bg-gray-50">
                         <div class="px-4 py-4 sm:px-6">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center">
+                                <div class="flex items-center gap-3">
                                     <p class="text-sm font-medium text-indigo-600 truncate">
                                         {{ $invoice->invoice_number }}
                                     </p>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium
+                                        @if($isPaid)
+                                        bg-green-100 text-green-800
+                                        @else
+                                        bg-yellow-100 text-yellow-800
+                                        @endif">
+                                        @if($isPaid) Paid @else Pending payment @endif
+                                    </span>
                                 </div>
                                 <div class="ml-2 flex-shrink-0 flex">
                                     <p class="text-sm text-gray-900">

@@ -9,10 +9,12 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\Services\InvoiceNumberService;
 use App\Services\InvoiceSendService;
+use App\Services\Mail\PHPMailerService;
 use App\Services\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -24,7 +26,7 @@ class InvoiceController extends Controller
     public function index(TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        $invoices = Invoice::with('contact')
+        $invoices = Invoice::with('contact', 'paymentAllocations')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -266,6 +268,76 @@ class InvoiceController extends Controller
         $invoice->load('lineItems', 'contact', 'paymentAllocations.payment');
 
         return view('tenant.invoices.receipt', compact('invoice', 'tenant'));
+    }
+
+    /**
+     * Send payment receipt email to the end client (only for paid invoices).
+     */
+    public function sendReceipt(Invoice $invoice, TenantContext $tenantContext, PHPMailerService $mailer)
+    {
+        $tenant = $tenantContext->getTenant();
+        $invoice->load('contact', 'paymentAllocations.payment', 'tenant');
+
+        $outstanding = $invoice->getOutstandingAmount();
+        $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+
+        if (! $isPaid) {
+            return redirect()->back()->withErrors(['invoice' => 'Receipt can only be sent for paid invoices.']);
+        }
+
+        if (! $invoice->contact->email) {
+            return redirect()->back()->withErrors(['invoice' => 'Contact does not have an email address.']);
+        }
+
+        $allocation = $invoice->paymentAllocations()->with('payment')->first();
+        if (! $allocation || ! $allocation->payment) {
+            return redirect()->back()->withErrors(['invoice' => 'No payment found for this invoice.']);
+        }
+
+        $payment = $allocation->payment;
+        $contact = $invoice->contact;
+
+        $html = view('emails.invoice.receipt', [
+            'invoice' => $invoice,
+            'payment' => $payment,
+            'tenant' => $tenant,
+            'contact' => $contact,
+        ])->render();
+
+        // Generate receipt PDF and attach to email
+        $receiptPdfPath = null;
+        $receiptPdfRelativePath = null;
+        try {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice.payment.receipt-pdf', compact('invoice', 'tenant'));
+            $filename = 'Receipt-Invoice-' . $invoice->invoice_number . '-' . now()->format('YmdHis') . '.pdf';
+            $receiptPdfRelativePath = 'temp/' . $filename;
+            Storage::disk('local')->makeDirectory('temp');
+            Storage::disk('local')->put($receiptPdfRelativePath, $pdf->output());
+            $receiptPdfPath = Storage::disk('local')->path($receiptPdfRelativePath);
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors(['invoice' => 'Failed to generate receipt PDF. Please try again.']);
+        }
+
+        try {
+            $sent = $mailer->send([
+                'to' => $contact->email,
+                'subject' => "Payment Receipt - Invoice {$invoice->invoice_number}",
+                'html' => $html,
+                'from_name' => $tenant->name,
+                'attachments' => [$receiptPdfPath],
+            ]);
+        } finally {
+            if ($receiptPdfRelativePath !== null && Storage::disk('local')->exists($receiptPdfRelativePath)) {
+                Storage::disk('local')->delete($receiptPdfRelativePath);
+            }
+        }
+
+        if ($sent) {
+            return redirect()->route('tenant.invoices.show', $invoice)
+                ->with('success', 'Receipt sent to ' . $contact->email);
+        }
+
+        return redirect()->back()->withErrors(['invoice' => 'Failed to send receipt. Please try again.']);
     }
 
     public function sendEmail(Invoice $invoice, TenantContext $tenantContext, InvoiceSendService $sendService)

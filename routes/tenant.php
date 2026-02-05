@@ -42,6 +42,7 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
         Route::resource('invoices', InvoiceController::class);
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
+        Route::post('invoices/{invoice}/send-receipt', [InvoiceController::class, 'sendReceipt'])->name('invoices.send-receipt');
         Route::post('invoices/{invoice}/generate-payment-link', [InvoiceController::class, 'generatePaymentLink'])->name('invoices.generate-payment-link');
         Route::get('invoices/{invoice}/receipt', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     });

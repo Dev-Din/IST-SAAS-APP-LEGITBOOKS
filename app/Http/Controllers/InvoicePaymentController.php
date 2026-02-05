@@ -179,6 +179,44 @@ class InvoicePaymentController extends Controller
     }
 
     /**
+     * Download PDF receipt for a paid invoice (requires valid token).
+     * Redirects to payment page if invoice is not yet paid.
+     */
+    public function downloadReceiptPdf($invoiceId, string $token)
+    {
+        try {
+            $invoice = $this->findInvoiceForPayment($invoiceId, $token);
+
+            $invoice->load('contact', 'lineItems', 'paymentAllocations.payment');
+
+            $this->tenantContext->setTenant($invoice->tenant);
+
+            $outstanding = $invoice->getOutstandingAmount();
+            $isPaid = $invoice->status === 'paid' || $outstanding <= 0;
+
+            if (! $isPaid) {
+                return redirect()->to("/pay/{$invoice->id}/{$invoice->payment_token}");
+            }
+
+            $tenant = $invoice->tenant;
+
+            // Render PDF using DomPDF
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice.payment.receipt-pdf', compact('invoice', 'tenant'));
+
+            // Download with filename: receipt-invoice-{invoice_number}.pdf
+            return $pdf->download('receipt-invoice-'.$invoice->invoice_number.'.pdf');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            abort(404, 'Invoice not found.');
+        } catch (\Exception $e) {
+            Log::error('Payment receipt PDF error', [
+                'invoice_id' => $invoiceId,
+                'error' => $e->getMessage(),
+            ]);
+            abort(500, 'An error occurred while generating the receipt.');
+        }
+    }
+
+    /**
      * Show public failed payment page (requires valid token).
      * Displays retry message and link back to payment page.
      */
@@ -338,6 +376,11 @@ class InvoicePaymentController extends Controller
     public function checkPaymentStatus($invoiceId, string $token, Request $request)
     {
         $checkoutRequestId = $request->input('checkout_request_id');
+        $debugLogPath = 'c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log';
+        $dbg = function (array $data) use ($debugLogPath) {
+            $line = json_encode(array_merge(['timestamp' => round(microtime(true) * 1000), 'sessionId' => 'debug-session'], $data)) . "\n";
+            @file_put_contents($debugLogPath, $line, FILE_APPEND);
+        };
 
         if (! $checkoutRequestId) {
             return response()->json([
@@ -350,6 +393,8 @@ class InvoicePaymentController extends Controller
 
         $this->tenantContext->setTenant($invoice->tenant);
 
+        $dbg(['hypothesisId' => 'A', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'entry', 'data' => ['checkout_request_id_tail' => substr($checkoutRequestId, -16), 'invoice_id' => $invoice->id]]);
+
         // Find payment by checkout_request_id and invoice_id (unscoped so tenant scope cannot hide the payment)
         $payment = Payment::withoutGlobalScope('tenant')
             ->where('checkout_request_id', $checkoutRequestId)
@@ -361,6 +406,7 @@ class InvoicePaymentController extends Controller
         }
 
         if (! $payment) {
+            $dbg(['hypothesisId' => 'A', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'payment_not_found', 'data' => ['invoice_id' => $invoice->id]]);
             Log::warning('Payment not found for status check', [
                 'invoice_id' => $invoice->id,
                 'checkout_request_id_tail' => strlen($checkoutRequestId) >= 8 ? substr($checkoutRequestId, -8) : $checkoutRequestId,
@@ -388,6 +434,8 @@ class InvoicePaymentController extends Controller
             Log::info('Invoice payment status check: querying Daraja', ['payment_id' => $payment->id]);
             $queryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
 
+            $dbg(['hypothesisId' => 'B', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'daraja_query_result', 'data' => ['query_success' => $queryResult['success'] ?? null, 'query_is_paid' => $queryResult['is_paid'] ?? null, 'result_code' => $queryResult['result_code'] ?? null, 'query_error' => $queryResult['error'] ?? null]]);
+
             if ($queryResult['success'] && isset($queryResult['is_paid']) && $queryResult['is_paid']) {
                 Log::info('Invoice payment status check: Daraja returned paid', [
                     'payment_id' => $payment->id,
@@ -395,6 +443,7 @@ class InvoicePaymentController extends Controller
                 ]);
 
                 // Payment was successful - update payment status
+                $dbg(['hypothesisId' => 'C', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'branch_daraja_paid', 'data' => []]);
                 try {
                     DB::beginTransaction();
 
@@ -412,6 +461,7 @@ class InvoicePaymentController extends Controller
                     if (! $existingAllocation && $payment->invoice_id) {
                         $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
                         if ($allocatedAmount > 0) {
+                            $this->ensurePaymentHasMpesaAccount($payment);
                             $paymentService = app(\App\Services\PaymentService::class);
                             $paymentService->processPayment($payment, [
                                 ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
@@ -433,8 +483,10 @@ class InvoicePaymentController extends Controller
                     }
 
                     DB::commit();
+                    $dbg(['hypothesisId' => 'C', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'allocated_ok', 'data' => []]);
                 } catch (\Exception $e) {
                     DB::rollBack();
+                    $dbg(['hypothesisId' => 'C', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'alloc_error', 'data' => ['error' => $e->getMessage()]]);
                     Log::error('Failed to process payment from status check', [
                         'payment_id' => $payment->id,
                         'error' => $e->getMessage(),
@@ -446,11 +498,10 @@ class InvoicePaymentController extends Controller
                         'payment_id' => $payment->id,
                     ]);
 
-                    // Optional retry: wait 2s and query once more before returning
-                    sleep(2);
+                    // Immediate retry (no sleep) to catch fast completions
                     $retryResult = $mpesaService->querySTKPushStatus($checkoutRequestId);
                     if ($retryResult['success'] && ! empty($retryResult['is_paid'])) {
-                        Log::info('Invoice payment status check: Daraja returned paid on retry', [
+                        Log::info('Invoice payment status check: Daraja returned paid on immediate retry', [
                             'payment_id' => $payment->id,
                         ]);
                         try {
@@ -466,6 +517,7 @@ class InvoicePaymentController extends Controller
                             if (! $existingAllocation && $payment->invoice_id) {
                                 $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
                                 if ($allocatedAmount > 0) {
+                                    $this->ensurePaymentHasMpesaAccount($payment);
                                     app(\App\Services\PaymentService::class)->processPayment($payment, [
                                         ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
                                     ]);
@@ -486,6 +538,7 @@ class InvoicePaymentController extends Controller
                             ]);
                         }
                     }
+                    // If still 4999 after retry, return pending so next poll will check again
                 } elseif ($queryResult['result_code'] != '0') {
                     // Only mark as failed if result_code explicitly indicates failure (not 4999)
                     $payment->update([
@@ -516,6 +569,8 @@ class InvoicePaymentController extends Controller
             'failed', 'cancelled' => 'failed',
             default => 'pending',
         };
+
+        $dbg(['hypothesisId' => 'D', 'location' => 'InvoicePaymentController::checkPaymentStatus', 'message' => 'response', 'data' => ['status' => $status, 'invoice_paid' => $isPaid, 'payment_status' => $payment->transaction_status, 'outstanding' => $outstanding]]);
 
         // API-style response for polling: success, status, payment_id, transaction, order (invoice)
         $payment->refresh();
@@ -591,6 +646,7 @@ class InvoicePaymentController extends Controller
                 if (! $existingAllocation && $payment->invoice_id) {
                     $allocatedAmount = min($payment->amount, $invoice->getOutstandingAmount());
                     if ($allocatedAmount > 0) {
+                        $this->ensurePaymentHasMpesaAccount($payment);
                         $paymentService->processPayment($payment, [
                             ['invoice_id' => $invoice->id, 'amount' => $allocatedAmount],
                         ]);
@@ -618,6 +674,52 @@ class InvoicePaymentController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+    }
+
+    /**
+     * Ensure payment has an M-Pesa account (required by PaymentService::processPayment).
+     * When payment is confirmed via Daraja query (not callback), account_id may be null.
+     * Creates ChartOfAccount 1400 (Cash) and M-Pesa account for the tenant if missing.
+     */
+    protected function ensurePaymentHasMpesaAccount(Payment $payment): void
+    {
+        if ($payment->account_id) {
+            return;
+        }
+        $tenant = $payment->tenant ?? $payment->invoice?->tenant;
+        if (! $tenant) {
+            return;
+        }
+        $mpesaAccount = \App\Models\Account::where('tenant_id', $tenant->id)
+            ->where('type', 'mpesa')
+            ->first();
+        if (! $mpesaAccount) {
+            $cashAccount = \App\Models\ChartOfAccount::where('tenant_id', $tenant->id)
+                ->where('code', '1400')
+                ->first();
+            if (! $cashAccount) {
+                $cashAccount = \App\Models\ChartOfAccount::create([
+                    'tenant_id' => $tenant->id,
+                    'code' => '1400',
+                    'name' => 'Cash',
+                    'type' => 'asset',
+                    'category' => 'current_asset',
+                    'is_active' => true,
+                ]);
+            }
+            if ($cashAccount) {
+                $mpesaAccount = \App\Models\Account::create([
+                    'tenant_id' => $tenant->id,
+                    'name' => 'M-Pesa',
+                    'type' => 'mpesa',
+                    'chart_of_account_id' => $cashAccount->id,
+                    'is_active' => true,
+                ]);
+            }
+        }
+        if ($mpesaAccount) {
+            $payment->update(['account_id' => $mpesaAccount->id]);
         }
     }
 

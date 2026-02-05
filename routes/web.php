@@ -56,6 +56,7 @@ Route::prefix('pay')
         Route::get('/{invoice}/{token}/success', [\App\Http\Controllers\InvoicePaymentController::class, 'success'])->name('pay.success');
         Route::get('/{invoice}/{token}/status', [\App\Http\Controllers\InvoicePaymentController::class, 'checkPaymentStatus'])->name('pay.status');
         Route::get('/{invoice}/{token}/receipt', [\App\Http\Controllers\InvoicePaymentController::class, 'receipt'])->name('pay.receipt');
+        Route::get('/{invoice}/{token}/receipt/pdf', [\App\Http\Controllers\InvoicePaymentController::class, 'downloadReceiptPdf'])->name('pay.receipt.pdf');
         Route::get('/{invoice}/{token}/failed', [\App\Http\Controllers\InvoicePaymentController::class, 'failed'])->name('pay.failed');
         Route::post('/{invoice}/{token}/mpesa', [\App\Http\Controllers\InvoicePaymentController::class, 'processMpesa'])->name('pay.mpesa');
         Route::post('/{invoice}/{token}/card', [\App\Http\Controllers\InvoicePaymentController::class, 'processCard'])->name('pay.card');
