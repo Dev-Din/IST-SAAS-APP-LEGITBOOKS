@@ -13,6 +13,7 @@ use App\Services\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class InvoiceController extends Controller
@@ -306,6 +307,30 @@ class InvoiceController extends Controller
 
             return redirect()->back()->withErrors(['invoice' => 'An error occurred while sending the invoice: '.$e->getMessage()]);
         }
+    }
+
+    /**
+     * Generate or regenerate payment_token for an invoice and return the payment URL.
+     * Allows the pay link (/pay/{id}/{token}) to work even if the invoice was not sent via email.
+     */
+    public function generatePaymentLink(Invoice $invoice)
+    {
+        if ($invoice->status === 'paid') {
+            return redirect()->back()->withErrors(['invoice' => 'Cannot generate payment link for an invoice that is already paid.']);
+        }
+
+        if ($invoice->status === 'cancelled') {
+            return redirect()->back()->withErrors(['invoice' => 'Cannot generate payment link for a cancelled invoice.']);
+        }
+
+        $invoice->payment_token = $invoice->payment_token ?? Str::random(64);
+        $invoice->save();
+
+        $paymentUrl = url("/pay/{$invoice->id}/{$invoice->payment_token}");
+
+        return redirect()->route('tenant.invoices.show', $invoice)
+            ->with('success', 'Payment link is ready. You can copy and share it.')
+            ->with('payment_link_url', $paymentUrl);
     }
 
     /**

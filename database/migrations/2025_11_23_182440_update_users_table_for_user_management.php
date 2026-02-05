@@ -33,9 +33,14 @@ return new class extends Migration
 
         // Handle unique constraint on email - drop if exists, then add composite
         try {
-            // Try to drop unique on email if it exists
-            $indexes = DB::select("SHOW INDEX FROM users WHERE Column_name = 'email' AND Non_unique = 0");
-            if (! empty($indexes)) {
+            $dropEmailUnique = false;
+            if (DB::getDriverName() === 'mysql') {
+                $indexes = DB::select("SHOW INDEX FROM users WHERE Column_name = 'email' AND Non_unique = 0");
+                $dropEmailUnique = ! empty($indexes);
+            } else {
+                $dropEmailUnique = Schema::hasIndex('users', 'users_email_unique');
+            }
+            if ($dropEmailUnique) {
                 Schema::table('users', function (Blueprint $table) {
                     $table->dropUnique(['email']);
                 });
@@ -46,8 +51,8 @@ return new class extends Migration
 
         // Add composite unique index on tenant_id + email if it doesn't exist
         try {
-            $compositeIndexExists = DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_tenant_email_unique'");
-            if (empty($compositeIndexExists)) {
+            $compositeExists = Schema::hasIndex('users', 'users_tenant_email_unique');
+            if (! $compositeExists) {
                 Schema::table('users', function (Blueprint $table) {
                     $table->unique(['tenant_id', 'email'], 'users_tenant_email_unique');
                 });
@@ -65,8 +70,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Drop composite unique index if it exists
             try {
-                $compositeIndexExists = DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_tenant_email_unique'");
-                if (! empty($compositeIndexExists)) {
+                if (Schema::hasIndex('users', 'users_tenant_email_unique')) {
                     $table->dropUnique('users_tenant_email_unique');
                 }
             } catch (\Exception $e) {

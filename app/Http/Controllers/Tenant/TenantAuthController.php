@@ -25,7 +25,9 @@ class TenantAuthController extends Controller
         // Add is_active to credentials
         $credentials['is_active'] = true;
 
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
+        $attemptOk = Auth::attempt($credentials, $request->filled('remember'));
+
+        if ($attemptOk) {
             $user = Auth::user();
 
             // Double-check that user is still active after authentication

@@ -10,8 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 'active' status to the enum
-        DB::statement("ALTER TABLE admin_invitations MODIFY COLUMN status ENUM('pending', 'accepted', 'active', 'cancelled') DEFAULT 'pending'");
+        // Add 'active' status to the enum (MySQL only; SQLite uses string and accepts any value)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE admin_invitations MODIFY COLUMN status ENUM('pending', 'accepted', 'active', 'cancelled') DEFAULT 'pending'");
+        }
     }
 
     /**
@@ -19,7 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove 'active' status from the enum (revert to original)
-        DB::statement("ALTER TABLE admin_invitations MODIFY COLUMN status ENUM('pending', 'accepted', 'cancelled') DEFAULT 'pending'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE admin_invitations MODIFY COLUMN status ENUM('pending', 'accepted', 'cancelled') DEFAULT 'pending'");
+        }
     }
 };

@@ -44,13 +44,19 @@ Route::middleware('web')
     ->name('tenant.')
     ->group(base_path('routes/tenant.php'));
 
-// Public invoice payment routes (no auth required)
+/*
+ * Public invoice payment routes (no auth required).
+ * Flow: show → processMpesa (STK Push) → success (waiting page with polling) → receipt (paid) or failed.
+ * Status endpoint (pay.status): GET ?checkout_request_id=... — used by frontend polling every 8–10s; returns JSON with status (pending|success|failed), invoice_paid, transaction, order.
+ */
 Route::prefix('pay')
     ->name('invoice.')
     ->group(function () {
         Route::get('/{invoice}/{token}', [\App\Http\Controllers\InvoicePaymentController::class, 'show'])->name('pay');
         Route::get('/{invoice}/{token}/success', [\App\Http\Controllers\InvoicePaymentController::class, 'success'])->name('pay.success');
         Route::get('/{invoice}/{token}/status', [\App\Http\Controllers\InvoicePaymentController::class, 'checkPaymentStatus'])->name('pay.status');
+        Route::get('/{invoice}/{token}/receipt', [\App\Http\Controllers\InvoicePaymentController::class, 'receipt'])->name('pay.receipt');
+        Route::get('/{invoice}/{token}/failed', [\App\Http\Controllers\InvoicePaymentController::class, 'failed'])->name('pay.failed');
         Route::post('/{invoice}/{token}/mpesa', [\App\Http\Controllers\InvoicePaymentController::class, 'processMpesa'])->name('pay.mpesa');
         Route::post('/{invoice}/{token}/card', [\App\Http\Controllers\InvoicePaymentController::class, 'processCard'])->name('pay.card');
     });

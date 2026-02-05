@@ -107,6 +107,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Send the password reset notification (tenant panel reset URL).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\TenantResetPasswordNotification($token));
+    }
+
+    /**
      * Get full name
      */
     public function getFullNameAttribute(): string

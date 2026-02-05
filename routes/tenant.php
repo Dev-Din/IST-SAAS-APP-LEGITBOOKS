@@ -23,6 +23,12 @@ Route::get('/auth/login', [TenantAuthController::class, 'showLoginForm'])->name(
 Route::post('/auth/login', [TenantAuthController::class, 'login']);
 Route::post('/auth/logout', [TenantAuthController::class, 'logout'])->name('auth.logout');
 
+// Forgot password - tenant panel only
+Route::get('/password/forgot', [\App\Http\Controllers\Tenant\TenantForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/password/email', [\App\Http\Controllers\Tenant\TenantForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/password/reset/{token}', [\App\Http\Controllers\Tenant\TenantResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/password/reset', [\App\Http\Controllers\Tenant\TenantResetPasswordController::class, 'reset'])->name('password.update');
+
 Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middleware\EnsureTenantActive::class, 'auth:web', 'user.active'])->group(function () {
     // Dashboard
     Route::middleware(['permission:view_dashboard'])->group(function () {
@@ -36,6 +42,7 @@ Route::middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middlewa
         Route::resource('invoices', InvoiceController::class);
         Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
+        Route::post('invoices/{invoice}/generate-payment-link', [InvoiceController::class, 'generatePaymentLink'])->name('invoices.generate-payment-link');
         Route::get('invoices/{invoice}/receipt', [InvoiceController::class, 'receipt'])->name('invoices.receipt');
     });
 

@@ -148,16 +148,18 @@ class MpesaStkService
         // Format phone number (remove + and ensure it starts with 254)
         $phoneNumber = $this->formatPhoneNumber($data['phone_number']);
 
-        // For development/testing: Use KES 1.00 for STK push, but keep actual amount for display
-        $actualAmount = $data['amount'];
-        $stkPushAmount = config('app.env') === 'production' ? $actualAmount : 1.00;
+        // Sandbox/testing: use KES 1 for the STK prompt. Production: use real invoice amount.
+        $actualAmount = (float) $data['amount'];
+        $stkPushAmount = config('app.env') === 'production'
+            ? (int) round($actualAmount)
+            : 1;
 
         $payload = [
             'BusinessShortCode' => $this->shortcode,
             'Password' => $password,
             'Timestamp' => $timestamp,
             'TransactionType' => $this->transactionType,
-            'Amount' => (int) $stkPushAmount, // M-Pesa requires integer amount - use 1.00 for dev/testing
+            'Amount' => $stkPushAmount,
             'PartyA' => $phoneNumber,
             'PartyB' => $this->shortcode,
             'PhoneNumber' => $phoneNumber,
@@ -165,15 +167,6 @@ class MpesaStkService
             'AccountReference' => $data['account_reference'] ?? 'INV-'.($data['invoice_id'] ?? ''),
             'TransactionDesc' => $data['transaction_desc'] ?? 'Payment for Invoice '.($data['invoice_id'] ?? ''),
         ];
-
-        // Log the amount difference in development
-        if (config('app.env') !== 'production') {
-            Log::info('M-Pesa STK Push: Using test amount', [
-                'actual_amount' => $actualAmount,
-                'stk_push_amount' => $stkPushAmount,
-                'invoice_id' => $data['invoice_id'] ?? null,
-            ]);
-        }
 
         Log::info('M-Pesa STK Push request', [
             'payload' => $payload,

@@ -64,7 +64,7 @@ class MpesaService
             'tenant_id' => $tenant->id,
             'payment_number' => $paymentNumber,
             'payment_date' => now()->toDateString(),
-            'account_id' => $mpesaAccount->id,
+            'account_id' => $mpesaAccount?->id,
             'amount' => $amount,
             'payment_method' => 'mpesa',
             'reference' => $transactionId,

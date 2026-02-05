@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Admin;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class SuperAdminSeeder extends Seeder
@@ -15,11 +14,11 @@ class SuperAdminSeeder extends Seeder
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'admin']);
         }
 
-        $admin = Admin::firstOrCreate(
+        $admin = Admin::updateOrCreate(
             ['email' => 'admin@legitbooks.com'],
             [
                 'name' => 'Owner',
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'role' => 'owner',
                 'is_active' => true,
             ]

@@ -27,7 +27,7 @@ class MpesaStkFlowTest extends TestCase
         // Create tenant
         $this->tenant = Tenant::factory()->create([
             'name' => 'Test Tenant',
-            'hash' => 'test-tenant-hash',
+            'tenant_hash' => base64_encode('test-tenant-hash'),
         ]);
 
         // Create user

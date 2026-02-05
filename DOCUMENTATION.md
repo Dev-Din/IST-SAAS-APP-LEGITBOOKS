@@ -375,6 +375,14 @@ LegitBooks uses **single-database, tenant-scoped architecture**:
 - Custom permission checking via `hasPermission()` method
 - Account owners (`is_owner = true`) have full access
 
+### Default admin / login troubleshooting
+
+- **Default admin:** Email `admin@legitbooks.com`, password `password`.
+- **Admin login URL:** `/admin/login` (not the tenant login at `/app/auth/login`).
+- If login fails (e.g. after an older seed or manual DB change), run:
+  - `php artisan auth:reset-demo-passwords` — resets default admin and demo tenant passwords to `password` and sets `is_active = true`.
+  - `php artisan db:seed --class=SuperAdminSeeder` — creates or updates the default admin with the correct password.
+
 ## Service Layer Architecture
 
 Services handle business logic, keeping controllers thin:
@@ -1385,9 +1393,25 @@ Public invoice payment controller (no auth required).
 - `success()`: Payment success page
 
 **Routes:**
-- `GET /pay/{invoice}/{token}`
-- `POST /pay/{invoice}/{token}/mpesa`
-- `GET /pay/{invoice}/{token}/success`
+- `GET /pay/{invoice}/{token}`: Payment page
+- `POST /pay/{invoice}/{token}/mpesa`: Initiate M-Pesa STK push
+- `GET /pay/{invoice}/{token}/status`: Payment status (polling; query `checkout_request_id` required)
+- `GET /pay/{invoice}/{token}/success`: Success/processing page (with polling)
+
+**Public invoice payment status polling**
+- After STK push, user is redirected to the success page with `?checkout_request_id=...`.
+- The success page polls `GET /pay/{invoice}/{token}/status?checkout_request_id=...` every 6 seconds (max 25 attempts).
+- Backend finds the payment by `checkout_request_id` and invoice; if status is pending/failed it may query the Daraja API and update the payment, then returns JSON: `status` (success|pending|failed|processing), `invoice_paid`, `outstanding`, `payment_status`.
+- On `status === 'success'` or `invoice_paid === true`, the page reloads to show the confirmed payment view. On `failed`, a failure message is shown. On timeout, a message with Refresh/Return options is shown. Polling is cleared on beforeunload/pagehide.
+
+**Live M-Pesa invoice payment test (end-to-end)**
+
+1. **Setup:** Backend running; ngrok or public callback URL configured; M-Pesa env vars set; frontend connected to backend.
+2. **Execute:** Open public pay URL (e.g. `/pay/{invoiceId}/{token}`), enter phone **254719286858**, enter amount/quantity, click "Pay with M-Pesa".
+3. **Verify:** STK Push received on 254719286858; backend logs show initiation; frontend success page shows "Waiting for payment confirmation..." and polls every 6s.
+4. **Complete on phone:** Enter M-Pesa PIN and confirm; backend receives callback and updates payment/order.
+5. **Verify success:** Within ~30s polling detects success; page reloads; "Payment Confirmed" and invoice/order details shown; no console errors.
+6. **Failure cases:** Cancel on phone → polling detects failed and shows error; let polling reach 25 attempts → timeout message with Refresh/Return.
 
 **`InvitationController.php`**
 Invitation acceptance controller.

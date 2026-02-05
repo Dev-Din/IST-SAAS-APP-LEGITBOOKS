@@ -57,23 +57,24 @@ return new class extends Migration
             }
         });
 
-        // Drop foreign keys that might reference the unique index
-        // Check for any foreign keys on tenant_id
-        try {
-            $foreignKeys = DB::select("
-                SELECT CONSTRAINT_NAME 
-                FROM information_schema.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'bill_counters' 
-                AND CONSTRAINT_NAME != 'PRIMARY'
-                AND REFERENCED_TABLE_NAME IS NOT NULL
-            ");
+        // Drop foreign keys that might reference the unique index (MySQL only; SQLite has no information_schema)
+        if (DB::getDriverName() === 'mysql') {
+            try {
+                $foreignKeys = DB::select("
+                    SELECT CONSTRAINT_NAME 
+                    FROM information_schema.KEY_COLUMN_USAGE 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'bill_counters' 
+                    AND CONSTRAINT_NAME != 'PRIMARY'
+                    AND REFERENCED_TABLE_NAME IS NOT NULL
+                ");
 
-            foreach ($foreignKeys as $fk) {
-                DB::statement("ALTER TABLE `bill_counters` DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
+                foreach ($foreignKeys as $fk) {
+                    DB::statement("ALTER TABLE `bill_counters` DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
+                }
+            } catch (\Exception $e) {
+                // No foreign keys or already dropped
             }
-        } catch (\Exception $e) {
-            // No foreign keys or already dropped
         }
 
         Schema::table('bill_counters', function (Blueprint $table) {

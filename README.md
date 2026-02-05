@@ -186,6 +186,12 @@ The `database/setup.sql` file contains both schema and seed data, making it idea
 
 > ⚠️ **Important**: Change the default password immediately after first login.
 
+**Default admin / login troubleshooting:**
+- Admin login URL: **`/admin/login`** (e.g. `http://localhost:8000/admin/login`). Do not use the tenant login at `/app/auth/login` for admin.
+- If login fails (e.g. after an older seed or manual DB change), run one of:
+  - `php artisan auth:reset-demo-passwords` — resets the default admin and demo tenant passwords to `password` and sets `is_active = true`.
+  - `php artisan db:seed --class=SuperAdminSeeder` — creates or updates the default admin with email `admin@legitbooks.com` and password `password`.
+
 ### Step 6: Build Frontend Assets
 
 ```bash
@@ -238,6 +244,8 @@ LegitBooks supports three branding modes configured via `BRANDING_MODE` environm
 **Per-Tenant Override:**
 Tenants can override the global branding mode through the admin panel at `/admin/tenants/{tenant}/branding`.
 
+**How to change branding:** Set `BRANDING_MODE=A`, `B`, or `C` in `.env`, or use Admin → Settings to change the platform-wide mode.
+
 ### M-Pesa Integration
 
 For M-Pesa STK Push integration:
@@ -254,7 +262,13 @@ For M-Pesa STK Push integration:
 
 3. **Webhook Testing:**
    - Use Cloudflare Tunnel for local development
-   - Configure callback URL in M-Pesa settings
+   - Configure callback URL in M-Pesa settings (e.g. `MPESA_CALLBACK_BASE` or `MPESA_CALLBACK_URL` in `.env`)
+
+4. **Simulate M-Pesa callback (development):**
+   ```bash
+   php artisan mpesa:simulate {tenant_hash} 2547XXXXXXXX {amount}
+   ```
+   Example: `php artisan mpesa:simulate abc123base64 254712345678 500` creates a simulated payment for the tenant.
 
 ### Email Configuration
 
@@ -346,7 +360,7 @@ php artisan reports:generate-scheduled --frequency=monthly --report=all --format
 
 #### Sending Invoices
 - **Email**: Click "Send Invoice" to email PDF to contact
-- **Public Link**: Share payment link for online payment
+- **Public Link**: Share payment link for online payment (M-Pesa, etc.). The payment link is available **after** you send the invoice (the link is included in the sent email), or you can generate it manually from the invoice detail page using **Generate payment link** / **Copy payment link** so the link works even if the invoice was not sent by email.
 - **PDF Download**: Download invoice PDF manually
 
 ## 🏗 Architecture

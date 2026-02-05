@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if bill_counters already created by 2025_12_11_193616_create_bill_counters_table
+        if (Schema::hasTable('bill_counters')) {
+            return;
+        }
+
         Schema::create('bill_counters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->onDelete('cascade');

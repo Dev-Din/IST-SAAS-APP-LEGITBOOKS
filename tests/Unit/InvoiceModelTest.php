@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
+use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,9 +73,10 @@ class InvoiceModelTest extends TestCase
     public function test_get_outstanding_amount_returns_correct_value(): void
     {
         $invoice = $this->createTestInvoice(['total' => 1000.00]);
+        $payment = $this->createTestPayment();
 
         PaymentAllocation::create([
-            'payment_id' => 1,
+            'payment_id' => $payment->id,
             'invoice_id' => $invoice->id,
             'amount' => 300.00,
         ]);
@@ -86,9 +88,10 @@ class InvoiceModelTest extends TestCase
     public function test_get_outstanding_amount_returns_zero_when_fully_paid(): void
     {
         $invoice = $this->createTestInvoice(['total' => 1000.00]);
+        $payment = $this->createTestPayment();
 
         PaymentAllocation::create([
-            'payment_id' => 1,
+            'payment_id' => $payment->id,
             'invoice_id' => $invoice->id,
             'amount' => 1000.00,
         ]);
@@ -100,15 +103,27 @@ class InvoiceModelTest extends TestCase
     public function test_get_outstanding_amount_never_returns_negative(): void
     {
         $invoice = $this->createTestInvoice(['total' => 1000.00]);
+        $payment = $this->createTestPayment();
 
         PaymentAllocation::create([
-            'payment_id' => 1,
+            'payment_id' => $payment->id,
             'invoice_id' => $invoice->id,
             'amount' => 1500.00, // Overpayment
         ]);
 
         $outstanding = $invoice->getOutstandingAmount();
         $this->assertEquals(0.00, $outstanding);
+    }
+
+    protected function createTestPayment(): Payment
+    {
+        return Payment::create([
+            'tenant_id' => $this->tenant->id,
+            'payment_number' => 'PAY-'.now()->format('Ymd').'-'.uniqid(),
+            'payment_date' => now()->toDateString(),
+            'amount' => 1000.00,
+            'payment_method' => 'cash',
+        ]);
     }
 
     protected function createTestTenant(): Tenant

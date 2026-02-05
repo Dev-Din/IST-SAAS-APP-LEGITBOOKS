@@ -23,7 +23,9 @@ class AdminAuthController extends Controller
 
         $credentials['is_active'] = true;
 
-        if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
+        $attemptOk = Auth::guard('admin')->attempt($credentials, $request->filled('remember'));
+
+        if ($attemptOk) {
             $request->session()->regenerate();
 
             // Update invitation status from 'accepted' to 'active' on first login

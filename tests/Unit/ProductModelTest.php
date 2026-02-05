@@ -46,8 +46,9 @@ class ProductModelTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->assertIsFloat($product->price);
-        $this->assertEquals(1000.50, $product->price);
+        // Laravel decimal cast may return string in PHP
+        $this->assertIsNumeric($product->price);
+        $this->assertEquals(1000.50, (float) $product->price);
     }
 
     protected function createTestTenant(): Tenant

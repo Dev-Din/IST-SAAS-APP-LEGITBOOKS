@@ -44,21 +44,24 @@ return new class extends Migration
                 }
 
                 if ($indexExists) {
-                    // Check if it's used by a foreign key
-                    $foreignKeys = DB::select("
-                        SELECT CONSTRAINT_NAME 
-                        FROM information_schema.KEY_COLUMN_USAGE 
-                        WHERE TABLE_SCHEMA = DATABASE() 
-                        AND TABLE_NAME = 'invoice_counters' 
-                        AND COLUMN_NAME = 'tenant_id' 
-                        AND CONSTRAINT_NAME != 'PRIMARY'
-                    ");
+                    // Check if it's used by a foreign key (MySQL only; SQLite has no information_schema)
+                    $foreignKeys = [];
+                    if (DB::getDriverName() === 'mysql') {
+                        $foreignKeys = DB::select("
+                            SELECT CONSTRAINT_NAME 
+                            FROM information_schema.KEY_COLUMN_USAGE 
+                            WHERE TABLE_SCHEMA = DATABASE() 
+                            AND TABLE_NAME = 'invoice_counters' 
+                            AND COLUMN_NAME = 'tenant_id' 
+                            AND CONSTRAINT_NAME != 'PRIMARY'
+                        ");
+                    }
                     // Only drop if not used by foreign key
                     if (empty($foreignKeys)) {
                         try {
                             $table->dropUnique(['tenant_id']);
                         } catch (\Exception $e) {
-                            // Constraint might be used elsewhere, continue
+                            // Constraint might be used elsewhere or not exist (e.g. SQLite), continue
                         }
                     }
                 }

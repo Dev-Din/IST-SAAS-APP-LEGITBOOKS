@@ -10,8 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Modify the enum to include 'pending'
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'trial', 'cancelled', 'expired', 'pending') DEFAULT 'trial'");
+        // Modify the enum to include 'pending' (MySQL only; SQLite uses string and accepts any value)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'trial', 'cancelled', 'expired', 'pending') DEFAULT 'trial'");
+        }
     }
 
     /**
@@ -19,8 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Revert to original enum (but first update any 'pending' subscriptions)
         DB::statement("UPDATE subscriptions SET status = 'trial' WHERE status = 'pending'");
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'trial', 'cancelled', 'expired') DEFAULT 'trial'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'trial', 'cancelled', 'expired') DEFAULT 'trial'");
+        }
     }
 };

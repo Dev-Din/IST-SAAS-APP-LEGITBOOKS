@@ -148,7 +148,7 @@
             messageDiv.classList.add('hidden');
             
             try {
-                const response = await fetch(`/pay/{{ $invoice->id }}/{{ $invoice->payment_token }}/mpesa`, {
+                const response = await fetch('{{ route('invoice.pay.mpesa', [$invoice->id, $invoice->payment_token]) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -164,7 +164,7 @@
                 if (data.success) {
                     // Redirect immediately to confirmation page with checkout request ID
                     const checkoutId = data.checkoutRequestID || '';
-                    window.location.href = '/pay/{{ $invoice->id }}/{{ $invoice->payment_token }}/success?checkout_request_id=' + encodeURIComponent(checkoutId);
+                    window.location.href = '{{ route('invoice.pay.success', [$invoice->id, $invoice->payment_token]) }}?checkout_request_id=' + encodeURIComponent(checkoutId);
                 } else {
                     messageDiv.textContent = data.error || 'Payment failed. Please try again.';
                     messageDiv.className = 'mt-2 text-sm text-red-600';

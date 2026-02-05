@@ -9,7 +9,6 @@ use App\Models\Product;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class TenantProvisioningService
 {
@@ -85,7 +84,7 @@ class TenantProvisioningService
             'tenant_id' => $tenant->id,
             'name' => 'Admin',
             'email' => $email,
-            'password' => Hash::make($password),
+            'password' => $password,
             'is_active' => true,
         ]);
     }

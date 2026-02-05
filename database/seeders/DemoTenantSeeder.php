@@ -6,7 +6,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioningService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DemoTenantSeeder extends Seeder
 {
@@ -42,12 +41,12 @@ class DemoTenantSeeder extends Seeder
             'seed_demo_data' => true,
         ]);
 
-        // Create demo tenant user
-        User::firstOrCreate(
+        // Create demo tenant user (plain password so User model's hashed cast hashes once)
+        User::updateOrCreate(
             ['email' => 'user@demo.com', 'tenant_id' => $tenant->id],
             [
                 'name' => 'Demo User',
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'is_active' => true,
             ]
         );

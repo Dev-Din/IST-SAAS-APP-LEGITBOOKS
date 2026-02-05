@@ -48,9 +48,33 @@
                 <a href="{{ route('tenant.invoices.edit', $invoice) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white" style="background-color: var(--brand-primary);">
                     Edit
                 </a>
+                @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
+                    @if($invoice->payment_token)
+                        @php $paymentUrl = url("/pay/{$invoice->id}/{$invoice->payment_token}"); @endphp
+                        <div class="inline-flex items-center gap-2">
+                            <input type="text" class="payment-link-input text-sm border border-gray-300 rounded-md px-3 py-2 w-80 bg-gray-50" readonly value="{{ $paymentUrl }}">
+                            <button type="button" onclick="copyPaymentLink()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                Copy payment link
+                            </button>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('tenant.invoices.generate-payment-link', $invoice) }}" class="inline">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                Generate payment link
+                            </button>
+                        </form>
+                    @endif
+                @endif
                 @endperm
             </div>
         </div>
+        @if(session('payment_link_url'))
+            <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2 flex-wrap">
+                <input type="text" class="payment-link-input text-sm border border-gray-300 rounded-md px-3 py-2 flex-1 min-w-0 max-w-md bg-white" readonly value="{{ session('payment_link_url') }}">
+                <button type="button" onclick="copyPaymentLink()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Copy payment link</button>
+            </div>
+        @endif
 
         @anyperm(['manage_invoices', 'view_invoices'])
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -139,5 +163,30 @@
         @endanyperm
     </div>
 </div>
+@anyperm(['manage_invoices', 'view_invoices'])
+@if($invoice->payment_token || session('payment_link_url'))
+<script>
+function copyPaymentLink() {
+    var el = document.querySelector('.payment-link-input');
+    if (!el) return;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(el.value);
+        } else {
+            el.select();
+            el.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+        }
+    } catch (e) {}
+    var btn = event.target;
+    if (btn && btn.tagName === 'BUTTON') {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = orig; }, 2000);
+    }
+}
+</script>
+@endif
+@endanyperm
 @endsection
 

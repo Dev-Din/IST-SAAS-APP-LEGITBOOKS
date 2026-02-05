@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payments;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessMpesaCallbackJob;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -97,14 +98,17 @@ class MpesaController extends Controller
             $resultCode = $parsed['result_code'];
             $resultDesc = $parsed['result_desc'];
 
-            // Find payment by checkout_request_id (primary lookup)
-            $payment = Payment::with(['tenant', 'subscription', 'user'])
+            // Find payment by checkout_request_id (primary lookup). Use withoutGlobalScope so
+            // invoice payments are always found regardless of tenant context (callback has no tenant).
+            $payment = Payment::withoutGlobalScope('tenant')
+                ->with(['tenant', 'subscription', 'user'])
                 ->where('checkout_request_id', $checkoutRequestID)
                 ->first();
 
             // Fallback 1: Try merchant_request_id
             if (! $payment && $merchantRequestID) {
-                $payment = Payment::with(['tenant', 'subscription', 'user'])
+                $payment = Payment::withoutGlobalScope('tenant')
+                    ->with(['tenant', 'subscription', 'user'])
                     ->where('merchant_request_id', $merchantRequestID)
                     ->first();
             }
@@ -115,7 +119,8 @@ class MpesaController extends Controller
                 $amount = (float) $parsed['amount'];
 
                 // Find pending payment with matching phone and amount (within 5 minutes)
-                $payment = Payment::with(['tenant', 'subscription', 'user'])
+                $payment = Payment::withoutGlobalScope('tenant')
+                    ->with(['tenant', 'subscription', 'user'])
                     ->where('phone', $phone)
                     ->where('amount', $amount)
                     ->where('transaction_status', 'pending')
@@ -360,6 +365,9 @@ class MpesaController extends Controller
                     'subscription_id' => $payment->subscription_id,
                     'cf_headers' => $cfHeaders,
                 ]);
+
+                // Enqueue job for audit/notification (requirements: enqueues ProcessMpesaCallbackJob)
+                ProcessMpesaCallbackJob::dispatch($rawCallback, $payment->tenant_id);
 
                 // Return 200 quickly (heavy work done in transaction)
                 return response()->json([

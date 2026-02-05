@@ -37,8 +37,9 @@ class ContactModelTest extends TestCase
             'tax_rate' => '16.00',
         ]);
 
-        $this->assertIsFloat($contact->tax_rate);
-        $this->assertEquals(16.00, $contact->tax_rate);
+        // Laravel decimal cast may return string in PHP
+        $this->assertIsNumeric($contact->tax_rate);
+        $this->assertEquals(16.00, (float) $contact->tax_rate);
     }
 
     public function test_contact_can_be_customer_type(): void

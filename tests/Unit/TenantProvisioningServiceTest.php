@@ -28,7 +28,6 @@ class TenantProvisioningServiceTest extends TestCase
 
         $counter = InvoiceCounter::where('tenant_id', $tenant->id)->first();
         $this->assertNotNull($counter);
-        $this->assertEquals(now()->year, $counter->year);
         $this->assertEquals(0, $counter->sequence);
     }
 
