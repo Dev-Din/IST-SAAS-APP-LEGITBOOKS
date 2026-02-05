@@ -10,7 +10,7 @@ use App\Http\Controllers\Tenant\PaymentController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ReportsController;
 use App\Http\Controllers\Tenant\TenantAuthController;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Route; 
 
 // Registration routes - no tenant context required
 Route::get('/auth/register', [\App\Http\Controllers\Tenant\TenantRegistrationController::class, 'showRegistrationForm'])->name('auth.register');
