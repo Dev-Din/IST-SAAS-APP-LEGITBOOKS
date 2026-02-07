@@ -103,9 +103,20 @@ class MpesaService
      */
     public function parseCallback(array $body): array
     {
-        $stkCallback = $body['Body']['stkCallback'] ?? null;
+        // Defensive parsing: accept both 'Body' and 'body' (case insensitive)
+        $stkCallback = $body['Body']['stkCallback'] ?? $body['body']['stkCallback'] ?? null;
 
         if (! $stkCallback) {
+            // Log raw body (truncated) when parse fails so we can debug structure differences
+            $bodyPreview = json_encode($body);
+            if (strlen($bodyPreview) > 500) {
+                $bodyPreview = substr($bodyPreview, 0, 500).'... (truncated)';
+            }
+            Log::warning('M-Pesa callback parse failed: Missing stkCallback', [
+                'body_preview' => $bodyPreview,
+                'body_keys' => array_keys($body),
+            ]);
+
             return [
                 'valid' => false,
                 'error' => 'Missing stkCallback in payload',

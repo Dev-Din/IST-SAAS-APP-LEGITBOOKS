@@ -21,7 +21,7 @@
                         @if($outstanding > 0)
                         <p class="text-sm text-gray-500 mt-2">Amount: KES {{ number_format($outstanding, 2) }}</p>
                         @endif
-                        <p id="reload-countdown" class="text-xs text-gray-400 mt-3">Checking again in <span id="countdown-sec">3</span> seconds…</p>
+                        <p id="reload-countdown" class="text-xs text-gray-400 mt-3">Checking again in <span id="countdown-sec">8</span> seconds…</p>
                     </div>
                     <div id="payment-result" class="hidden">
                         <p id="payment-result-message" class="text-gray-700 mb-6"></p>
@@ -31,13 +31,13 @@
                         </div>
                     </div>
                 </div>
-                {{-- Full page reload every 3s so server runs sync and redirects to receipt when payment is received. --}}
+                {{-- Full page reload every 8s so server runs sync and redirects to receipt when payment is received. --}}
                 <script>
                     (function() {
                         const urlParams = new URLSearchParams(window.location.search);
                         const checkoutRequestId = urlParams.get('checkout_request_id');
-                        const reloadDelayMs = 3000;
-                        const maxReloads = 40;
+                        const reloadDelayMs = 8000;
+                        const maxReloads = 15;
                         const storageKey = 'pay_reload_count_{{ $invoice->id }}_{{ $invoice->payment_token }}';
 
                         const loadingEl = document.getElementById('payment-loading');

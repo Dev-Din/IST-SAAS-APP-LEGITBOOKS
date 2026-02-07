@@ -24,7 +24,15 @@ class InvoicePostingService
                 ->first();
 
             if (! $arAccount) {
-                throw new \Exception('Accounts Receivable account not found');
+                // Auto-create Accounts Receivable for tenants that are missing it
+                $arAccount = \App\Models\ChartOfAccount::create([
+                    'tenant_id' => $tenant->id,
+                    'code' => '1200',
+                    'name' => 'Accounts Receivable',
+                    'type' => 'asset',
+                    'category' => 'current_asset',
+                    'is_active' => true,
+                ]);
             }
 
             // Create journal entry
@@ -56,6 +64,18 @@ class InvoicePostingService
                         ->where('code', '4100')
                         ->first();
 
+                if (! $salesAccount) {
+                    // Auto-create Sales Revenue for tenants that are missing it
+                    $salesAccount = \App\Models\ChartOfAccount::create([
+                        'tenant_id' => $tenant->id,
+                        'code' => '4100',
+                        'name' => 'Sales Revenue',
+                        'type' => 'revenue',
+                        'category' => 'operating_revenue',
+                        'is_active' => true,
+                    ]);
+                }
+
                 if ($salesAccount) {
                     // Calculate line subtotal (quantity * unit_price) without tax
                     $lineSubtotal = $lineItem->quantity * $lineItem->unit_price;
@@ -76,15 +96,25 @@ class InvoicePostingService
                     ->where('code', '2200')
                     ->first();
 
-                if ($taxAccount) {
-                    JournalLine::create([
-                        'journal_entry_id' => $journalEntry->id,
-                        'chart_of_account_id' => $taxAccount->id,
-                        'type' => 'credit',
-                        'amount' => $invoice->tax_amount,
-                        'description' => "Tax for Invoice {$invoice->invoice_number}",
+                if (! $taxAccount) {
+                    // Auto-create Tax Payable for tenants that are missing it
+                    $taxAccount = \App\Models\ChartOfAccount::create([
+                        'tenant_id' => $tenant->id,
+                        'code' => '2200',
+                        'name' => 'Tax Payable',
+                        'type' => 'liability',
+                        'category' => 'current_liability',
+                        'is_active' => true,
                     ]);
                 }
+
+                JournalLine::create([
+                    'journal_entry_id' => $journalEntry->id,
+                    'chart_of_account_id' => $taxAccount->id,
+                    'type' => 'credit',
+                    'amount' => $invoice->tax_amount,
+                    'description' => "Tax for Invoice {$invoice->invoice_number}",
+                ]);
             }
 
             $journalEntry->calculateTotals();

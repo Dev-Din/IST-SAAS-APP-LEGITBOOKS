@@ -51,7 +51,15 @@ class PaymentService
                 ->first();
 
             if (! $arAccount) {
-                throw new \Exception('Accounts Receivable account not found');
+                // Auto-create Accounts Receivable for tenants that are missing it
+                $arAccount = \App\Models\ChartOfAccount::create([
+                    'tenant_id' => $tenant->id,
+                    'code' => '1200',
+                    'name' => 'Accounts Receivable',
+                    'type' => 'asset',
+                    'category' => 'current_asset',
+                    'is_active' => true,
+                ]);
             }
 
             $totalAllocated = 0;
@@ -81,15 +89,25 @@ class PaymentService
                     ->where('code', '2200')
                     ->first();
 
-                if ($unappliedAccount) {
-                    JournalLine::create([
-                        'journal_entry_id' => $journalEntry->id,
-                        'chart_of_account_id' => $unappliedAccount->id,
-                        'type' => 'credit',
-                        'amount' => $overpayment,
-                        'description' => 'Unapplied payment amount',
+                if (! $unappliedAccount) {
+                    // Auto-create Unapplied Credits for tenants that are missing it
+                    $unappliedAccount = \App\Models\ChartOfAccount::create([
+                        'tenant_id' => $tenant->id,
+                        'code' => '2200',
+                        'name' => 'Unapplied Credits',
+                        'type' => 'liability',
+                        'category' => 'current_liability',
+                        'is_active' => true,
                     ]);
                 }
+
+                JournalLine::create([
+                    'journal_entry_id' => $journalEntry->id,
+                    'chart_of_account_id' => $unappliedAccount->id,
+                    'type' => 'credit',
+                    'amount' => $overpayment,
+                    'description' => 'Unapplied payment amount',
+                ]);
             }
 
             $journalEntry->calculateTotals();

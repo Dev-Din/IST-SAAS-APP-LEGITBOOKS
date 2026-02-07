@@ -447,10 +447,21 @@ class InvoicePaymentController extends Controller
                 try {
                     DB::beginTransaction();
 
-                    $payment->update([
+                    // Persist query response in raw_callback if not already set (so we have audit trail)
+                    $updateData = [
                         'transaction_status' => 'completed',
                         'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
-                    ]);
+                        'mpesa_receipt' => $queryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
+                    ];
+                    
+                    if (empty($payment->raw_callback)) {
+                        $updateData['raw_callback'] = array_merge($queryResult, [
+                            '_source' => 'daraja_stk_query',
+                            '_queried_at' => now()->toIso8601String(),
+                        ]);
+                    }
+
+                    $payment->update($updateData);
 
                     // Allocate payment to invoice if not already allocated
                     $invoice->load('paymentAllocations');
@@ -490,6 +501,7 @@ class InvoicePaymentController extends Controller
                     Log::error('Failed to process payment from status check', [
                         'payment_id' => $payment->id,
                         'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
             } elseif ($queryResult['success'] && isset($queryResult['result_code'])) {
@@ -506,10 +518,23 @@ class InvoicePaymentController extends Controller
                         ]);
                         try {
                             DB::beginTransaction();
-                            $payment->update([
+                            
+                            // Persist query response in raw_callback if not already set (so we have audit trail)
+                            $updateData = [
                                 'transaction_status' => 'completed',
                                 'reference' => $retryResult['checkout_request_id'] ?? $checkoutRequestId,
-                            ]);
+                                'mpesa_receipt' => $retryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
+                            ];
+                            
+                            if (empty($payment->raw_callback)) {
+                                $updateData['raw_callback'] = array_merge($retryResult, [
+                                    '_source' => 'daraja_stk_query_retry',
+                                    '_queried_at' => now()->toIso8601String(),
+                                ]);
+                            }
+
+                            $payment->update($updateData);
+                            
                             $invoice->load('paymentAllocations');
                             $existingAllocation = $invoice->paymentAllocations()
                                 ->where('payment_id', $payment->id)
@@ -535,6 +560,7 @@ class InvoicePaymentController extends Controller
                             Log::error('Failed to process payment from status check retry', [
                                 'payment_id' => $payment->id,
                                 'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString(),
                             ]);
                         }
                     }
@@ -626,6 +652,10 @@ class InvoicePaymentController extends Controller
         foreach ($pendingPayments as $payment) {
             $queryResult = $mpesaService->querySTKPushStatus($payment->checkout_request_id);
 
+            // #region agent log
+            @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'C', 'location' => 'InvoicePaymentController::syncPending', 'message' => 'query_result', 'data' => ['payment_id' => $payment->id, 'query_keys' => array_keys($queryResult), 'has_mpesa_receipt_key' => array_key_exists('mpesa_receipt', $queryResult), 'mpesa_receipt_val' => $queryResult['mpesa_receipt'] ?? 'KEY_MISSING', 'is_paid' => $queryResult['is_paid'] ?? null]]) . "\n", FILE_APPEND);
+            // #endregion
+
             if (! ($queryResult['success'] && ! empty($queryResult['is_paid']))) {
                 continue;
             }
@@ -633,10 +663,21 @@ class InvoicePaymentController extends Controller
             try {
                 DB::beginTransaction();
 
-                $payment->update([
+                // Persist query response in raw_callback if not already set (so we have audit trail)
+                $updateData = [
                     'transaction_status' => 'completed',
                     'reference' => $queryResult['checkout_request_id'] ?? $payment->checkout_request_id,
-                ]);
+                    'mpesa_receipt' => $queryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
+                ];
+                
+                if (empty($payment->raw_callback)) {
+                    $updateData['raw_callback'] = array_merge($queryResult, [
+                        '_source' => 'daraja_stk_query',
+                        '_queried_at' => now()->toIso8601String(),
+                    ]);
+                }
+
+                $payment->update($updateData);
 
                 $invoice->load('paymentAllocations');
                 $existingAllocation = $invoice->paymentAllocations()
@@ -672,6 +713,7 @@ class InvoicePaymentController extends Controller
                 Log::error('Failed to sync payment from Daraja on success page', [
                     'payment_id' => $payment->id,
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }

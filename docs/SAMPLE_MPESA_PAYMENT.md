@@ -62,6 +62,19 @@ If you want the callback to be hit (faster confirmation):
    (The app will use this + `/api/payments/mpesa/callback` as the callback URL.)
 3. Restart the app, then repeat the payment steps above.
 
+### Testing Callback URL (Optional)
+
+To verify your tunnel and callback URL are working before making a real payment:
+
+1. Use the test endpoint: `POST https://your-tunnel-url/api/payments/mpesa/callback-test`
+2. Send any JSON body (e.g. `{"test": "data"}`).
+3. Check `storage/logs/laravel.log` for "M-Pesa callback TEST endpoint hit" with your request details.
+4. If you see the log entry, your tunnel and Laravel are receiving POST requests correctly.
+5. If not, verify:
+   - Tunnel is running and the URL is correct.
+   - No firewall/Cloudflare challenge is blocking the POST.
+   - Laravel is running on the port the tunnel points to.
+
 ## Troubleshooting
 
 - **“Payment is taking longer than expected”**  
@@ -72,6 +85,30 @@ If you want the callback to be hit (faster confirmation):
 
 - **“No payment found”**  
   Ensure you used the same browser/session that started the payment (same `checkout_request_id` in the URL). If you closed the tab, use the payment link again and pay; that creates a new payment and you’ll get a new success URL.
+
+- **Callback not being received** (raw_callback and mpesa_receipt are NULL in database)  
+  The M-Pesa callback from Daraja must reach your app to store the full callback data and receipt number. If these fields are NULL:
+  
+  1. **Verify callback URL**:
+     - Check that `MPESA_CALLBACK_URL` in `.env` is set to the **exact** URL registered in your Daraja LIPA Na M-Pesa Online settings.
+     - Example: `MPESA_CALLBACK_URL=https://your-tunnel-url.trycloudflare.com/api/payments/mpesa/callback`
+     - The URL must be publicly reachable (use tunnel for local testing).
+  
+  2. **Check if tunnel is running**:
+     - If using Cloudflare tunnel: run `./cloudflared-tunnel.sh` and ensure the tunnel URL matches what's in `.env`.
+     - The tunnel must be running when you make the payment so Daraja can POST the callback.
+  
+  3. **Check Laravel logs**:
+     - Look in `storage/logs/laravel.log` for:
+       - "M-Pesa callback received" → callback is reaching the app (good)
+       - "M-Pesa callback for unknown payment" → callback reached but payment lookup failed (check checkout_request_id in DB)
+       - "M-Pesa callback parse failed" → callback body structure is different (check logs for body_preview)
+     - If you don't see any of these, the callback is not reaching Laravel; verify tunnel and Daraja callback URL.
+  
+  4. **Fallback: Sync via query**:
+     - Even without callback, payments can be completed via the **sync path** (success page reload queries Daraja).
+     - When completed via sync, `raw_callback` will contain the query response instead of the full callback payload.
+     - The invoice will still be marked paid and the receipt will be accessible.
 
 - **Sandbox**  
   In Safaricom sandbox, use test credentials and the test phone numbers allowed by the sandbox documentation.
