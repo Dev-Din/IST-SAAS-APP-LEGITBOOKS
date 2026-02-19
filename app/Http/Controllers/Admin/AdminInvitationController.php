@@ -79,9 +79,9 @@ class AdminInvitationController extends Controller
             'message' => 'Before role assignment - checking role_name',
             'data' => [
                 'invitation_role_name' => $invitation->role_name,
-                'has_role_name' => !empty($invitation->role_name)
+                'has_role_name' => ! empty($invitation->role_name),
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
@@ -97,18 +97,18 @@ class AdminInvitationController extends Controller
                 'message' => 'Checking if role exists before assignment',
                 'data' => [
                     'role_name' => $invitation->role_name,
-                    'guard_name' => 'admin'
+                    'guard_name' => 'admin',
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
             // #endregion
-            
+
             // Check if role exists, create if it doesn't
             $role = \Spatie\Permission\Models\Role::firstOrCreate(
                 ['name' => $invitation->role_name, 'guard_name' => 'admin']
             );
-            
+
             // #region agent log
             $logEntry = [
                 'sessionId' => 'debug-session',
@@ -119,15 +119,15 @@ class AdminInvitationController extends Controller
                 'data' => [
                     'role_id' => $role->id,
                     'role_name' => $role->name,
-                    'was_created' => $role->wasRecentlyCreated
+                    'was_created' => $role->wasRecentlyCreated,
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
             // #endregion
-            
+
             $admin->assignRole($role);
-            
+
             // #region agent log
             $logEntry = [
                 'sessionId' => 'debug-session',
@@ -137,9 +137,9 @@ class AdminInvitationController extends Controller
                 'message' => 'Role assigned successfully',
                 'data' => [
                     'admin_id' => $admin->id,
-                    'role_name' => $invitation->role_name
+                    'role_name' => $invitation->role_name,
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
             // #endregion

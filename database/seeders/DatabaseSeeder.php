@@ -14,7 +14,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PlatformSettingsSeeder::class,
             SuperAdminSeeder::class,
-            DemoTenantSeeder::class,
         ]);
     }
 }

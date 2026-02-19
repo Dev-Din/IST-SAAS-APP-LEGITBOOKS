@@ -309,8 +309,8 @@ class InvoiceController extends Controller
         $receiptPdfRelativePath = null;
         try {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice.payment.receipt-pdf', compact('invoice', 'tenant'));
-            $filename = 'Receipt-Invoice-' . $invoice->invoice_number . '-' . now()->format('YmdHis') . '.pdf';
-            $receiptPdfRelativePath = 'temp/' . $filename;
+            $filename = 'Receipt-Invoice-'.$invoice->invoice_number.'-'.now()->format('YmdHis').'.pdf';
+            $receiptPdfRelativePath = 'temp/'.$filename;
             Storage::disk('local')->makeDirectory('temp');
             Storage::disk('local')->put($receiptPdfRelativePath, $pdf->output());
             $receiptPdfPath = Storage::disk('local')->path($receiptPdfRelativePath);
@@ -334,7 +334,7 @@ class InvoiceController extends Controller
 
         if ($sent) {
             return redirect()->route('tenant.invoices.show', $invoice)
-                ->with('success', 'Receipt sent to ' . $contact->email);
+                ->with('success', 'Receipt sent to '.$contact->email);
         }
 
         return redirect()->back()->withErrors(['invoice' => 'Failed to send receipt. Please try again.']);

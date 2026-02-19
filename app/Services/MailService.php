@@ -28,7 +28,7 @@ class MailService
                 'invitation_id' => $invitation->id,
                 'email' => $invitation->email,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
@@ -46,7 +46,7 @@ class MailService
             'location' => 'app/Services/MailService.php:sendAdminInvite',
             'message' => 'Before rendering HTML template',
             'data' => [],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
@@ -71,7 +71,7 @@ class MailService
                 'data' => [
                     'exception' => $e->getMessage(),
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
             // #endregion
@@ -88,7 +88,7 @@ class MailService
             'data' => [
                 'html_length' => strlen($html),
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
@@ -113,7 +113,7 @@ class MailService
                 'data' => [
                     'exception' => $e->getMessage(),
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
             // #endregion
@@ -128,7 +128,7 @@ class MailService
             'location' => 'app/Services/MailService.php:sendAdminInvite',
             'message' => 'Before calling PHPMailerService->send',
             'data' => [],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
@@ -151,7 +151,7 @@ class MailService
             'data' => [
                 'result' => $result,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion

@@ -326,7 +326,7 @@ class MpesaStkService
             $responseData = $response->json();
 
             // #region agent log
-            @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'A', 'location' => 'MpesaStkService::querySTKPushStatus', 'message' => 'full_daraja_stk_query_response', 'data' => ['status' => $response->status(), 'response_keys' => array_keys($responseData ?? []), 'full_response' => $responseData]]) . "\n", FILE_APPEND);
+            @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'A', 'location' => 'MpesaStkService::querySTKPushStatus', 'message' => 'full_daraja_stk_query_response', 'data' => ['status' => $response->status(), 'response_keys' => array_keys($responseData ?? []), 'full_response' => $responseData]])."\n", FILE_APPEND);
             // #endregion
 
             if ($response->successful() && isset($responseData['ResponseCode'])) {

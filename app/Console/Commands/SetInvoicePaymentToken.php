@@ -37,7 +37,7 @@ class SetInvoicePaymentToken extends Command
 
         $url = url("/pay/{$invoice->id}/{$invoice->payment_token}");
         $this->info("Payment token set for invoice ID {$invoice->id} ({$invoice->invoice_number}).");
-        $this->line('Payment URL: ' . $url);
+        $this->line('Payment URL: '.$url);
 
         return self::SUCCESS;
     }

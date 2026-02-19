@@ -301,17 +301,17 @@ class TenantUserAdminController extends Controller
             'message' => 'Cancel tenant invitation method entry',
             'data' => [
                 'tenant_id' => $tenant->id,
-                'invitation_id' => $invitationId
+                'invitation_id' => $invitationId,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         $this->ensurePermission();
-        
+
         $invitation = UserInvitation::findOrFail($invitationId);
-        
+
         // #region agent log
         $logEntry = [
             'sessionId' => 'debug-session',
@@ -324,18 +324,18 @@ class TenantUserAdminController extends Controller
                 'invitation_tenant_id' => $invitation->tenant_id,
                 'requested_tenant_id' => $tenant->id,
                 'invitation_status' => $invitation->status,
-                'invitation_email' => $invitation->email
+                'invitation_email' => $invitation->email,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         // Ensure invitation belongs to tenant
         if ($invitation->tenant_id !== $tenant->id) {
             abort(404);
         }
-        
+
         if ($invitation->status !== 'pending') {
             // #region agent log
             $logEntry = [
@@ -345,20 +345,21 @@ class TenantUserAdminController extends Controller
                 'location' => 'app/Http/Controllers/Admin/TenantUserAdminController.php:cancelInvitation',
                 'message' => 'Validation failed - not pending',
                 'data' => [
-                    'invitation_status' => $invitation->status
+                    'invitation_status' => $invitation->status,
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+
             // #endregion
             return response()->json([
                 'error' => 'Only pending invitations can be cancelled.',
             ], 422);
         }
-        
+
         $invitation->status = 'cancelled';
         $saveResult = $invitation->save();
-        
+
         // #region agent log
         $logEntry = [
             'sessionId' => 'debug-session',
@@ -369,13 +370,13 @@ class TenantUserAdminController extends Controller
             'data' => [
                 'invitation_id' => $invitation->id,
                 'new_status' => $invitation->status,
-                'save_result' => $saveResult
+                'save_result' => $saveResult,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Invitation cancelled successfully.',
@@ -396,17 +397,17 @@ class TenantUserAdminController extends Controller
             'message' => 'Delete tenant invitation method entry',
             'data' => [
                 'tenant_id' => $tenant->id,
-                'invitation_id' => $invitationId
+                'invitation_id' => $invitationId,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         $this->ensurePermission();
-        
+
         $invitation = UserInvitation::findOrFail($invitationId);
-        
+
         // #region agent log
         $logEntry = [
             'sessionId' => 'debug-session',
@@ -420,18 +421,18 @@ class TenantUserAdminController extends Controller
                 'requested_tenant_id' => $tenant->id,
                 'invitation_status' => $invitation->status,
                 'invitation_email' => $invitation->email,
-                'is_deletable' => !in_array($invitation->status, ['accepted', 'active'])
+                'is_deletable' => ! in_array($invitation->status, ['accepted', 'active']),
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         // Ensure invitation belongs to tenant
         if ($invitation->tenant_id !== $tenant->id) {
             abort(404);
         }
-        
+
         if (in_array($invitation->status, ['accepted', 'active'])) {
             // #region agent log
             $logEntry = [
@@ -441,20 +442,21 @@ class TenantUserAdminController extends Controller
                 'location' => 'app/Http/Controllers/Admin/TenantUserAdminController.php:destroyInvitation',
                 'message' => 'Validation failed - cannot delete accepted/active',
                 'data' => [
-                    'invitation_status' => $invitation->status
+                    'invitation_status' => $invitation->status,
                 ],
-                'timestamp' => round(microtime(true) * 1000)
+                'timestamp' => round(microtime(true) * 1000),
             ];
             file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
+
             // #endregion
             return response()->json([
                 'error' => 'Cannot delete accepted or active invitations.',
             ], 422);
         }
-        
+
         $email = $invitation->email;
         $deleteResult = $invitation->delete();
-        
+
         // #region agent log
         $logEntry = [
             'sessionId' => 'debug-session',
@@ -465,13 +467,13 @@ class TenantUserAdminController extends Controller
             'data' => [
                 'invitation_id' => $invitation->id,
                 'invitation_email' => $email,
-                'delete_result' => $deleteResult
+                'delete_result' => $deleteResult,
             ],
-            'timestamp' => round(microtime(true) * 1000)
+            'timestamp' => round(microtime(true) * 1000),
         ];
         file_put_contents('/home/nuru/Desktop/SAAS APP LARAVEL/.cursor/debug.log', json_encode($logEntry)."\n", FILE_APPEND);
         // #endregion
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Invitation deleted successfully.',

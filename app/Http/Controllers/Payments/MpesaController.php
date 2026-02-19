@@ -30,7 +30,7 @@ class MpesaController extends Controller
     public function callback(Request $request)
     {
         // #region agent log
-        @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'callback_endpoint_hit', 'data' => ['ip' => $request->ip(), 'method' => $request->method(), 'content_type' => $request->header('Content-Type'), 'body_size' => strlen($request->getContent()), 'body_preview' => substr($request->getContent(), 0, 300)]]) . "\n", FILE_APPEND);
+        @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'callback_endpoint_hit', 'data' => ['ip' => $request->ip(), 'method' => $request->method(), 'content_type' => $request->header('Content-Type'), 'body_size' => strlen($request->getContent()), 'body_preview' => substr($request->getContent(), 0, 300)]])."\n", FILE_APPEND);
         // #endregion
 
         // Log Cloudflare headers for debugging
@@ -167,7 +167,7 @@ class MpesaController extends Controller
             // Check idempotency (already processed)
             if ($payment->transaction_status !== 'pending') {
                 // #region agent log
-                @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'idempotency_check', 'data' => ['payment_id' => $payment->id, 'current_status' => $payment->transaction_status, 'current_mpesa_receipt' => $payment->mpesa_receipt, 'parsed_mpesa_receipt' => $parsed['mpesa_receipt'] ?? null, 'will_backfill' => ($payment->transaction_status === 'completed' && empty($payment->mpesa_receipt))]]) . "\n", FILE_APPEND);
+                @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'idempotency_check', 'data' => ['payment_id' => $payment->id, 'current_status' => $payment->transaction_status, 'current_mpesa_receipt' => $payment->mpesa_receipt, 'parsed_mpesa_receipt' => $parsed['mpesa_receipt'] ?? null, 'will_backfill' => ($payment->transaction_status === 'completed' && empty($payment->mpesa_receipt))]])."\n", FILE_APPEND);
                 // #endregion
 
                 // Even if already processed, backfill mpesa_receipt if missing
@@ -176,7 +176,7 @@ class MpesaController extends Controller
                     $mpesaReceipt = $parsed['mpesa_receipt'] ?? null;
                     if ($mpesaReceipt) {
                         $backfill = ['mpesa_receipt' => $mpesaReceipt, 'reference' => $mpesaReceipt];
-                        if (empty($payment->raw_callback) || !isset($payment->raw_callback['Body'])) {
+                        if (empty($payment->raw_callback) || ! isset($payment->raw_callback['Body'])) {
                             $backfill['raw_callback'] = $rawCallback;
                         }
                         $payment->update($backfill);
@@ -206,7 +206,7 @@ class MpesaController extends Controller
                 // Success - extract payment details
                 $mpesaReceipt = $parsed['mpesa_receipt'] ?? null;
                 // #region agent log
-                @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'processing_success_callback', 'data' => ['payment_id' => $payment->id, 'mpesa_receipt' => $mpesaReceipt, 'parsed_keys' => array_keys($parsed), 'result_code' => $resultCode]]) . "\n", FILE_APPEND);
+                @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'B', 'location' => 'MpesaController::callback', 'message' => 'processing_success_callback', 'data' => ['payment_id' => $payment->id, 'mpesa_receipt' => $mpesaReceipt, 'parsed_keys' => array_keys($parsed), 'result_code' => $resultCode]])."\n", FILE_APPEND);
                 // #endregion
                 $callbackAmount = $parsed['amount'] ?? null;
                 $phoneNumber = $parsed['phone'] ?? null;

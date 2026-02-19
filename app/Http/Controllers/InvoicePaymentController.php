@@ -378,7 +378,7 @@ class InvoicePaymentController extends Controller
         $checkoutRequestId = $request->input('checkout_request_id');
         $debugLogPath = 'c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log';
         $dbg = function (array $data) use ($debugLogPath) {
-            $line = json_encode(array_merge(['timestamp' => round(microtime(true) * 1000), 'sessionId' => 'debug-session'], $data)) . "\n";
+            $line = json_encode(array_merge(['timestamp' => round(microtime(true) * 1000), 'sessionId' => 'debug-session'], $data))."\n";
             @file_put_contents($debugLogPath, $line, FILE_APPEND);
         };
 
@@ -453,7 +453,7 @@ class InvoicePaymentController extends Controller
                         'reference' => $queryResult['checkout_request_id'] ?? $checkoutRequestId,
                         'mpesa_receipt' => $queryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
                     ];
-                    
+
                     if (empty($payment->raw_callback)) {
                         $updateData['raw_callback'] = array_merge($queryResult, [
                             '_source' => 'daraja_stk_query',
@@ -518,14 +518,14 @@ class InvoicePaymentController extends Controller
                         ]);
                         try {
                             DB::beginTransaction();
-                            
+
                             // Persist query response in raw_callback if not already set (so we have audit trail)
                             $updateData = [
                                 'transaction_status' => 'completed',
                                 'reference' => $retryResult['checkout_request_id'] ?? $checkoutRequestId,
                                 'mpesa_receipt' => $retryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
                             ];
-                            
+
                             if (empty($payment->raw_callback)) {
                                 $updateData['raw_callback'] = array_merge($retryResult, [
                                     '_source' => 'daraja_stk_query_retry',
@@ -534,7 +534,7 @@ class InvoicePaymentController extends Controller
                             }
 
                             $payment->update($updateData);
-                            
+
                             $invoice->load('paymentAllocations');
                             $existingAllocation = $invoice->paymentAllocations()
                                 ->where('payment_id', $payment->id)
@@ -600,6 +600,7 @@ class InvoicePaymentController extends Controller
 
         // API-style response for polling: success, status, payment_id, transaction, order (invoice)
         $payment->refresh();
+
         return response()->json([
             'success' => true,
             'status' => $status,
@@ -653,7 +654,7 @@ class InvoicePaymentController extends Controller
             $queryResult = $mpesaService->querySTKPushStatus($payment->checkout_request_id);
 
             // #region agent log
-            @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'C', 'location' => 'InvoicePaymentController::syncPending', 'message' => 'query_result', 'data' => ['payment_id' => $payment->id, 'query_keys' => array_keys($queryResult), 'has_mpesa_receipt_key' => array_key_exists('mpesa_receipt', $queryResult), 'mpesa_receipt_val' => $queryResult['mpesa_receipt'] ?? 'KEY_MISSING', 'is_paid' => $queryResult['is_paid'] ?? null]]) . "\n", FILE_APPEND);
+            @file_put_contents('c:\\Users\\LENOVO\\Downloads\\DEVELOPMENT\\IST-COLLEGE\\SAAS APP LARAVEL\\.cursor\\debug.log', json_encode(['timestamp' => round(microtime(true) * 1000), 'hypothesisId' => 'C', 'location' => 'InvoicePaymentController::syncPending', 'message' => 'query_result', 'data' => ['payment_id' => $payment->id, 'query_keys' => array_keys($queryResult), 'has_mpesa_receipt_key' => array_key_exists('mpesa_receipt', $queryResult), 'mpesa_receipt_val' => $queryResult['mpesa_receipt'] ?? 'KEY_MISSING', 'is_paid' => $queryResult['is_paid'] ?? null]])."\n", FILE_APPEND);
             // #endregion
 
             if (! ($queryResult['success'] && ! empty($queryResult['is_paid']))) {
@@ -669,7 +670,7 @@ class InvoicePaymentController extends Controller
                     'reference' => $queryResult['checkout_request_id'] ?? $payment->checkout_request_id,
                     'mpesa_receipt' => $queryResult['mpesa_receipt'] ?? $payment->mpesa_receipt,
                 ];
-                
+
                 if (empty($payment->raw_callback)) {
                     $updateData['raw_callback'] = array_merge($queryResult, [
                         '_source' => 'daraja_stk_query',
